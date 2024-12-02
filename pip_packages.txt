@@ -1,0 +1,1 @@
+django numpy django-crispy-forms django-htmx django-cotton django-template-partials

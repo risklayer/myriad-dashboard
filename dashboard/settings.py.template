@@ -1,0 +1,70 @@
+from sys import stderr
+
+from .settings_base import *
+
+# this is a template file for development or productive use
+# for development, just link settings.py to settings.py.template:
+# ln -s settings.py.template settings.py
+# for production mode, copy and edit the file
+
+# uncomment (and edit if necassary)
+# the following settings for production:
+
+# secret key is passed from operating system
+# e.g. systemd service file
+#SECRET_KEY = os.environ['SECRET_KEY']
+
+#SECURE_SSL_REDIRECT = True
+#DEBUG = False
+#ALLOWED_HOSTS = ["www.example.com"]
+
+# disable the admin interface for production!
+#ENABLE_ADMIN_INTERFACE = False
+
+# Save Emails as text file
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_FILE_PATH = 'tmp-email-messages/'
+
+# uncomment this to use proper E-Mail Server
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_USE_TLS = True
+#EMAIL_HOST = 'smtp.example.com'
+#EMAIL_PORT = 587
+#EMAIL_HOST_USER = 'app@example.com'
+#EMAIL_HOST_PASSWORD = 'passw0rd'
+#DEFAULT_FROM_EMAIL = 'noreply@example.com'
+
+# django will copy all static files to this directory
+# this offloads static content serving away from python
+#STATIC_ROOT = "/var/www/app.example.com/static/" # for productive deployment
+#MEDIA_ROOT = "/var/www/app.example.com/media/" # for productive deployment
+
+# use a CDN:
+# STATIC_URL = 'https://cdn.app.example.com/'
+# when using a CDN, uncomment the following:
+# SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+#CSRF_COOKIE_SECURE = True
+#SESSION_COOKIE_SECURE = True
+
+# Database
+# https://docs.djangoproject.com/en/4.0/ref/settings/#databases
+
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3', # or django.db.backends.postgresql or django.db.backends.mysql
+#        'NAME': BASE_DIR / 'db.sqlite3',
+#    },
+#}
+
+try:
+  with open("/etc/timezone", 'r') as file:
+    TIME_ZONE = str(file.readline().strip())
+except:
+  print("Warning: cannot open /etc/timezone to retrieve Server timezone." +
+        "Please set the timezone manually inside app/settings.py if other than UTC", file=stderr)
+
+TILE_LAYER_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+
+# mapbox
+# MAPBOX_KEY = ""
