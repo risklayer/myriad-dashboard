@@ -1,0 +1,326 @@
+code_nuts;label_orig;label_latin
+BG3;Северна и Югоизточна България;Severna i Yugoiztochna Bulgaria
+BG31;Северозападен;Severozapaden
+BG311;Видин;Vidin
+BG312;Монтана;Montana
+BG313;Враца;Vratsa
+BG314;Плевен;Pleven
+BG315;Ловеч;Lovech
+BG32;Северен централен;Severen tsentralen
+BG321;Велико Търново;Veliko Tarnovo
+BG322;Габрово;Gabrovo
+BG323;Русе;Ruse
+BG324;Разград;Razgrad
+BG325;Силистра;Silistra
+BG33;Североизточен;Severoiztochen
+BG331;Варна;Varna
+BG332;Добрич;Dobrich
+BG333;Шумен;Shumen
+BG334;Търговище;Targovishte
+BG34;Югоизточен;Yugoiztochen
+BG341;Бургас;Burgas
+BG342;Сливен;Sliven
+BG343;Ямбол;Yambol
+BG344;Стара Загора;Stara Zagora
+BG4;Югозападна и Южна централна България;Yugozapadna i Yuzhna tsentralna Bulgaria
+BG41;Югозападен;Yugozapaden
+BG411;София (столица);Sofia (stolitsa)
+BG412;София;Sofia
+BG413;Благоевград;Blagoevgrad
+BG414;Перник;Pernik
+BG415;Кюстендил;Kyustendil
+BG42;Южен централен;Yuzhen tsentralen
+BG421;Пловдив;Plovdiv
+BG422;Хасково;Haskovo
+BG423;Пазарджик;Pazardzhik
+BG424;Смолян;Smolyan
+BG425;Кърджали;Kardzhali
+EL3;Αττική ;Attiki
+EL30;Aττική;Attiki
+EL301;Βόρειος Τομέας Αθηνών;Voreios Tomeas Athinon
+EL302;Δυτικός Τομέας Αθηνών;Dytikos Tomeas Athinon
+EL303;Κεντρικός Τομέας Αθηνών;Kentrikos Tomeas Athinon
+EL304;Νότιος Τομέας Αθηνών;Notios Tomeas Athinon
+EL305;Ανατολική Αττική;Anatoliki Attiki
+EL306;Δυτική Αττική;Dytiki Attiki
+EL307;Πειραιάς, Νήσοι;Peiraias, Nisoi
+EL4;Νησιά Αιγαίου, Κρήτη;Nisia Aigaiou, Kriti
+EL41;Βόρειο Αιγαίο;Voreio Aigaio
+EL411;Λέσβος, Λήμνος;Lesvos, Limnos
+EL412;Ικαρία, Σάμος;Ikaria, Samos
+EL413;Χίος;Chios
+EL42;Νότιο Αιγαίο;Notio Aigaio
+EL421;Κάλυμνος, Κάρπαθος – Ηρωική Νήσος Κάσος, Κως, Ρόδος;Kalymnos, Karpathos – Iroiki Nisos Kasos, Kos, Rodos
+EL422;Άνδρος, Θήρα, Κέα, Μήλος, Μύκονος, Νάξος, Πάρος, Σύρος, Τήνος;Andros, Thira, Kea, Milos, Mykonos, Naxos, Paros,  Syros, Tinos
+EL43;Κρήτη;Kriti
+EL431;Ηράκλειο;Irakleio
+EL432;Λασίθι;Lasithi
+EL433;Ρέθυμνο;Rethymni
+EL434;Χανιά;Chania
+EL5;Βόρεια Ελλάδα;Voreia Elláda
+EL51;Aνατολική Μακεδονία, Θράκη;Anatoliki Makedonia, Thraki
+EL511;Έβρος;Evros
+EL512;Ξάνθη;Xanthi
+EL513;Ροδόπη;Rodopi
+EL514;Δράμα;Drama
+EL515;Θάσος, Καβάλα;Thasos, Kavala
+EL52;Κεντρική Μακεδονία;Kentriki Makedonia
+EL521;Ημαθία;Imathia
+EL522;Θεσσαλονίκη;Thessaloniki
+EL523;Κιλκίς;Kilkis
+EL524;Πέλλα;Pella
+EL525;Πιερία;Pieria
+EL526;Σέρρες;Serres
+EL527;Χαλκιδική;Chalkidiki
+EL53;Δυτική Μακεδονία;Dytiki Makedonia
+EL531;Γρεβενά, Κοζάνη;Grevena, Kozani
+EL532;Καστοριά;Kastoria
+EL533;Φλώρινα;Florina
+EL54;Ήπειρος;Ipeiros
+EL541;Άρτα, Πρέβεζα;Arta, Preveza
+EL542;Θεσπρωτία;Thesprotia
+EL543;Ιωάννινα;Ioannina
+EL6;Κεντρική Ελλάδα;Kentriki Elláda
+EL61;Θεσσαλία;Thessalia
+EL611;Καρδίτσα, Τρίκαλα;Karditsa, Trikala
+EL612;Λάρισα;Larisa
+EL613;Μαγνησία, Σποράδες;Magnisia, Sporades
+EL62;Ιόνια Νησιά;Ionia Nisia
+EL621;Ζάκυνθος;Zakynthos
+EL622;Κέρκυρα;Kerkyra
+EL623;Ιθάκη, Κεφαλληνία;Ithaki, Kefallinia
+EL624;Λευκάδα;Lefkada
+EL63;Δυτική Ελλάδα;Dytiki Elláda
+EL631;Αιτωλοακαρνανία;Aitoloakarnania
+EL632;Αχαΐα;Achaia
+EL633;Ηλεία;Ileia
+EL64;Στερεά Ελλάδα;Sterea Elláda
+EL641;Βοιωτία;Voiotia
+EL642;Εύβοια;Evvoia
+EL643;Ευρυτανία;Evrytania
+EL644;Φθιώτιδα;Fthiotida
+EL645;Φωκίδα;Fokida
+EL65;Πελοπόννησος;Peloponnisos
+EL651;Αργολίδα, Αρκαδία;Argolida, Arkadia
+EL652;Κορινθία;Korinthia
+EL653;Λακωνία, Μεσσηνία;Lakonia, Messinia
+CY0;Κύπρος;Kýpros
+CY00;Κύπρος;Kýpros
+CY000;Κύπρος;Kýpros
+ME0;Црна Гора ;Crna Gora
+ME00;Црна Гора;Crna Gora
+ME000;Црна Гора;Crna Gora
+MK0;Северна Македонија;Severna Makedonija 
+MK00;Северна Македонија;Severna Makedonija 
+MK001;Вардарски;Vardarski
+MK002;Источен;Istočen
+MK003;Југозападен;Jugozapaden
+MK004;Југоисточен;Jugoistočen
+MK005;Пелагониски;Pelagoniski
+MK006;Полошки;Pološki
+MK007;Североисточен;Severoistočen
+MK008;Скопски;Skopski
+RS1;Србија - север ;Serbia - sever
+RS11;Београдски регион;City of Belgrade
+RS110;Београдска област;City of Belgrade
+RS12;Регион Војводине;Autonomous Province of Vojvodina
+RS121;Западнобачка област;Zapadnobačka oblast 
+RS122;Јужнобанатска област;Južnobanatska oblast
+RS123;Јужнобачка област;Južnobačka oblast
+RS124;Севернобанатска област;Severnobanatska oblast
+RS125;Севернобачка област;Severnobačka oblast
+RS126;Средњобанатска област;Srednjobanatska oblast
+RS127;Сремска област;Sremska oblast
+RS2;Србија - југ ;Serbia - jug 
+RS21;Регион Шумадије и Западне Србије;Region Šumadije i Zapadne Srbije
+RS211;Златиборска област;Zlatiborska oblast
+RS212;Колубарска област;Kolubarska oblast
+RS213;Мачванска област;Mačvanska oblast
+RS214;Моравичка област;Moravička oblast
+RS215;Поморавска област;Pomoravska oblast
+RS216;Расинска област;Rasinska oblast
+RS217;Рашка област;Raška oblast
+RS218;Шумадијска област;Šumadijska oblast
+RS22;Регион Јужне и Источне Србије;Region Južne i Istočne Srbije
+RS221;Борска област;Borska oblast
+RS222;Браничевска област;Braničevska oblast
+RS223;Зајечарска област;Zaječarska oblast
+RS224;Јабланичка област;Jablanička oblast
+RS225;Нишавска област;Nišavska oblast
+RS226;Пиротска област;Pirotska oblast
+RS227;Подунавска област;Podunavska oblast
+RS228;Пчињска област;Pčinjska oblast
+RS229;Топличка област;Toplička oblast
+UA1;Макрорегіон_01;Macroregion_01
+UA11;Полтавська Область;Poltavska Oblast
+UA111;Кременчуцький Район;Kremenchutskyi Raion
+UA112;Лубенський Район;Lubenskyi Raion
+UA113;Миргородський Район;Myrhorodskyi Raion
+UA114;Полтавський Район;Poltavskyi Raion
+UA12;Сумська Область;Sumska Oblast
+UA121;Конотопський Район;Konotopskyi Raion
+UA122;Охтирський Район;Okhtyrskyi Raion
+UA123;Роменський Район;Romenskyi Raion
+UA124;Сумський Район;Sumskyi Raion
+UA125;Шосткинський Район;Shostkynskyi Raion
+UA13;Харківська Область;Kharkivska Oblast
+UA131;Богодухівський Район;Bohodukhivskyi Raion
+UA132;Ізюмський Район;Iziumskyi Raion
+UA133;Красноградський Район;Krasnohradskyi Raion
+UA134;Куп'Янський Район;Kupianskyi Raion
+UA135;Лозівський Район;Lozivskyi Raion
+UA136;Харківський Район;Kharkivskyi Raion
+UA137;Чугуївський Район;Chuhuivskyi Raion
+UA14;Чернігівська Область;Chernihivska Oblast
+UA141;Корюківський Район;Koriukivskyi Raion
+UA142;Ніжинський Район;Nizhynskyi Raion
+UA143;Новгород-Сіверський Район;Novhorod-Siverskyi Raion
+UA144;Прилуцький Район;Prylutskyi Raion
+UA145;Чернігівський Район;Chernihivskyi Raion
+UA2;Макрорегіон_02;Macroregion_02
+UA21;Донецька Область;Donetska Oblast
+UA211;Бахмутський Район;Bakhmutskyi Raion
+UA212;Волноваський Район;Volnovaskyi Raion
+UA213;Горлівський Район;Horlivskyi Raion
+UA214;Донецький Район;Donetskyi Raion
+UA215;Кальміуський Район;Kalmiuskyi Raion
+UA216;Краматорський Район;Kramatorskyi Raion
+UA217;Маріупольський Район;Mariupolskyi Raion
+UA218;Покровський Район;Pokrovskyi Raion
+UA22;Луганська Область;Luhanska Oblast
+UA221;Алчевський Район;Alchevskyi Raion
+UA222;Довжанський Район;Dovzhanskyi Raion
+UA223;Луганський Район;Luhanskyi Raion
+UA224;Ровеньківський Район;Rovenkivskyi Raion
+UA225;Сватівський Район;Svativskyi Raion
+UA226;Сєвєродонецький Район;Sievierodonetskyi Raion
+UA227;Старобільський Район;Starobilskyi Raion
+UA228;Щастинський Район;Shchastynskyi Raion
+UA3;Макрорегіон_03;Macroregion_03
+UA31;Дніпропетровська Область;Dnipropetrovska Oblast
+UA311;Дніпровський Район;Dniprovskyi Raion
+UA312;Кам'Янський Район;Kamianskyi Raion
+UA313;Криворізький Район;Kryvorizkyi Raion
+UA314;Нікопольський Район;Nikopolskyi Raion
+UA315;Новомосковський Район;Novomoskovskyi Raion
+UA316;Павлоградський Район;Pavlohradskyi Raion
+UA317;Синельниківський Район;Synelnykivskyi Raion
+UA32;Запорізька Область;Zaporizka Oblast
+UA321;Бердянський Район;Berdianskyi Raion
+UA322;Василівський Район;Vasylivskyi Raion
+UA323;Запорізький Район;Zaporizkyi Raion
+UA324;Мелітопольський Район;Melitopolskyi Raion
+UA325;Пологівський Район;Polohivskyi Raion
+UA33;Кіровоградська Область;Kirovohradska Oblast
+UA331;Голованівський Район;Holovanivskyi Raion
+UA332;Кропивницький Район;Kropyvnytskyi Raion
+UA333;Новоукраїнський Район;Novoukrainskyi Raion
+UA334;Олександрійський Район;Oleksandriiskyi Raion
+UA4;Макрорегіон_04;Macroregion_04
+UA41;Миколаївська Область;Mykolaivska Oblast
+UA411;Баштанський Район;Bashtanskyi Raion
+UA412;Вознесенський Район;Voznesenskyi Raion
+UA413;Миколаївський Район;Mykolaivskyi Raion
+UA414;Первомайський Район;Pervomaiskyi Raion
+UA42;Одеська Область;Odeska Oblast
+UA421;Березівський Район;Berezivskyi Raion
+UA422;Білгород-Дністровський Район;Bilhorod-Dnistrovskyi Raion
+UA423;Болградський Район;Bolhradskyi Raion
+UA424;Ізмаїльський Район;Izmailskyi Raion
+UA425;Одеський Район;Odeskyi Raion
+UA426;Подільський Район;Podilskyi Raion
+UA427;Роздільнянський Район;Rozdilnianskyi Raion
+UA43;Херсонська Область;Khersonska Oblast
+UA431;Бериславський Район;Beryslavskyi Raion
+UA432;Генічеський Район;Henicheskyi Raion
+UA433;Каховський Район;Kakhovskyi Raion
+UA434;Скадовський Район;Skadovskyi Raion
+UA435;Херсонський Район;Khersonskyi Raion
+UA44;Ар Крим;Avtonomna Respublika Krym
+UA441;Бахчисарайський Район;Bakhchysaraiskyi Raion
+UA442;Білогірський Район;Bilohirskyi Raion
+UA443;Джанкойський Район;Dzhankoiskyi Raion
+UA444;Євпаторійський Район;Ievpatoriiskyi Raion
+UA445;Керченський Район;Kerchenskyi Raion
+UA446;Курманський Район;Kurmanskyi Raion
+UA447;Перекопський Район;Perekopskyi Raion
+UA448;Сімферопольський Район;Simferopolskyi Raion
+UA449;Феодосійський Район;Feodosiiskyi Raion
+UA44A;Ялтинський Район;Ialtynskyi Raion
+UA45;М. Севастополь;M. Sevastopol
+UA450;М. Севастополь;M. Sevastopol
+UA5;Макрорегіон_05;Macroregion_05
+UA51;Вінницька Область;Vinnytska Oblast
+UA511;Вінницький Район;Vinnytskyi Raion
+UA512;Гайсинський Район;Haisynskyi Raion
+UA513;Жмеринський Район;Zhmerynskyi Raion
+UA514;Могилів-Подільський Район;Mohyliv-Podilskyi Raion
+UA515;Тульчинський Район;Tulchynskyi Raion
+UA516;Хмільницький Район;Khmilnytskyi Raion
+UA52;Тернопільська Область;Ternopilska Oblast
+UA521;Кременецький Район;Kremenetskyi Raion
+UA522;Тернопільський Район;Ternopilskyi Raion
+UA523;Чортківський Район;Chortkivskyi Raion
+UA53;Хмельницька Область;Khmelnytska Oblast
+UA531;Кам'Янець-Подільський Район;Kamianets-Podilskyi Raion
+UA532;Хмельницький Район;Khmelnytskyi Raion
+UA533;Шепетівський Район;Shepetivskyi Raion
+UA6;Макрорегіон_06;Macroregion_06
+UA61;Київська  Область;Kyivska Oblast
+UA611;Білоцерківський Район;Bilotserkivskyi Raion
+UA612;Бориспільський Район;Boryspilskyi Raion
+UA613;Броварський Район;Brovarskyi Raion
+UA614;Бучанський Район;Buchanskyi Raion
+UA615;Вишгородський Район;Vyshhorodskyi Raion
+UA616;Обухівський Район;Obukhivskyi Raion
+UA617;Фастівський Район;Fastivskyi Raion
+UA62;Черкаська  Область;Cherkaska Oblast
+UA621;Звенигородський Район;Zvenyhorodskyi Raion
+UA622;Золотоніський Район;Zolotoniskyi Raion
+UA623;Уманський Район;Umanskyi Raion
+UA624;Черкаський Район;Cherkaskyi Raion
+UA63;М. Київ ;M. Kyiv
+UA630;М. Київ;M. Kyiv
+UA7;Макрорегіон_07;Macroregion_07
+UA71;Закарпатська Область;Zakarpatska Oblast
+UA711;Берегівський Район;Berehivskyi Raion
+UA712;Мукачівський Район;Mukachivskyi Raion
+UA713;Рахівський Район;Rakhivskyi Raion
+UA714;Тячівський Район;Tiachivskyi Raion
+UA715;Ужгородський Район;Uzhhorodskyi Raion
+UA716;Хустський Район;Khustskyi Raion
+UA72;Івано-Франківська Область;Ivano-Frankivska Oblast
+UA721;Верховинський Район;Verkhovynskyi Raion
+UA722;Івано-Франківський Район;Ivano-Frankivskyi Raion
+UA723;Калуський Район;Kaluskyi Raion
+UA724;Коломийський Район;Kolomyiskyi Raion
+UA725;Косівський Район;Kosivskyi Raion
+UA726;Надвірнянський Район;Nadvirnianskyi Raion
+UA73;Львівська Область;Lvivska Oblast
+UA731;Дрогобицький Район;Drohobytskyi Raion
+UA732;Золочівський Район;Zolochivskyi Raion
+UA733;Львівський Район;Lvivskyi Raion
+UA734;Самбірський Район;Sambirskyi Raion
+UA735;Стрийський Район;Stryiskyi Raion
+UA736;Червоноградський Район;Chervonohradskyi Raion
+UA737;Яворівський Район;Iavorivskyi Raion
+UA74;Чернівецька Область;Chernivetska Oblast
+UA741;Вижницький Район;Vyzhnytskyi Raion
+UA742;Дністровський Район;Dnistrovskyi Raion
+UA743;Чернівецький Район;Chernivetskyi Raion
+UA8;Макрорегіон_08;Macroregion_08
+UA81;Волинська Область;Volynska Oblast
+UA811;Володимирський Район;Volodymyrskyi Raion
+UA812;Камінь-Каширський Район;Kamin-Kashyrskyi Raion
+UA813;Ковельський Район;Kovelskyi Raion
+UA814;Луцький Район;Lutskyi Raion
+UA82;Житомирська Область;Zhytomyrska Oblast
+UA821;Бердичівський Район;Berdychivskyi Raion
+UA822;Житомирський Район;Zhytomyrskyi Raion
+UA823;Коростенський Район;Korostenskyi Raion
+UA824;Звягельський Район;Zviahelskyi Raion
+UA83;Рівненська Область;Rivnenska Oblast
+UA831;Вараський Район;Varaskyi Raion
+UA832;Дубенський Район;Dubenskyi Raion
+UA833;Рівненський Район;Rivnenskyi Raion
+UA834;Сарненський Район;Sarnenskyi Raion
