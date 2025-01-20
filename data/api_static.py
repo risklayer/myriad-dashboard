@@ -6,4 +6,4 @@ def api_index(request):
   return render(request, "api/api_reference.html")
 
 def api_openapi_yaml(request):
-  return render(request, "api/openapi.yaml", context={"hosts" : settings.ALLOWED_HOSTS})
+  return render(request, "api/openapi_v1.yaml", context={"hosts" : settings.ALLOWED_HOSTS})

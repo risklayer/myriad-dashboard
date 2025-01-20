@@ -1,13 +1,12 @@
-{% extends "base_public.html" %}
+{# extends "base_public.html" #}
 
 {% load static %}
-{% load filters %}
 
 {% block header %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static 'css/swagger-ui.css' %}" crossorigin="">
-<script src="{% static 'js/swagger-ui-bundle.js' %}" crossorigin=""></script>
-<script src="{% static 'js/swagger-ui-standalone-preset.js' %}" crossorigin=""></script>
+{# {{ block.super }} #}
+<link rel="stylesheet" href="{% static 'swagger-ui-dist/swagger-ui.css' %}" crossorigin="">
+<script src="{% static 'swagger-ui-dist/swagger-ui-bundle.js' %}" crossorigin=""></script>
+<script src="{% static 'swagger-ui-dist/swagger-ui-standalone-preset.js' %}" crossorigin=""></script>
 {% endblock %}
 
 {% block mainbody %}

@@ -1,0 +1,55 @@
+openapi: 3.0.3
+info:
+  title: Myriad Dashboard Data Backend API
+  version: "0.9"
+
+servers:
+  {% for host in hosts %}
+  - url: http{% if request.is_secure %}s{% endif %}://{% autoescape off %}{{ host }}{% endautoescape %}/data/api/v1
+  {% endfor %}
+
+paths:
+
+  /countries:
+    get:
+      summary: Get a list of Countries
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+  /nuts2areas:
+    get:
+      summary: Get a list of nuts2areas
+      parameters:
+        - in: query
+          name: bbox
+          schema:
+            type: string
+          description: Optional bbox to limit result in the format of minx,miny,maxx,maxy
+          example: 7.097168,48.242967,10.362854,49.569759
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+  /columns:
+    get:
+      summary: Get a list of available indicators
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+  /values:
+    get:
+      summary: Get values filtered by bbox and indicators
+      parameters:
+        - in: query
+          name: bbox
+          schema:
+            type: string
+          description: Optional bbox to limit result in the format of minx,miny,maxx,maxy
+          example: 7.097168,48.242967,10.362854,49.569759
+        - in: query
+          name: columns
+          schema:
+            type: string
+          description: Optional list of indicators to be used
+          example: drought_drr_0.4_POP,drought_drr_0.6_POP,drought_drr_0.8_POP,drought_drr_avg_POP
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
