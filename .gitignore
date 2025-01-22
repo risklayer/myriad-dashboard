@@ -164,3 +164,7 @@ cython_debug/
 /node_modules/
 
 /dashboard/settings.py
+.DS_Store
+~$*.xlsx
+
+/.vscode/
