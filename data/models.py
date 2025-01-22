@@ -84,7 +84,7 @@ class DataTableColumn(models.Model):
 
   def to_dict(self):
     return {
-      "data_table" : self.data_table.to_dict(),
+      "data_table_id" : self.data_table_id,
       "key" : self.key,
       "label" : self.label,
     }
