@@ -167,4 +167,5 @@ cython_debug/
 .DS_Store
 ~$*.xlsx
 
-/.vscode/
+/.vscode/*
+!/.vscode/extensions.json
