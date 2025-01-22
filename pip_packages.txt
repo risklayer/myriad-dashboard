@@ -1,1 +1,1 @@
-django numpy django-crispy-forms django-htmx django-cotton django-template-partials
+django numpy django-crispy-forms django-htmx django-cotton django-template-partials ruff djlint
