@@ -16,6 +16,19 @@ def get_country_dict_by_2alpha() -> Dict[str, Dict[str, str]]:
   return countries
 
 
+def get_country_dict_by_iso() -> Dict[str, Dict[str, str]]:
+  with open(
+    dirname(realpath(__file__)) + "/wb_list_country.csv", mode="r", encoding="utf-8"
+  ) as csv_file:
+    csv_reader = DictReader(csv_file, delimiter=";")
+
+    countries = dict()
+    for row in csv_reader:
+      countries[row["code_iso"]] = row
+
+  return countries
+
+
 def get_nuts_by_code() -> Dict[str, Dict[str, str]]:
   with open(
     dirname(realpath(__file__)) + "/list_nuts_codes.csv", mode="r", encoding="utf-8"

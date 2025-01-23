@@ -1,11 +1,25 @@
-from typing import Tuple
+from typing import Dict, Tuple
 
 from django.db import models
+from django.template.defaultfilters import slugify
 
 
 class Country(models.Model):
   country_code = models.TextField(unique=True)
   label = models.TextField()
+
+  @classmethod
+  def ensure_creation_by_iso(
+    cls,
+    code_iso: str,
+    country_dict_by_iso : Dict[str, Dict[str, str]]
+  ):
+    code = country_dict_by_iso[code_iso]["code_2alpha"]
+    country, _ = cls.objects.get_or_create(
+      country_code=code, defaults={"label": country_dict_by_iso[code_iso]["name_short"]}
+    )
+
+    return country
 
   def to_dict(self):
     return {
@@ -116,6 +130,91 @@ class DataTableColumnValue(models.Model):
     unique_together = ("data_table_column", "nuts_area")
 
 
-# class VulnerabilityCurve():
-#  param_asdf1
-#  param_asdf2
+class CurveKeyLabelSelection:
+  @classmethod
+  def get_or_create_by_label(cls, label: str):
+    if label is None:
+      return None
+
+    slug_key = slugify(label)
+
+    instance, created = cls.objects.get_or_create(key=slug_key, defaults={"label": label})
+
+    return instance
+
+  def to_dict(self):
+    return {
+      "key": self.key,
+      "label": self.label,
+    }
+
+  def __str__(self):
+    return str(self.label)
+
+
+class CurveHazard(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class CurveQuality(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class CurveConstructionType1(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class CurveConstructionType2(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class CurveConstructionType3(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class CurveOccupancyType1(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class CurveOccupancyType2(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class CurveOccupancyType3(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class CurveCoverage(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class CurveSector(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class VulnerabilityCurve(models.Model, CurveKeyLabelSelection):
+  key = models.SlugField(unique=True, max_length=256)
+  label = models.TextField()
+
+  hazard = models.ForeignKey(CurveHazard, on_delete=models.CASCADE)
+  quality = models.ForeignKey(CurveQuality, on_delete=models.CASCADE, null=True, blank=True)
+  con_description_1 = models.ForeignKey(CurveConstructionType1, on_delete=models.CASCADE, null=True, blank=True)
+  con_description_2 = models.ForeignKey(CurveConstructionType2, on_delete=models.CASCADE, null=True, blank=True)
+  con_description_3 = models.ForeignKey(CurveConstructionType3, on_delete=models.CASCADE, null=True, blank=True)
+  occ_description_1 = models.ForeignKey(CurveOccupancyType1, on_delete=models.CASCADE, null=True, blank=True)
+  occ_description_2 = models.ForeignKey(CurveOccupancyType2, on_delete=models.CASCADE, null=True, blank=True)
+  occ_description_3 = models.ForeignKey(CurveOccupancyType3, on_delete=models.CASCADE, null=True, blank=True)
+  coverage = models.ForeignKey(CurveCoverage, on_delete=models.CASCADE)
+  myriad_sectors_applicable = models.ManyToManyField(CurveSector)
+  countries = models.ManyToManyField(Country)
+  metadata = models.JSONField()
