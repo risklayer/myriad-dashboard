@@ -6,9 +6,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-" + str.join(
-  "", (random.choice(string.hexdigits) for _ in range(12))
-)
+SECRET_KEY = "django-insecure-" + str.join("", (random.choice(string.hexdigits) for _ in range(12)))
 DEBUG = True
 if SECRET_KEY.startswith("django-insecure") and not DEBUG:
   raise Exception("using insecure SECRET_KEY without DEBUG.")

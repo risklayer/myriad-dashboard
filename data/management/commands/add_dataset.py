@@ -24,9 +24,7 @@ class Command(BaseCommand):
 
   def add_arguments(self, parser):
     parser.add_argument("--filename", type=str, required=True)
-    parser.add_argument(
-      "--format", type=str, required=True, choices=["gpkg-sqlite", "xlsx"]
-    )
+    parser.add_argument("--format", type=str, required=True, choices=["gpkg-sqlite", "xlsx"])
 
   def handle(self, *args, filename: str, format: str, **options):
     regexp_str = "^[a-zA-Z_\-]*[0-9a-zA-Z_\-]$"
