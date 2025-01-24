@@ -217,4 +217,5 @@ class VulnerabilityCurve(models.Model, CurveKeyLabelSelection):
   coverage = models.ForeignKey(CurveCoverage, on_delete=models.CASCADE)
   myriad_sectors_applicable = models.ManyToManyField(CurveSector)
   countries = models.ManyToManyField(Country)
+
   metadata = models.JSONField()

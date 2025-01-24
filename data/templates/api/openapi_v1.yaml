@@ -53,3 +53,101 @@ paths:
           example: drought_drr_0.4_POP,drought_drr_0.6_POP,drought_drr_0.8_POP,drought_drr_avg_POP
       responses:
         '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+  /curves/filter:
+    get:
+      summary: Filter Curves by multiple Parameters
+      parameters:
+        - in: query
+          name: hazard
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ hazard_options|join:", " }}]
+          description: hazard
+        - in: query
+          name: quality
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ quality_options|join:", " }}]
+          description: quality
+        - in: query
+          name: con_description_1
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ con_description_1_options|join:", " }}]
+          description: con_description_1
+        - in: query
+          name: con_description_2
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ con_description_2_options|join:", " }}]
+          description: con_description_2
+        - in: query
+          name: con_description_3
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ con_description_3_options|join:", " }}]
+          description: con_description_3
+        - in: query
+          name: occ_description_1
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ occ_description_1_options|join:", " }}]
+          description: occ_description_1
+        - in: query
+          name: occ_description_2
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ occ_description_2_options|join:", " }}]
+          description: occ_description_2
+        - in: query
+          name: occ_description_3
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ occ_description_3_options|join:", " }}]
+          description: occ_description_3
+        - in: query
+          name: coverage
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ coverage_options|join:", " }}]
+          description: coverage
+        - in: query
+          name: myriad_sectors_applicable
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ myriad_sectors_applicable_options|join:", " }}]
+          description: myriad_sectors_applicable
+        - in: query
+          name: countries
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [{{ countries_options|join:", " }}]
+          description: countries
+
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+#  /curve/{key}:

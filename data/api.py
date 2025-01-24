@@ -1,7 +1,14 @@
 from django.http import HttpRequest, JsonResponse
 from django.views.decorators.http import require_http_methods
 
-from .models import Country, DataTableColumn, DataTableColumnValue, Nuts2Area
+from .curves import api_curves_filter_json
+
+from .models import (
+  Country,
+  DataTableColumn,
+  DataTableColumnValue,
+  Nuts2Area,
+)
 
 
 @require_http_methods(["GET"])
@@ -78,3 +85,8 @@ def api_values(request: HttpRequest):
     result[column.key] = column_data
 
   return JsonResponse(result)
+
+
+@require_http_methods(["GET"])
+def api_curves_filter(request: HttpRequest):
+  return JsonResponse(api_curves_filter_json(request.GET))
