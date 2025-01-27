@@ -1,0 +1,6 @@
+blank_line_after_tag="load,extends,endpartialdef,endblock"
+blank_line_before_tag="partialdef"
+close_void_tags=true
+format_css=true
+indent=2
+max_line_length=80
