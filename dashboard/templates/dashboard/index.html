@@ -1,0 +1,15 @@
+{% extends "layouts/base.html" %}
+{% load dashboard %}
+{% block head %}
+  <style>
+    h1 {
+    font-size: 10vw;
+    }
+  </style>
+{% endblock head %}
+{% block pagetitle %}
+  <h1>Myriad</h1>
+{% endblock pagetitle %}
+{% block main %}
+  {% dashboard_home_apps %}
+{% endblock main %}

@@ -1,0 +1,12 @@
+<div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+  {% for app in myriad_apps %}
+    <div class="feature col">
+      <div class="feature-icon d-inline-flex align-items-center justify-content-center text-bg-primary bg-gradient fs-2 mb-3">
+        <span class="fa-solid fa-{{app.icon}}"></span>
+      </div>
+      <h3 class="fs-2 text-body-emphasis">{{ app.name }}</h3>
+      <p>{{ app.description }}</p>
+      <a href="{{app.url}}" class="icon-link">Open {{ app.name }}</a>
+    </div>
+  {% endfor %}
+</div>

@@ -12,5 +12,15 @@
     "bootstrap": "5.3.3",
     "swagger-ui-dist": "5.18.2",
     "sass" : "1.83.4"
+  },
+  "dependencies": {
+    "@fontsource/barlow": "^5.1.0",
+    "@popperjs/core": "^2.11.8",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
+    "chart.js": "^4.4.7",
+    "htmx-ext-class-tools": "^2.0.1",
+    "htmx.org": "^2.0.4",
+    "prettier": "^3.4.2"
   }
 }

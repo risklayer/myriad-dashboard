@@ -1,0 +1,61 @@
+{% load static %}
+{% load django_htmx %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+      {% block title %}
+        MYRIAD Multi-Risk Toolkit
+      {% endblock title %}
+    </title>
+    {% include "layouts/head.html" %}
+    <link rel="stylesheet"
+          href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}" />
+    <link rel="stylesheet"
+          href="{% static 'bootstrap/dist/css/bootstrap-grid.min.css' %}" />
+    <link rel="stylesheet"
+          href="{% static 'bootstrap/dist/css/bootstrap-utilities.min.css' %}" />
+    <link rel="stylesheet"
+          href="{% static '@fortawesome/fontawesome-free/css/fontawesome.min.css' %}" />
+    <link rel="stylesheet" href="{% static '@fortawesome/fontawesome-free/css/solid.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'styles.css' %}" />
+    {% block head %}
+    {% endblock head %}
+  </head>
+  <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    {% include "layouts/header.html" %}
+    <main id="main" class="p-3 md:p-10">
+      {% block pagetitle %}
+      {% endblock pagetitle %}
+      {% block main %}
+      {% endblock main %}
+    </main>
+    <template id="toast-template">
+      <div class="toast align-items-center text-bg-primary border-0"
+           role="alert"
+           aria-live="assertive"
+           aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            <div class="toast-text"></div>
+          </div>
+          <button type="button"
+                  class="btn-close btn-close-white me-2 m-auto"
+                  data-bs-dismiss="toast"
+                  aria-label="Close"></button>
+        </div>
+      </div>
+    </template>
+    <div id="toast-container" class="position-fixed top-0 end-0 p-3"></div>
+  </body>
+  <script src="{% static '@popperjs/core/dist/umd/popper.min.js' %}" defer></script>
+  <script src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}" defer></script>
+  <script src="{% static 'htmx.org/dist/htmx.min.js' %}"></script>
+  <script src="{% static 'htmx-ext-class-tools/class-tools.js' %}"></script>
+  <script src="{% static 'chart.js/dist/chart.umd.js' %}"></script>
+  {% comment %} <script src="{% static 'htmx.org/dist/ext/debug.js' %}"></script> {% endcomment %}
+  {% django_htmx_script %}
+  {% comment %} <script src="{% static 'js/scripts.min.js' %}" defer></script> {% endcomment %}
+  <script src="{% static 'js/scripts.js' %}"></script>
+</html>
