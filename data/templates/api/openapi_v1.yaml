@@ -25,7 +25,34 @@ paths:
           schema:
             type: string
           description: Optional bbox to limit result in the format of minx,miny,maxx,maxy
-          example: 7.097168,48.242967,10.362854,49.569759
+          example: 6.315765,49.450941,6.401253,49.502918
+        - in: query
+          name: country
+          schema:
+            type: array
+            items:
+              type: string
+          description: Optional country code(s)
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+  /nuts2shapes:
+    get:
+      summary: Get a geojson shapefile
+      parameters:
+        - in: query
+          name: bbox
+          schema:
+            type: string
+          description: Optional bbox to limit result in the format of minx,miny,maxx,maxy
+          example: 6.315765,49.450941,6.401253,49.502918
+        - in: query
+          name: country
+          schema:
+            type: array
+            items:
+              type: string
+          description: Optional country code(s)
       responses:
         '200' : {"description" : "success", "content" : { "application/json" : {} } }
 
@@ -44,7 +71,7 @@ paths:
           schema:
             type: string
           description: Optional bbox to limit result in the format of minx,miny,maxx,maxy
-          example: 7.097168,48.242967,10.362854,49.569759
+          example: 6.315765,49.450941,6.401253,49.502918
         - in: query
           name: columns
           schema:

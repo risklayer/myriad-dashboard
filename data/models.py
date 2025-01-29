@@ -40,8 +40,10 @@ class Nuts2Area(models.Model):
   bbox_max_x = models.FloatField()
   bbox_max_y = models.FloatField()
 
-  def to_dict(self):
-    return {
+  geom_json = models.JSONField()
+
+  def to_dict(self, include_geom_json: bool = False):
+    data = {
       "country": self.country.to_dict(),
       "key": self.key,
       "label": self.label,
@@ -52,6 +54,11 @@ class Nuts2Area(models.Model):
         self.bbox_max_y,
       ),
     }
+
+    if include_geom_json:
+      data["geom_json"] = self.geom_json
+
+    return data
 
   def __str__(self):
     return str(self.country) + " / [" + self.key + "] " + str(self.label)
@@ -64,19 +71,22 @@ class Nuts2Area(models.Model):
     nuts2_label: str,
     country_label: str,
     bbox: Tuple[str],
+    geom_json: dict,
   ):
     country, created_country = Country.objects.get_or_create(
       country_code=country_code, defaults={"label": country_label}
     )
+
     nuts2area, created_nuts = Nuts2Area.objects.get_or_create(
       key=nuts2_key,
       defaults={
         "label": nuts2_label,
         "country": country,
         "bbox_min_x": bbox[0],
-        "bbox_min_y": bbox[2],
-        "bbox_max_x": bbox[1],
+        "bbox_min_y": bbox[1],
+        "bbox_max_x": bbox[2],
         "bbox_max_y": bbox[3],
+        "geom_json": geom_json,
       },
     )
 

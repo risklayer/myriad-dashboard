@@ -28,11 +28,15 @@ def api_nuts2areas(request: HttpRequest):
   if "bbox" in request.GET:
     bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = request.GET["bbox"].split(",")
     nuts2area_filter = nuts2area_filter.filter(
-      bbox_min_x__gt=bbox_min_x,
-      bbox_min_y__gt=bbox_min_y,
-      bbox_max_x__lt=bbox_max_x,
-      bbox_max_y__lt=bbox_max_y,
+      bbox_min_x__lt=bbox_max_x,
+      bbox_min_y__lt=bbox_max_y,
+      bbox_max_x__gt=bbox_min_x,
+      bbox_max_y__gt=bbox_min_y,
     )
+
+  countries = request.GET.getlist("country", [])
+  if len(countries) > 0:
+    nuts2area_filter = nuts2area_filter.filter(country__country_code__in=countries)
 
   nuts2areas_list = [c.to_dict() for c in nuts2area_filter]
 
@@ -40,6 +44,44 @@ def api_nuts2areas(request: HttpRequest):
     {
       "nuts2areas_list": nuts2areas_list,
       "nuts2areas_map": {c["key"]: c for c in nuts2areas_list},
+    }
+  )
+
+
+@require_http_methods(["GET"])
+def api_nuts2shapes(request: HttpRequest):
+  nuts2area_filter = Nuts2Area.objects.all()
+
+  if "bbox" in request.GET:
+    bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = request.GET["bbox"].split(",")
+
+    nuts2area_filter = nuts2area_filter.filter(
+      bbox_min_x__lt=bbox_max_x,
+      bbox_min_y__lt=bbox_max_y,
+      bbox_max_x__gt=bbox_min_x,
+      bbox_max_y__gt=bbox_min_y,
+    )
+
+  countries = request.GET.getlist("country", [])
+  if len(countries) > 0:
+    nuts2area_filter = nuts2area_filter.filter(country__country_code__in=countries)
+
+  return JsonResponse(
+    {
+      "type": "FeatureCollection",
+      "name": "nuts3",
+      "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "NUTS_ID": area.key,
+            "country_id": area.country_id,
+          },
+          "geometry": area.geom_json,
+        }
+        for area in nuts2area_filter
+      ],
     }
   )
 
@@ -71,10 +113,10 @@ def api_values(request: HttpRequest):
     if "bbox" in request.GET:
       bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = request.GET["bbox"].split(",")
       nuts2area_filter = nuts2area_filter.filter(
-        bbox_min_x__gt=bbox_min_x,
-        bbox_min_y__gt=bbox_min_y,
-        bbox_max_x__lt=bbox_max_x,
-        bbox_max_y__lt=bbox_max_y,
+        bbox_min_x__lt=bbox_max_x,
+        bbox_min_y__lt=bbox_max_y,
+        bbox_max_x__gt=bbox_min_x,
+        bbox_max_y__gt=bbox_min_y,
       )
 
     for value in DataTableColumnValue.objects.filter(
