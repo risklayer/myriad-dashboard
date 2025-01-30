@@ -1,1 +1,1 @@
-django numpy django-crispy-forms ruff djlint crispy-bootstrap5 django-htmx django-cotton django-template-partials pandas openpyxl
+django numpy django-crispy-forms ruff djlint crispy-bootstrap5 django-htmx django-cotton django-template-partials pandas openpyxl fiona

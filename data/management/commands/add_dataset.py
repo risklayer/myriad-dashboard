@@ -36,12 +36,12 @@ class Command(BaseCommand):
       all_values = list()
       with sqlite3.connect(filename) as con:
         con.row_factory = sqlite3.Row
-        cur = con.cursor()
 
-        res = cur.execute(
+        cur_tables = con.cursor()
+        res_tables = cur_tables.execute(
           "SELECT table_name, data_type, identifier, description, last_change, min_x, min_y, max_x, max_y, srs_id FROM gpkg_contents"
         )
-        for content in res.fetchall():
+        for content in res_tables.fetchall():
           (
             table_name,
             data_type,
@@ -64,9 +64,9 @@ class Command(BaseCommand):
             )
 
           geometry_bbox = dict()
-
           print("loading bbox geometry")
-          res = cur.execute(
+          cur_geometry = con.cursor()
+          res_geometry = cur_geometry.execute(
             "SELECT NUTS_ID, minx, miny, maxx, maxy FROM rtree_"
             + table_name
             + "_geom INNER JOIN "
@@ -77,7 +77,7 @@ class Command(BaseCommand):
             + table_name
             + ".fid"
           )
-          for row in res.fetchall():
+          for row in res_geometry.fetchall():
             geometry_bbox[row["NUTS_ID"]] = (
               row["minx"],
               row["miny"],
@@ -85,36 +85,8 @@ class Command(BaseCommand):
               row["maxy"],
             )
 
-          metadata, created = DataTableMetadata.objects.get_or_create(key=identifier)
-          metadata.source_metadata = {
-            "table_name": table_name,
-            "data_type": data_type,
-            "identifier": identifier,
-            "description": description,
-            "last_change": last_change,
-            "min_x": min_x,
-            "min_y": min_y,
-            "max_x": max_x,
-            "max_y": max_y,
-            "srs_id": srs_id,
-          }
-          metadata.save()
-
-          res = cur.execute("SELECT * FROM " + table_name + " WHERE True")
-          column_keys = set([d[0] for d in cur.description])
-          column_keys = column_keys.difference({"fid", "geom", "NUTS_ID"})
-
-          columns = list()
-
-          for column_key in column_keys:
-            column, created = DataTableColumn.objects.get_or_create(
-              data_table=metadata, key=column_key, defaults={"label": column_key}
-            )
-            if not created:
-              print("removing column " + str(column))
-              DataTableColumnValue.objects.filter(data_table_column=column).delete()
-            columns.append(column)
-
+          geometry_shapes = dict()
+          print("loading shape geometry")
           with fiona.open(filename, layer=table_name) as data_collection:
             for feature in data_collection:
               nuts_id = feature.properties["NUTS_ID"]
@@ -136,7 +108,7 @@ class Command(BaseCommand):
               if code_2alpha in country_dict:
                 country_label = country_dict[code_2alpha]["name_short"]
 
-              nuts_area = Nuts2Area.ensure_creation(
+              geometry_shapes[nuts_id] = Nuts2Area.ensure_creation(
                 nuts_id,
                 code_2alpha,
                 label,
@@ -147,22 +119,54 @@ class Command(BaseCommand):
                   "coordinates": feature.geometry.coordinates,
                 },
               )
-              for column in columns:
-                if column.key not in feature.properties:
-                  continue
 
-                data_value = feature.properties[column.key]
+          metadata, created = DataTableMetadata.objects.get_or_create(key=identifier)
+          metadata.source_metadata = {
+            "table_name": table_name,
+            "data_type": data_type,
+            "identifier": identifier,
+            "description": description,
+            "last_change": last_change,
+            "min_x": min_x,
+            "min_y": min_y,
+            "max_x": max_x,
+            "max_y": max_y,
+            "srs_id": srs_id,
+          }
+          metadata.save()
 
-                if data_value is None:
-                  continue
+          cur_columns = con.cursor()
+          res_columns = cur_columns.execute("SELECT * FROM " + table_name + " WHERE True")
+          column_keys = set([d[0] for d in cur_columns.description])
+          column_keys = column_keys.difference({"fid", "geom", "NUTS_ID"})
 
-                all_values.append(
-                  DataTableColumnValue(
-                    data_table_column=column,
-                    nuts_area=nuts_area,
-                    value=data_value,
-                  )
+          columns = list()
+          columns_dict = dict()
+
+          for column_key in column_keys:
+            column, created = DataTableColumn.objects.get_or_create(
+              data_table=metadata, key=column_key, defaults={"label": column_key}
+            )
+            if not created:
+              print("removing column " + str(column))
+              DataTableColumnValue.objects.filter(data_table_column=column).delete()
+            columns.append(column)
+            columns_dict[column.key] = column
+
+          for row in res_columns.fetchall():
+            for column in columns:
+              data_value = row[column.key]
+
+              if data_value is None:
+                continue
+
+              all_values.append(
+                DataTableColumnValue(
+                  data_table_column=column,
+                  nuts_area=geometry_shapes[row["NUTS_ID"]],
+                  value=data_value,
                 )
+              )
 
       DataTableColumnValue.objects.bulk_create(all_values)
 
