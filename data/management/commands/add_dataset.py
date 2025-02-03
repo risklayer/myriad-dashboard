@@ -5,6 +5,10 @@ from data.models import (
   DataTableColumnValue,
   DataTableMetadata,
   Nuts2Area,
+  TableMetaHazard,
+  TableMetaExposure,
+  TableMetaThreshold,
+  TableMetaReturnPeriod,
 )
 from django.core.management.base import BaseCommand
 from data.data_region.country_list import (
@@ -15,6 +19,11 @@ from data.data_region.country_list import (
 import re
 
 import fiona
+
+import json
+
+from django.db import models
+from typing import Type, Dict
 
 
 country_dict = get_country_dict_by_2alpha()
@@ -28,8 +37,39 @@ class Command(BaseCommand):
   def add_arguments(self, parser):
     parser.add_argument("--filename", type=str, required=True)
     parser.add_argument("--format", type=str, required=True, choices=["gpkg-sqlite", "xlsx"])
+    parser.add_argument("--table-metadata", type=str, required=True, dest="table_metadata")
 
-  def handle(self, *args, filename: str, format: str, **options):
+  def handle(self, *args, filename: str, format: str, table_metadata: str, **options):
+    table_metadata = json.load(open(table_metadata))
+
+    def ensureTableMetaParameterCreation(
+      cls: Type[models.Model], data: dict, cls_dict=Dict[str, models.Model]
+    ):
+      for key, data in data["values"].items():
+        if isinstance(data, dict):
+          instance_cls = cls.get_or_create_by_label(
+            label=data["label"], slug_key=key, unit=data.get("unit", None)
+          )
+          cls_dict[key] = instance_cls
+        else:
+          instance_cls = cls.get_or_create_by_label(label=data, slug_key=key)
+          cls_dict[key] = instance_cls
+
+    meta_dict_hazard = dict()
+    ensureTableMetaParameterCreation(TableMetaHazard, table_metadata["hazard"], meta_dict_hazard)
+    meta_dict_exposure = dict()
+    ensureTableMetaParameterCreation(
+      TableMetaExposure, table_metadata["exposure"], meta_dict_exposure
+    )
+    meta_dict_threshold = dict()
+    ensureTableMetaParameterCreation(
+      TableMetaThreshold, table_metadata["parameters"]["threshold"], meta_dict_threshold
+    )
+    meta_dict_return_period = dict()
+    ensureTableMetaParameterCreation(
+      TableMetaReturnPeriod, table_metadata["parameters"]["return_period"], meta_dict_return_period
+    )
+
     regexp_str = "^[a-zA-Z_\-]*[0-9a-zA-Z_\-]$"
     table_name_check = re.compile(regexp_str)
     if format == "gpkg-sqlite":
@@ -144,8 +184,27 @@ class Command(BaseCommand):
           columns_dict = dict()
 
           for column_key in column_keys:
+            column_metadata = table_metadata["columns"][column_key]
+
+            threshold = None
+            if "threshold" in column_metadata:
+              threshold = meta_dict_threshold[column_metadata["threshold"]]
+
+            return_period = None
+            if "return_period" in column_metadata:
+              return_period = meta_dict_return_period[column_metadata["return_period"]]
+
             column, created = DataTableColumn.objects.get_or_create(
-              data_table=metadata, key=column_key, defaults={"label": column_key}
+              data_table=metadata,
+              key=column_key,
+              defaults={
+                "label": column_key,
+                "description": column_metadata["description"],
+                "hazard": meta_dict_hazard[column_metadata["hazard"]],
+                "exposure": meta_dict_exposure[column_metadata["exposure"]],
+                "threshold": threshold,
+                "return_period": return_period,
+              },
             )
             if not created:
               print("removing column " + str(column))

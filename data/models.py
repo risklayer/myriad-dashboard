@@ -1,7 +1,7 @@
 import math
 import numbers
 import re
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from django.db import models
 from django.template.defaultfilters import slugify
@@ -113,16 +113,100 @@ class DataTableMetadata(models.Model):
     return "[" + self.key + "]"
 
 
+class KeyLabelSelection:
+  @classmethod
+  def get_or_create_by_label(cls, label: str, slug_key: Optional[str] = None, **kwargs):
+    if label is None:
+      return None
+
+    if slug_key is None:
+      slug_key = slugify(label)
+
+    instance, created = cls.objects.get_or_create(key=slug_key, defaults={"label": label} | kwargs)
+
+    return instance
+
+  def to_dict(self):
+    return {
+      "key": self.key,
+      "label": self.label,
+    }
+
+  def __str__(self):
+    return str(self.label)
+
+
+class TableMetaHazard(models.Model, KeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+  unit = models.TextField(null=True, blank=True)
+
+  def to_dict(self):
+    return {
+      "key": self.key,
+      "label": self.label,
+      "unit": self.unit,
+    }
+
+
+class TableMetaExposure(models.Model, KeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+  unit = models.TextField(null=True, blank=True)
+
+  def to_dict(self):
+    return {
+      "key": self.key,
+      "label": self.label,
+      "unit": self.unit,
+    }
+
+
+class TableMetaThreshold(models.Model, KeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
+class TableMetaReturnPeriod(models.Model, KeyLabelSelection):
+  key = models.SlugField(unique=True)
+  label = models.TextField()
+
+
 class DataTableColumn(models.Model):
   data_table = models.ForeignKey(DataTableMetadata, on_delete=models.CASCADE)
   key = models.TextField(unique=True)
   label = models.TextField()
+  description = models.TextField()
 
-  def to_dict(self):
+  hazard = models.ForeignKey(TableMetaHazard, on_delete=models.CASCADE)
+  exposure = models.ForeignKey(TableMetaExposure, on_delete=models.CASCADE)
+  threshold = models.ForeignKey(TableMetaThreshold, on_delete=models.CASCADE, null=True, blank=True)
+  return_period = models.ForeignKey(
+    TableMetaReturnPeriod, on_delete=models.CASCADE, null=True, blank=True
+  )
+
+  def to_dict(self, flat=True):
+    if flat:
+      return {
+        "data_table_id": self.data_table_id,
+        "key": self.key,
+        "label": self.label,
+        "description": self.description,
+        "hazard": self.hazard_id,
+        "exposure": self.exposure_id,
+        "threshold": self.threshold_id,
+        "return_period": self.return_period_id,
+      }
+
     return {
-      "data_table_id": self.data_table_id,
+      "data_table": self.data_table.to_dict(),
       "key": self.key,
       "label": self.label,
+      "description": self.description,
+      "hazard": self.hazard.to_dict(),
+      "exposure": self.exposure.to_dict(),
+      "threshold": self.threshold.to_dict() if self.threshold else None,
+      "return_period": self.return_period.to_dict() if self.return_period else None,
     }
 
   def __str__(self):
@@ -139,79 +223,57 @@ class DataTableColumnValue(models.Model):
     unique_together = ("data_table_column", "nuts_area")
 
 
-class CurveKeyLabelSelection:
-  @classmethod
-  def get_or_create_by_label(cls, label: str):
-    if label is None:
-      return None
-
-    slug_key = slugify(label)
-
-    instance, created = cls.objects.get_or_create(key=slug_key, defaults={"label": label})
-
-    return instance
-
-  def to_dict(self):
-    return {
-      "key": self.key,
-      "label": self.label,
-    }
-
-  def __str__(self):
-    return str(self.label)
-
-
-class CurveHazard(models.Model, CurveKeyLabelSelection):
+class CurveHazard(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class CurveQuality(models.Model, CurveKeyLabelSelection):
+class CurveQuality(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class CurveConstructionType1(models.Model, CurveKeyLabelSelection):
+class CurveConstructionType1(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class CurveConstructionType2(models.Model, CurveKeyLabelSelection):
+class CurveConstructionType2(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class CurveConstructionType3(models.Model, CurveKeyLabelSelection):
+class CurveConstructionType3(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class CurveOccupancyType1(models.Model, CurveKeyLabelSelection):
+class CurveOccupancyType1(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class CurveOccupancyType2(models.Model, CurveKeyLabelSelection):
+class CurveOccupancyType2(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class CurveOccupancyType3(models.Model, CurveKeyLabelSelection):
+class CurveOccupancyType3(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class CurveCoverage(models.Model, CurveKeyLabelSelection):
+class CurveCoverage(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class CurveSector(models.Model, CurveKeyLabelSelection):
+class CurveSector(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True)
   label = models.TextField()
 
 
-class VulnerabilityCurve(models.Model, CurveKeyLabelSelection):
+class VulnerabilityCurve(models.Model, KeyLabelSelection):
   key = models.SlugField(unique=True, max_length=256)
   label = models.TextField()
 

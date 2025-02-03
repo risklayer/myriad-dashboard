@@ -88,7 +88,7 @@ def api_nuts2shapes(request: HttpRequest):
 
 @require_http_methods(["GET"])
 def api_columns(request: HttpRequest):
-  column_list = [c.to_dict() for c in DataTableColumn.objects.all()]
+  column_list = [c.to_dict(flat = False) for c in DataTableColumn.objects.all()]
 
   return JsonResponse(
     {
