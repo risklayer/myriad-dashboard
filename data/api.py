@@ -106,18 +106,23 @@ def api_values(request: HttpRequest):
   if "columns" in request.GET:
     columns = columns.filter(key__in=request.GET["columns"].split(","))
 
+  nuts2area_filter = Nuts2Area.objects.all()
+
+  countries = request.GET.getlist("country", [])
+  if len(countries) > 0:
+    nuts2area_filter = nuts2area_filter.filter(country__country_code__in=countries)
+
+  if "bbox" in request.GET:
+    bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = request.GET["bbox"].split(",")
+    nuts2area_filter = nuts2area_filter.filter(
+      bbox_min_x__lt=bbox_max_x,
+      bbox_min_y__lt=bbox_max_y,
+      bbox_max_x__gt=bbox_min_x,
+      bbox_max_y__gt=bbox_min_y,
+    )
+
   for column in columns:
     column_data = dict()
-
-    nuts2area_filter = Nuts2Area.objects.all()
-    if "bbox" in request.GET:
-      bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = request.GET["bbox"].split(",")
-      nuts2area_filter = nuts2area_filter.filter(
-        bbox_min_x__lt=bbox_max_x,
-        bbox_min_y__lt=bbox_max_y,
-        bbox_max_x__gt=bbox_min_x,
-        bbox_max_y__gt=bbox_min_y,
-      )
 
     for value in DataTableColumnValue.objects.filter(
       data_table_column=column, nuts_area__in=nuts2area_filter
