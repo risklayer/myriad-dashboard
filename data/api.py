@@ -93,6 +93,50 @@ def api_nuts2shapes(request: HttpRequest):
 
 
 @require_http_methods(["GET"])
+def api_column_hazard(request: HttpRequest):
+  hazard_list = [c.to_dict() for c in TableMetaHazard.objects.all()]
+  return JsonResponse(
+    {
+      "hazard_list": hazard_list,
+      "hazard_map": {c["key"]: c for c in hazard_list},
+    }
+  )
+
+
+@require_http_methods(["GET"])
+def api_column_exposure(request: HttpRequest):
+  exposure_list = [c.to_dict() for c in TableMetaExposure.objects.all()]
+  return JsonResponse(
+    {
+      "exposure_list": exposure_list,
+      "exposure_map": {c["key"]: c for c in exposure_list},
+    }
+  )
+
+
+@require_http_methods(["GET"])
+def api_column_threshold(request: HttpRequest):
+  threshold_list = [c.to_dict() for c in TableMetaThreshold.objects.all()]
+  return JsonResponse(
+    {
+      "threshold_list": threshold_list,
+      "threshold_map": {c["key"]: c for c in threshold_list},
+    }
+  )
+
+
+@require_http_methods(["GET"])
+def api_column_return_period(request: HttpRequest):
+  return_period_list = [c.to_dict() for c in TableMetaReturnPeriod.objects.all()]
+  return JsonResponse(
+    {
+      "return_period_list": return_period_list,
+      "return_period_map": {c["key"]: c for c in return_period_list},
+    }
+  )
+
+
+@require_http_methods(["GET"])
 def api_columns(request: HttpRequest):
   hazard_filter = TableMetaHazard.objects.all()
   if "hazard" in request.GET:

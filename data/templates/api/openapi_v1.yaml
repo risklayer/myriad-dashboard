@@ -56,6 +56,30 @@ paths:
       responses:
         '200' : {"description" : "success", "content" : { "application/json" : {} } }
 
+  /column/hazard:
+    get:
+      summary: Get a list of Hazards
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+  /column/exposure:
+    get:
+      summary: Get a list of Exposures
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+  /column/threshold:
+    get:
+      summary: Get a list of Thresholds
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+  /column/return_period:
+    get:
+      summary: Get a list of Return Periods
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
   /columns:
     get:
       summary: Get a list of available indicators
