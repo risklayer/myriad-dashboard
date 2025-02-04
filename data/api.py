@@ -1,6 +1,8 @@
 from django.http import HttpRequest, JsonResponse
 from django.views.decorators.http import require_http_methods
 
+from django.db.models import Q
+
 from .curves import api_curves_filter_json
 
 from .models import (
@@ -8,6 +10,10 @@ from .models import (
   DataTableColumn,
   DataTableColumnValue,
   Nuts2Area,
+  TableMetaHazard,
+  TableMetaExposure,
+  TableMetaThreshold,
+  TableMetaReturnPeriod,
 )
 
 
@@ -88,7 +94,30 @@ def api_nuts2shapes(request: HttpRequest):
 
 @require_http_methods(["GET"])
 def api_columns(request: HttpRequest):
-  column_list = [c.to_dict(flat = False) for c in DataTableColumn.objects.all()]
+  hazard_filter = TableMetaHazard.objects.all()
+  if "hazard" in request.GET:
+    hazard_filter = hazard_filter.filter(key=request.GET["hazard"])
+
+  exposure_filter = TableMetaExposure.objects.all()
+  if "exposure" in request.GET:
+    exposure_filter = exposure_filter.filter(key=request.GET["exposure"])
+
+  threshold_filter = TableMetaThreshold.objects.all()
+  if "threshold" in request.GET:
+    threshold_filter = threshold_filter.filter(key=request.GET["threshold"])
+
+  return_period_filter = TableMetaReturnPeriod.objects.all()
+  if "return_period" in request.GET:
+    return_period_filter = return_period_filter.filter(key=request.GET["return_period"])
+
+  columns = DataTableColumn.objects.filter(
+    (Q(hazard__in=hazard_filter) | Q(hazard=None))
+    & (Q(exposure__in=exposure_filter) | Q(exposure=None))
+    & (Q(threshold__in=threshold_filter) | Q(threshold=None))
+    & (Q(return_period__in=return_period_filter) | Q(return_period=None))
+  )
+
+  column_list = [c.to_dict(flat=False) for c in columns]
 
   return JsonResponse(
     {

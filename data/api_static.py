@@ -10,6 +10,10 @@ from data.models import (
   CurveQuality,
   CurveSector,
   Country,
+  TableMetaExposure,
+  TableMetaHazard,
+  TableMetaThreshold,
+  TableMetaReturnPeriod,
 )
 from django.conf import settings
 from django.shortcuts import render
@@ -25,6 +29,14 @@ def api_openapi_yaml(request):
     "api/openapi_v1.yaml",
     context={
       "hosts": settings.ALLOWED_HOSTS,
+      "col_hazard_options": TableMetaHazard.objects.all().values_list("key", flat=True),
+      "col_exposure_filter_options": TableMetaExposure.objects.all().values_list("key", flat=True),
+      "col_threshold_filter_options": TableMetaThreshold.objects.all().values_list(
+        "key", flat=True
+      ),
+      "col_return_period_filter_options": TableMetaReturnPeriod.objects.all().values_list(
+        "key", flat=True
+      ),
       "hazard_options": CurveHazard.objects.all().values_list("key", flat=True),
       "quality_options": CurveQuality.objects.all().values_list("key", flat=True),
       "con_description_1_options": CurveConstructionType1.objects.all().values_list(

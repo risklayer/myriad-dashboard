@@ -59,6 +59,31 @@ paths:
   /columns:
     get:
       summary: Get a list of available indicators
+      parameters:
+        - in: query
+          name: hazard
+          schema:
+            type: string
+            enum: [{{ col_hazard_options|join:", " }}]
+          description: hazard
+        - in: query
+          name: exposure
+          schema:
+            type: string
+            enum: [{{ col_exposure_filter_options|join:", " }}]
+          description: exposure
+        - in: query
+          name: threshold
+          schema:
+            type: string
+            enum: [{{ col_threshold_filter_options|join:", " }}]
+          description: threshold
+        - in: query
+          name: return_period
+          schema:
+            type: string
+            enum: [{{ col_return_period_filter_options|join:", " }}]
+          description: return_period
       responses:
         '200' : {"description" : "success", "content" : { "application/json" : {} } }
 
