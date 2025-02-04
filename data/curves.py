@@ -77,16 +77,19 @@ def api_curves_filter_json(parameters):
 
   curves = VulnerabilityCurve.objects.filter(
     (Q(hazard__in=hazard_options) | Q(hazard=None))
-    & (Q(quality__in=quality_options) | Q(hazard=None))
-    & (Q(con_description_1__in=con_description_1_options) | Q(hazard=None))
-    & (Q(con_description_2__in=con_description_2_options) | Q(hazard=None))
-    & (Q(con_description_3__in=con_description_3_options) | Q(hazard=None))
-    & (Q(occ_description_1__in=occ_description_1_options) | Q(hazard=None))
-    & (Q(occ_description_2__in=occ_description_2_options) | Q(hazard=None))
-    & (Q(occ_description_3__in=occ_description_3_options) | Q(hazard=None))
-    & (Q(coverage__in=coverage_options) | Q(hazard=None))
-    & (Q(myriad_sectors_applicable__in=myriad_sectors_applicable_options) | Q(hazard=None))
-    & (Q(countries__in=countries_options) | Q(hazard=None))
+    & (Q(quality__in=quality_options) | Q(quality=None))
+    & (Q(con_description_1__in=con_description_1_options) | Q(con_description_1=None))
+    & (Q(con_description_2__in=con_description_2_options) | Q(con_description_2=None))
+    & (Q(con_description_3__in=con_description_3_options) | Q(con_description_3=None))
+    & (Q(occ_description_1__in=occ_description_1_options) | Q(occ_description_1=None))
+    & (Q(occ_description_2__in=occ_description_2_options) | Q(occ_description_2=None))
+    & (Q(occ_description_3__in=occ_description_3_options) | Q(occ_description_3=None))
+    & (Q(coverage__in=coverage_options) | Q(coverage=None))
+    & (
+      Q(myriad_sectors_applicable__in=myriad_sectors_applicable_options)
+      | Q(myriad_sectors_applicable=None)
+    )
+    & (Q(countries__in=countries_options) | Q(countries=None))
   )
 
   return {
