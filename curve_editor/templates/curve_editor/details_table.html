@@ -1,0 +1,119 @@
+<div class="table-responsive curve-details">
+  <table class="table table-bordered table-striped curve-details-table">
+    <tbody>
+      {% for name, detail in curve.get_details_map.items %}
+        <tr>
+          <th data-name="{{ detail.key }}" data-value="{{ detail.value }}">
+            {{ detail.label }}
+          </th>
+          <td>
+            {% if name == "Weblink_Study" %}
+              <a href="{{ detail.value }}" target="_blank">{{ detail.display }}</a>
+            {% elif name == "Reference" and details.Weblink %}
+              <a href="{{ details.Weblink }}" target="_blank">{{ detail.display }}</a>
+            {% else %}
+              {{ detail.display|linebreaks }}
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-5"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-11"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-4"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-9"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-6"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-4"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-5"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-1"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-9"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-3"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-5"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-2"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-3"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-2"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-3"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-2"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-3"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-3"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-12"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-1"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-12"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-9"></span>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <span class="placeholder bg-secondary col-12"></span>
+          </th>
+          <td>
+            <span class="placeholder bg-secondary col-7"></span>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

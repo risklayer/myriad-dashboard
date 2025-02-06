@@ -1,0 +1,19 @@
+<div id="curve-panel-{{ panel }}"
+     class="curve-panel"
+     hx-swap-oob="outerHTML">
+  <h2 id="pin-name-title-{{ panel }}"
+      class="h5 p-0 mb-2 text-center rounded-5 curve-title">
+    {% if curve %}
+      {{ curve.label }}
+    {% else %}
+      No curve selected
+    {% endif %}
+  </h2>
+  {% include "curve_editor/curve_buttons.html" with pinned=pinned key=curve.key pinned_keys=pinned_keys panel=panel only %}
+  {% include "curve_editor/curve_chart.html" with curve=curve panel=panel only %}
+  {% include "curve_editor/curve_values.html" with curve=curve panel=panel only %}
+  {% include "curve_editor/details_table.html" with curve=curve panel=panel only %}
+  <input type="hidden"
+         name="curve_panel_selected_{{ panel }}"
+         value="{{ curve.key }}" />
+</div>

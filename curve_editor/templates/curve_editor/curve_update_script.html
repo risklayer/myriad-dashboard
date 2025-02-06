@@ -1,0 +1,7 @@
+<script id="update-curve-script" hx-swap-oob="outerHTML">
+  document.body.addEventListener(
+    "htmx:afterSwap",
+    () => displayCurveChart({{ panel }}),
+    {once: true}
+  );
+</script>

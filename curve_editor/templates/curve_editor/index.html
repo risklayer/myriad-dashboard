@@ -1,0 +1,249 @@
+{% extends "layouts/base.html" %}
+
+{% load static %}
+
+{% block title %}
+    Curve Editor - {{ block.super }}
+{% endblock title %}
+
+{% block head %}
+    <style>
+        .vulnerability-curve-chart {
+            background-color: #f0f0f0;
+            width: 100%;
+            aspect-ratio: 2;
+        }
+
+        .curve-panel td>p:first-child {
+            margin-top: 0;
+        }
+
+        .curve-panel td>p:last-child {
+            margin-bottom: 0;
+        }
+
+        .curve-grid-container .htmx-indicator {
+            display: none;
+        }
+
+        .htmx-indicator~* {
+            transition: opacity 0.1s ease;
+        }
+
+        .htmx-indicator.htmx-request~* {
+            transition: opacity 0.2s ease;
+        }
+
+        .htmx-request~* {
+            opacity: 0.4;
+        }
+
+        .curve-grid-container {
+            width: 100%;
+            display: grid;
+            gap: 8px 24px;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+                "title-1 title-2"
+                "curve-filter-details-1 curve-filter-details-2"
+                "curve-form-1 curve-form-2"
+                "curve-title-1 curve-title-2"
+                "curve-buttons-1 curve-buttons-2"
+                "curve-chart-1 curve-chart-2"
+                "curve-values-1 curve-values-2"
+                "curve-details-1 curve-details-2";
+
+        }
+
+        #panel-1.card {
+
+            &,
+            &>.card-body {
+                grid-area: 1 / 1 / 9 / 1;
+
+            }
+        }
+
+        #panel-2.card {
+
+            &,
+            &>.card-body {
+                grid-area: 1 / 2 / 9 / 2;
+            }
+        }
+
+        #panel-1 .curve-panel {
+            grid-area: 4 / 1 / 9 / 1;
+        }
+
+        #panel-2 .curve-panel {
+            grid-area: 4 / 2 / 9 / 2;
+        }
+
+        @media (min-width: 1600px) {
+            .curve-grid-container {
+                grid-template-columns: 3fr 4fr 4fr 3fr;
+                grid-template-areas:
+                    "title-1 title-1 title-2 title-2"
+                    "curve-filter-details-1 curve-form-1 curve-form-2 curve-filter-details-2"
+                    "curve-filter-details-1 curve-title-1 curve-title-2 curve-filter-details-2"
+                    "curve-filter-details-1 curve-buttons-1 curve-buttons-2 curve-filter-details-2"
+                    "curve-filter-details-1 curve-chart-1 curve-chart-2 curve-filter-details-2"
+                    "curve-filter-details-1 curve-values-1 curve-values-2 curve-filter-details-2"
+                    "curve-filter-details-1 curve-details-1 curve-details-2 curve-filter-details-2"
+            }
+
+            .curve-grid-container:not(:has(.curve-filter-details[open])) {
+                grid-template-columns: auto 4fr 4fr auto;
+
+                & .curve-filter-details span {
+                    display: none;
+                }
+
+                & .curve-filter-details summary {
+                    list-style: none;
+                }
+            }
+
+            #panel-1.card {
+                grid-area: 1 / 1 / 8 / 3;
+            }
+
+            #panel-1.card .card-body {
+                grid-area: 1 / 1 / 8 / 3;
+            }
+
+            #panel-2.card {
+                grid-area: 1 / 3 / 8 / 5;
+            }
+
+            #panel-2.card .card-body {
+                grid-area: 1 / 1 / 8 / 3;
+            }
+
+            #panel-1 .curve-panel {
+                grid-area: 1 / 2 / 8 / 3;
+            }
+
+            #panel-2 .curve-panel {
+                grid-area: 1 / 1 / 8 / 2;
+            }
+        }
+
+        /* Wrappers, pass downgrid to contents */
+        .curve-grid-container .card,
+        .curve-grid-container .card-body,
+        .curve-panel {
+            display: grid;
+            grid-template-columns: subgrid;
+            grid-template-rows: subgrid;
+        }
+
+        .card-heading,
+        .curve-filter-details,
+        .curve-form,
+        .curve-title,
+        .curve-buttons,
+        .curve-chart,
+        .curve-values,
+        .curve-details {
+            /*grid-template-columns: subgrid;
+            grid-template-rows: subgrid;*/
+        }
+
+        #panel-1 .card-heading {
+            grid-area: title-1;
+        }
+
+        #panel-2 .card-heading {
+            grid-area: title-2;
+        }
+
+        #panel-1 .curve-filter-details {
+            grid-area: curve-filter-details-1;
+        }
+
+        #panel-2 .curve-filter-details {
+            grid-area: curve-filter-details-2;
+        }
+
+        #panel-1 .curve-form {
+            grid-area: curve-form-1;
+        }
+
+        #panel-2 .curve-form {
+            grid-area: curve-form-2;
+        }
+
+        #panel-1 .curve-title {
+            grid-area: curve-title-1;
+        }
+
+        #panel-2 .curve-title {
+            grid-area: curve-title-2;
+        }
+
+        #panel-1 .curve-buttons {
+            grid-area: curve-buttons-1;
+        }
+
+        #panel-2 .curve-buttons {
+            grid-area: curve-buttons-2;
+        }
+
+        #panel-1 .curve-chart {
+            grid-area: curve-chart-1;
+        }
+
+        #panel-2 .curve-chart {
+            grid-area: curve-chart-2;
+        }
+
+        #panel-1 .curve-values {
+            grid-area: curve-values-1;
+        }
+
+        #panel-2 .curve-values {
+            grid-area: curve-values-2;
+        }
+
+        #panel-1 .curve-details {
+            grid-area: curve-details-1;
+        }
+
+        #panel-2 .curve-details {
+            grid-area: curve-details-2;
+        }
+    </style>
+{% endblock head %}
+
+{% block pagetitle %}
+    <div class="d-flex justify-content-between">
+        <h1>Vulnerability Curve Editor</h1>
+        <div class="float-end">{% include "curve_editor/pin.html" %}</div>
+    </div>
+{% endblock pagetitle %}
+
+{% block main %}
+    <div class="curve-grid-container w-100">
+        {% for i, filter_form, curve_form in forms %}
+            <div id="panel-{{ i }}" class="card shadow" hx-vals='{ "panel": {{ i }} }'>
+                {% comment %} <div class="card shadow">
+                {% endcomment %}
+                <div class="card-body">
+                    <h2 class="card-heading h4 pb-2">Curve {{ i }}</h2>
+                    {% if filter_form %}
+                        {% include "curve_editor/curve_filter_form.html" with filter_form=filter_form panel=i only %}
+                    {% endif %}
+                    {% include "curve_editor/curve_select_form.html" with curve_form=curve_form panel=i only %}
+                    <div class="htmx-indicator"></div>
+                    {% include "curve_editor/curve_panel.html" with panel=i only %}
+                </div>
+                {% comment %}
+                </div> {% endcomment %}
+            </div>
+        {% endfor %}
+    </div>
+    <script src="{% static "js/curve_editor.js" %}"></script>
+    <script id="update-curve-script"></script>
+{% endblock main %}

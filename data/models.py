@@ -1,3 +1,4 @@
+import json
 import math
 import numbers
 import re
@@ -5,6 +6,132 @@ from typing import Dict, Optional, Tuple
 
 from django.db import models
 from django.template.defaultfilters import slugify
+from django.utils.safestring import mark_safe
+
+_json_script_escapes = {
+  ord(">"): "\\u003E",
+  ord("<"): "\\u003C",
+  ord("&"): "\\u0026",
+}
+
+# Fields from original dataset that don't need to be displayed
+hidden_fields = set(
+  [
+    "id",
+    "rowNum",
+    "ID_set",
+    "Y_vals",
+    "Name",
+    "Risk_Component",
+    "Category",
+    "Local_Path",
+    "FileName",
+    "Geographic_Relevance_Score",
+    "scale_applicability",
+    "applicability_notes",
+    "urban_rural",
+    "Material_Technology2",
+    "Material._Properties",
+    "Retrofit",
+    "Date_of_Construction_or_Retrofit._value",
+    "Storey_.Below_Ground",
+    "Storeys_Below_Ground_value",
+    "Storeys_Below_Ground_lower_bound_value",
+    "Storeys_Below_Ground_upper_bound_value",
+    "Height_of_ground_floor_above_grade",
+    "Height_of_ground_floor_above_grade_lower_bound_value",
+    "Height_of_ground_floor_above_grade_upper_bound_value",
+    "Slope_of_ground_in_deg",
+    "Exterior_Walls",
+    "Roof_Shape",
+    "Roof_Covering",
+    "Roof_System_Type",
+    "Roof_Connections_Diaphragm",
+    "Roof_Connections._Tie_Down",
+    "Floor_System_Type",
+    "Floor_Connections",
+    "Foundation._System",
+    "Position_in_Block",
+    "Spatial_Building_Density",
+    "Shape_of_Building._Plan",
+    "Structural_Irregularity",
+    "Primary_Irregularity",
+    "Primary_Irregularity_Details",
+    "Secondary._Irregularity",
+    "Secondary_Irregularity_Details",
+    "FloorArea",
+    "FloorArea_units",
+    "Damage_Estimation_Scale",
+    "Loss_Definition",
+    "im_sim_type",
+    "Method_of_Uncertainty_Propagation",
+    "Uncertainty_in_Capacity",
+    "Mechanical_Variables",
+    "No_of_Distinct_Structural_Models_Analysed",
+    "Geometrical_Variables",
+    "Structural_Variables",
+    "Modelling_Variables",
+    "Uncertainty_in_Demand",
+    "Use_case_information",
+    "Expert_Elicitation_Technique",
+    "No_of_Experts",
+    "Statistical_Model_Fitting._Method",
+    "is_acceptable",
+    "is_validated",
+    "Function_Relationship",
+    "Function_Type",
+    "Function_Shape",
+    "DS_No",
+    "Damage_State_Description",
+    "Number_of_Events",
+    "Year_Oldest.Event",
+    "Year_Newest_Event",
+    "Sample_Size",
+    "No_of_Data_Points",
+    "max_No_of_Data_Points",
+    "T_Type",
+    "T_in_s",
+    "Duplicated",
+    "IM_units",
+    "Wind_Speed_Height",
+    "minimum_im",
+    "maximum_im",
+    "Mean",
+    "Log_Mean",
+    "Log_Median",
+    "Log_SD",
+    "Further_information_on_Dependent_Variable",
+    "SD_Y",
+    "SD_Y_Description",
+    "len_IM",
+    "len_IM_c",
+    "len_Y_vals",
+    "error?",
+    "Y_Vals",
+    "IM_vals",
+    "IM_harmonised",
+    "values_xy",
+    "metadata",
+  ]
+)
+
+field_labels_map = {
+  "con_description_1": "Construction type 1",
+  "con_description_2": "Construction type 2",
+  "con_description_3": "Construction type 3",
+  "occ_description_1": "Occupation type 1",
+  "occ_description_2": "Occupation type 2",
+  "occ_description_3": "Occupation type 3",
+  "myriad_sectors_applicable": "Sectors",
+}
+
+
+def get_curve_field_label(key: str) -> str:
+  label = field_labels_map.get(key, key[0].upper() + key[1:])
+  label = re.sub(r"[_\.]+", " ", label)
+  label = re.sub(r"\bIm\b", "IM", label)
+  label = re.sub(r"\bSd\b", "SD", label)
+  return label
 
 
 class Country(models.Model):
@@ -306,174 +433,68 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
   values_xy = models.JSONField()
 
   def to_dict(self):
-    return {
+    all_vals = {
       "key": self.key,
       "label": self.label,
       "hazard": self.hazard.key,
-      "quality": self.quality.key,
-      "con_description_1": self.con_description_1.key,
-      "con_description_2": self.con_description_2.key,
-      "con_description_3": self.con_description_3.key,
-      "occ_description_1": self.occ_description_1.key,
-      "occ_description_2": self.occ_description_2.key,
-      "occ_description_3": self.occ_description_3.key,
-      "coverage": self.coverage.key,
+      "quality": self.quality.key if self.quality else None,
+      "con_description_1": self.con_description_1.key if self.con_description_1 else None,
+      "con_description_2": self.con_description_2.key if self.con_description_2 else None,
+      "con_description_3": self.con_description_3.key if self.con_description_3 else None,
+      "occ_description_1": self.occ_description_1.key if self.occ_description_1 else None,
+      "occ_description_2": self.occ_description_2.key if self.occ_description_2 else None,
+      "occ_description_3": self.occ_description_3.key if self.occ_description_3 else None,
+      "coverage": self.coverage.key if self.coverage else None,
       "myriad_sectors_applicable": [s.key for s in self.myriad_sectors_applicable.all()],
       "countries": [c.country_code for c in self.countries.all()],
       "values_xy": self.values_xy,
     } | self.metadata
+    return all_vals
+
+  def to_json(self):
+    return mark_safe(json.dumps(self.to_dict()).translate(_json_script_escapes))
 
   def get_details_map(self):
-    displayed_fields = set(
-      [
-        "MYRIAD_Sectors_Applicable",
-        "Name",
-        "Taxonomy",
-        "Damage_Scale",
-        "IM_type",
-        "Data_Source",
-        "Reference",
-        "Risk_Component",
-        "Asset",
-        "Coverage",
-        "Hazard",
-        "Authors_Study",
-        "Year_Study",
-        "Weblink_Study",
-        "General_Comments",
-        "Region",
-        "Country",
-        "Quality",
-        "Con_Description_1",
-        "Con_Description_2",
-        "Con_Description_3",
-        "Occ_Description_1",
-        "Occ_Description_2",
-        "Occ_Description_3",
-        "Material_Type",
-        "Material_Technology1",
-        "Material_Technology2",
-        "Date_of_Construction_or_Retrofit",
-        "LLRS",
-        "System_Ductility",
-        "Height",
-        "Height_value",
-        "Height_lower_bound_.value",
-        "Height_upper_bound_.value",
-        "Storey_.Below_Ground",
-        "Storeys_Below_Ground_value",
-        "Storeys_Below_Ground_lower_bound_value",
-        "Storeys_Below_Ground_upper_bound_value",
-        "Height_of_ground_floor_above_grade",
-        "Height_of_ground_floor_above_grade_value",
-        "Height_of_ground_floor_above_grade_lower_bound_value",
-        "Height_of_ground_floor_above_grade_upper_bound_value",
-        "Slope_of_ground_in_deg",
-        "Exterior_Walls",
-        "Roof_Shape",
-        "Roof_Covering",
-        "Roof_System_Materials",
-        "Roof_System_Type",
-        "Roof_Connections_Diaphragm",
-        "Roof_Connections._Tie_Down",
-        "Floor_System_Material",
-        "Floor_System_Type",
-        "Floor_Connections",
-        "Foundation._System",
-        "Occupancy_Class",
-        "Occupancy_Detail",
-        "Position_in_Block",
-        "Spatial_Building_Density",
-        "Shape_of_Building._Plan",
-        "Structural_Irregularity",
-        "Primary_Irregularity",
-        "Primary_Irregularity_Details",
-        "Secondary._Irregularity",
-        "Secondary_Irregularity_Details",
-        "FloorArea",
-        "FloorArea_units",
-        "Assessment_Type",
-        "Damage_Estimation_Scale",
-        "Loss_Definition",
-        "EDP",
-        "Analysis_Type",
-        "Model_Type",
-        "IM_Evaluation",
-        "im_sim_type",
-        "No_of_Distinct_Structural_Models_Analysed",
-        "Method_of_Uncertainty_Propagation",
-        "Uncertainty_in_Capacity",
-        "Mechanical_Variables",
-        "Geometrical_Variables",
-        "Structural_Variables",
-        "Modelling_Variables",
-        "Uncertainty_in_Demand",
-        "Use_case_information",
-        "Expert_Elicitation_Technique",
-        "No_of_Experts",
-        "Statistical_Model_Fitting._Method",
-        "is_acceptable",
-        "Statistical_Model",
-        "is_validated",
-        "Validation_Data_Source",
-        "Function_Relationship",
-        "Function_Type",
-        "Function_Shape",
-        "DS_No",
-        "Damage_State_Description",
-        "Structural_NonStructural",
-        "Components_Failure_Mechanism",
-        "Damage_to_Loss_function",
-        "Damage_to_Loss_function_Uncertainty_Modelling",
-        "Source_of_Damage_Data",
-        "Number_of_Events",
-        "Year_Oldest.Event",
-        "Year_Newest_Event",
-        "Sample_Size",
-        "sample",
-        "nonsampling_err",
-        "type_nonsampling_err",
-        "is_fix_nonsam_err",
-        "Isoseismic_Unit",
-        "Sources_of.Uncertainty_Explicitely_Modelled",
-        "Are_the_Data_Aggregated",
-        "No_of_Data_Points",
-        "max_No_of_Data_Points",
-        "T_Type",
-        "T_in_s",
-        "Duplicated",
-        "IM_units",
-      ]
+    allowed_keys = filter(
+      lambda k: not (k.startswith("_") or k in hidden_fields),
+      [*self.__dict__.keys(), *self.metadata.keys()],
     )
-
-    all_details = self.to_dict()
-
     details = {}
-    for key in all_details.keys():
-      val = all_details.get(key)
+    for key in allowed_keys:
+      # For relationships, show the object not the ID
+      if key.endswith("_id"):
+        key = re.sub(r"_id$", "", key)
+      val = getattr(self, key, None) or getattr(self.metadata, key, None)
       if (
         val is not None
         and val != ""
         and val != "nan"
-        and key in displayed_fields
         and not (isinstance(val, numbers.Number) and math.isnan(val))
       ):
         # Don't display years as decimals
         if key == "Year_Study":
           val = int(val)
         # Convert to readable metadata titles
-        label = (
-          key.replace("_", " ")
-          .replace("Weblink Study", "Weblink")
-          .replace("Con Description", "Construction Type")
-          .replace("Occ Description", "Occupancy Type")
-          .replace("MYRIAD Sectors Applicable", "Sectors")
+        label = get_curve_field_label(key)
+
+        display = (
+          re.sub(r"(_x000D_|\n)+", "\n\n", val).replace("_", " ").replace(".", " ")
+          if isinstance(val, str)
+          else ", ".join(val)
+          if isinstance(val, list)
+          else getattr(val, "label")
+          if (isinstance(val, models.Model) and hasattr(val, "label"))
+          else ", ".join([a.label for a in val.all()])
+          if hasattr(val, "all")
+          else val
         )
+        if isinstance(val, models.Model) and hasattr(val, "key"):
+          val = val.key
+
         details[key] = {
+          "key": key,
           "label": label,
-          "display": (
-            re.sub(r"(_x000D_|\n)+", "\n\n", val).replace("_", " ") if isinstance(val, str) else val
-          ),
+          "display": display,
           "value": val,
         }
 
@@ -483,26 +504,30 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
     pair_of_arrays = list([list(a) for a in zip(*self.values_xy)])
     return [
       {
+        "key": "array_pairs",
         "label": "Array of X, Y pairs",
         "value": self.values_xy,
         "format": "json",
         "filename": self.key + " (pairs).json",
       },
       {
+        "key": "pair_arrays",
         "label": "X, Y pair of arrays",
         "value": pair_of_arrays,
         "format": "json",
         "filename": self.key + " (arrays).json",
       },
       {
+        "key": "csv_xy",
         "label": "CSV with X, Y columns",
         "value": "x,y\n" + "\n".join([",".join(map(str, pair)) for pair in self.values_xy]),
         "format": "csv",
         "filename": self.key + " (x,y).csv",
       },
       {
+        "key": "json",
         "label": "JSON with metadata",
-        "value": self.to_dict(),
+        "value": self.to_json(),
         "format": "json",
         "filename": self.key + " (complete).json",
       },

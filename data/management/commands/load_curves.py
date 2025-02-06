@@ -45,7 +45,7 @@ class Command(BaseCommand):
       occ_description_2 = row["Occ_Description_2"]
       occ_description_3 = row["Occ_Description_3"]
       coverage = row["Coverage"]
-      myriad_sectors_list = [c.strip() for c in row["MYRIAD_Sectors_Applicable"].split(",")]
+      myriad_sectors_list = [c.strip() for c in row["MYRIAD_Sectors_Applicable"].split(";")]
       country_list = [c.strip() for c in row["Country"].split(",")]
       x_values = row["IM_vals"]
       y_values = row["Y_vals"]
@@ -81,7 +81,8 @@ class Command(BaseCommand):
       metadata.pop("Y_vals")
       metadata.pop("Y_Vals")
 
-      metadata = {k: str(v) for k, v in metadata.items()}
+      items = metadata.items()
+      metadata = {k: str(v) for k, v in items if isinstance(v, str) or not isnan(v)}
 
       try:
         if isinstance(name, str):

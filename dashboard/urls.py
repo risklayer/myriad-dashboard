@@ -9,4 +9,5 @@ urlpatterns = [
   path("", views.index, name="home"),
   path("admin/", admin.site.urls),
   path("data/", include("data.urls")),
+  path("curve-editor/", include("curve_editor.urls")),
 ]
