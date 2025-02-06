@@ -1,15 +1,24 @@
-{# extends "base_public.html" #}
+{% extends "layouts/base.html" %}
 
 {% load static %}
 
-{% block header %}
-{# {{ block.super }} #}
+{% block title %}
+  OpenAPI Reference - {{ block.super }}
+{% endblock title %}
+
+{% block head %}
 <link rel="stylesheet" href="{% static 'swagger-ui-dist/swagger-ui.css' %}" crossorigin="">
 <script src="{% static 'swagger-ui-dist/swagger-ui-bundle.js' %}" crossorigin=""></script>
 <script src="{% static 'swagger-ui-dist/swagger-ui-standalone-preset.js' %}" crossorigin=""></script>
 {% endblock %}
 
-{% block mainbody %}
+{% block pagetitle %}
+  <div class="d-flex justify-content-between">
+      <h1>OpenAPI Reference</h1>
+  </div>
+{% endblock pagetitle %}
+
+{% block main %}
 <div id="swagger-ui" class="card mt-5"></div>
 
 <script>
@@ -20,4 +29,4 @@
     });
   };
 </script>
-{% endblock %}
+{% endblock main %}
