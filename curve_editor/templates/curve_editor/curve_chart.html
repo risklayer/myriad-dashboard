@@ -1,13 +1,19 @@
 <figure class="panel mb-0 curve-chart">
-  <figcaption id="chart-caption-{{ panel }}" class="text-center mb-2">
-    {% if curve %}
+  <figcaption id="chart-caption-{{ panel }}" class="text-center p-2">
+    {% if caption %}
+      {{ caption }}
+    {% elif curve %}
       {{ curve.label }}
     {% else %}
       <span class="placeholder bg-secondary col-10"></span>
       <span class="placeholder bg-secondary col-7 d-none d-lg-inline-block d-xl-none"></span>
     {% endif %}
   </figcaption>
-  <canvas id="vulnerability-curve-chart-{{ panel }}"
-          class="vulnerability-curve-chart"
-          hx-preserve></canvas>
+  <div id="vulnerability-curve-chart-wrapper-{{ panel }}"
+       class="vulnerability-curve-chart-wrapper"
+       hx-preserve>
+    <canvas id="vulnerability-curve-chart-{{ panel }}"
+            class="vulnerability-curve-chart"
+            hx-preserve></canvas>
+  </div>
 </figure>

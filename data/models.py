@@ -452,7 +452,7 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
     return all_vals
 
   def to_json(self):
-    return mark_safe(json.dumps(self.to_dict()).translate(_json_script_escapes))
+    return mark_safe(json.dumps(self.to_dict(), indent=2).translate(_json_script_escapes))
 
   def get_details_map(self):
     allowed_keys = filter(

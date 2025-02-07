@@ -4,7 +4,9 @@
   <h2 id="pin-name-title-{{ panel }}"
       class="h5 p-0 mb-2 text-center rounded-5 curve-title">
     {% if curve %}
-      {{ curve.label }}
+      {% for pin_key, pin_name, pin_label in pinned %}
+        {% if pin_key == curve.key %}{{ pin_label }}{% endif %}
+      {% endfor %}
     {% else %}
       No curve selected
     {% endif %}

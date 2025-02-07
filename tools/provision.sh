@@ -2,6 +2,8 @@
 
 npm install
 
+npm run build-styles
+
 python -m venv venv
 
 venv/bin/pip install `cat pip_packages.txt`

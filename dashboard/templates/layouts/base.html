@@ -8,28 +8,28 @@
       {% block title %}
         MYRIAD Multi-Risk Toolkit
       {% endblock title %}
+
     </title>
     {% include "layouts/head.html" %}
-    <link rel="stylesheet"
-          href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}" />
-    <link rel="stylesheet"
-          href="{% static 'bootstrap/dist/css/bootstrap-grid.min.css' %}" />
-    <link rel="stylesheet"
-          href="{% static 'bootstrap/dist/css/bootstrap-utilities.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'build/css/bootstrap.min.css' %}" />
     <link rel="stylesheet"
           href="{% static '@fortawesome/fontawesome-free/css/fontawesome.min.css' %}" />
-    <link rel="stylesheet" href="{% static '@fortawesome/fontawesome-free/css/solid.min.css' %}" />
+    <link rel="stylesheet"
+          href="{% static '@fortawesome/fontawesome-free/css/solid.min.css' %}" />
     <link rel="stylesheet" href="{% static 'styles.css' %}" />
     {% block head %}
     {% endblock head %}
+
   </head>
   <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     {% include "layouts/header.html" %}
     <main id="main" class="p-3 md:p-10">
       {% block pagetitle %}
       {% endblock pagetitle %}
+
       {% block main %}
       {% endblock main %}
+
     </main>
     <template id="toast-template">
       <div class="toast align-items-center text-bg-primary border-0"
@@ -51,7 +51,7 @@
   </body>
   <script src="{% static '@popperjs/core/dist/umd/popper.min.js' %}" defer></script>
   <script src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}" defer></script>
-  <script src="{% static 'htmx.org/dist/htmx.min.js' %}"></script>
+  <script src="{% static 'htmx.org/dist/htmx.js' %}"></script>
   <script src="{% static 'htmx-ext-class-tools/class-tools.js' %}"></script>
   <script src="{% static 'chart.js/dist/chart.umd.js' %}"></script>
   {% comment %} <script src="{% static 'htmx.org/dist/ext/debug.js' %}"></script> {% endcomment %}

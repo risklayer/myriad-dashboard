@@ -26,21 +26,23 @@
             {{ pin_name }}
           </div>
           <div class="d-flex flex-nowrap float-end">
-            {% for i in '12'|make_list %}
+            {% for i in '01'|make_list %}
               <button class="btn btn-outline-secondary text-nowrap btn-sm me-1 border-0"
                       hx-post="{% url 'curve_editor:show_curve' %}"
                       hx-swap="none"
-                      hx-indicator="#panel-{{ i }} .htmx-indicator"
+                      hx-indicator="#curve-panel-{{ panel }}"
                       hx-vals='{ "panel": {{ i }} }'
                       data-bs-auto-close="false"
                       title="Show in panel {{ i }}"
                       name="row"
                       value="{{ pin_key }}">
                 <svg width="16" height="16" fill="currentColor" class="me-1">
-                  {% if i == '1' %}
-                    <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#arrow-down-left-square" />
+                  {% if i == '0' %}
+                    <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#arrow-up-square" class="d-md-none" />
+                    <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#arrow-down-left-square" class="d-none d-md-inline-block" />
                   {% else %}
-                    <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#arrow-down-right-square" />
+                    <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#arrow-down-square" class="d-md-none" />
+                    <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#arrow-down-right-square" class="d-none d-md-inline-block" />
                   {% endif %}
                 </svg>
               </button>

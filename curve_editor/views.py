@@ -61,10 +61,9 @@ def get_pin_label(pinned, key: str):
 @require_GET
 def index(request):
   template = "curve_editor/index.html"
-  curve = None
 
   forms = []
-  for i in [1, 2]:
+  for i in [0, 1]:
     filter_form = CurveEditorFilterForm(panel=i)
     curve_form = CurveEditorRowForm(panel=i)
     curve_form.update_row_options([], "Please select a filter before choosing a curve")
@@ -79,7 +78,6 @@ def index(request):
     template,
     {
       "forms": forms,
-      "curve": json.dumps(curve) if curve else None,
       "pinned": pinned,
       "pinned_keys": pinned_keys,
       "panel": panel,
@@ -177,7 +175,7 @@ def pin_curve(request):
   pinned, pinned_keys = add_pin(request, key, name)
   panel = int(request.POST.get("panel") or 1)
   show_pin_buttons = []
-  for i in [1, 2]:
+  for i in [0, 1]:
     selected_id = request.POST.get("curve_panel_selected_" + str(i))
     if selected_id and selected_id == key:
       show_pin_buttons.append(i)
@@ -207,7 +205,7 @@ def unpin_curve(request):
   pinned, pinned_keys = remove_pin(request, key, True)
   panel = int(request.POST.get("panel") or 1)
   show_pin_buttons = []
-  for i in [1, 2]:
+  for i in [0, 1]:
     selected_key = request.POST.get("curve_panel_selected_" + str(i))
     if selected_key and selected_key == key:
       show_pin_buttons.append(i)
