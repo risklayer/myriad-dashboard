@@ -264,7 +264,7 @@ class KeyLabelSelection:
 
 
 class TableMetaHazard(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
   unit = models.TextField(null=True, blank=True)
 
@@ -277,7 +277,7 @@ class TableMetaHazard(models.Model, KeyLabelSelection):
 
 
 class TableMetaExposure(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
   unit = models.TextField(null=True, blank=True)
 
@@ -290,12 +290,12 @@ class TableMetaExposure(models.Model, KeyLabelSelection):
 
 
 class TableMetaThreshold(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class TableMetaReturnPeriod(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
@@ -351,57 +351,57 @@ class DataTableColumnValue(models.Model):
 
 
 class CurveHazard(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class CurveQuality(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class CurveConstructionType1(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class CurveConstructionType2(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class CurveConstructionType3(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class CurveOccupancyType1(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class CurveOccupancyType2(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class CurveOccupancyType3(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class CurveCoverage(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class CurveSector(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True)
+  key = models.TextField(unique=True)
   label = models.TextField()
 
 
 class VulnerabilityCurve(models.Model, KeyLabelSelection):
-  key = models.SlugField(unique=True, max_length=256)
+  key = models.TextField(unique=True, max_length=256)
   label = models.TextField()
 
   hazard = models.ForeignKey(CurveHazard, on_delete=models.CASCADE)

@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   myriad-dashboard-uwsgi:
     build: .
@@ -7,5 +6,4 @@ services:
       - ./docker-volumes/run:/myriad-dashboard/run
       - ./docker-volumes/www_static_data:/myriad-dashboard/www_static_data
       - ./docker-volumes/media:/myriad-dashboard/media
-    env_file:
-      - docker.env
+      - ./docker-volumes/settings:/myriad-dashboard/settings

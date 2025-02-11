@@ -38,8 +38,9 @@ class Command(BaseCommand):
     parser.add_argument("--filename", type=str, required=True)
     parser.add_argument("--format", type=str, required=True, choices=["gpkg-sqlite", "xlsx"])
     parser.add_argument("--table-metadata", type=str, required=True, dest="table_metadata")
+    parser.add_argument("--skip-existing", action="store_true", default=False, dest="skip_existing")
 
-  def handle(self, *args, filename: str, format: str, table_metadata: str, **options):
+  def handle(self, *args, filename: str, format: str, table_metadata: str, skip_existing: bool, **options):
     table_metadata = json.load(open(table_metadata))
 
     def ensureTableMetaParameterCreation(
@@ -70,7 +71,7 @@ class Command(BaseCommand):
       TableMetaReturnPeriod, table_metadata["parameters"]["return_period"], meta_dict_return_period
     )
 
-    regexp_str = "^[a-zA-Z_\-]*[0-9a-zA-Z_\-]$"
+    regexp_str = "^[a-zA-Z_\-][0-9a-zA-Z_\-]*$"
     table_name_check = re.compile(regexp_str)
     if format == "gpkg-sqlite":
       all_values = list()
@@ -107,15 +108,15 @@ class Command(BaseCommand):
           print("loading bbox geometry")
           cur_geometry = con.cursor()
           res_geometry = cur_geometry.execute(
-            "SELECT NUTS_ID, minx, miny, maxx, maxy FROM rtree_"
+            "SELECT NUTS_ID, minx, miny, maxx, maxy FROM \"rtree_"
             + table_name
-            + "_geom INNER JOIN "
+            + "_geom\" INNER JOIN \""
             + table_name
-            + " on rtree_"
+            + "\" on \"rtree_"
             + table_name
-            + "_geom.id = "
+            + "_geom\".id = \""
             + table_name
-            + ".fid"
+            + "\".fid"
           )
           for row in res_geometry.fetchall():
             geometry_bbox[row["NUTS_ID"]] = (
@@ -176,14 +177,17 @@ class Command(BaseCommand):
           metadata.save()
 
           cur_columns = con.cursor()
-          res_columns = cur_columns.execute("SELECT * FROM " + table_name + " WHERE True")
+          res_columns = cur_columns.execute("SELECT * FROM \"" + table_name + "\" WHERE True")
           column_keys = set([d[0] for d in cur_columns.description])
-          column_keys = column_keys.difference({"fid", "geom", "NUTS_ID"})
+          column_keys = column_keys.difference({"fid", "geom", "NUTS_ID", "CNTR_CODE"})
 
           columns = list()
           columns_dict = dict()
 
           for column_key in column_keys:
+            if column_key not in table_metadata["columns"]:
+              print("skipping " + column_key + " (no metadata)")
+              continue
             column_metadata = table_metadata["columns"][column_key]
 
             threshold = None
@@ -209,8 +213,12 @@ class Command(BaseCommand):
             if not created:
               print("removing column " + str(column))
               DataTableColumnValue.objects.filter(data_table_column=column).delete()
-            columns.append(column)
-            columns_dict[column.key] = column
+
+            if skip_existing and not created:
+              print("skipping " + column_key + " (already existing)")
+            else:
+              columns.append(column)
+              columns_dict[column.key] = column
 
           for row in res_columns.fetchall():
             for column in columns:
