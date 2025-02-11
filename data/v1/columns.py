@@ -16,7 +16,7 @@ from data.api_shared import (
 from data.models import (
   DataTableColumn,
   TableMetaExposure,
-  TableMetaHazard,
+  Hazard,
   TableMetaReturnPeriod,
   TableMetaThreshold,
 )
@@ -66,7 +66,7 @@ def column_summaries(
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def hazards(request: HttpRequest):
   """Returns a list of all hazard types"""
-  return TableMetaHazard.objects.all().order_by("label")
+  return Hazard.objects.all().order_by("label")
 
 
 @router.get("/exposure_types", response=List[TableMetaExposureSchema])
@@ -91,7 +91,7 @@ def return_periods(request: HttpRequest):
 
 
 def filter_columns(hazard: str, exposure: str, threshold: str, return_period: str):
-  hazard_filter = TableMetaHazard.objects.all()
+  hazard_filter = Hazard.objects.all()
   if hazard:
     hazard_filter = hazard_filter.filter(key=hazard)
 

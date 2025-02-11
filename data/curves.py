@@ -6,7 +6,7 @@ from .models import (
   CurveConstructionType2,
   CurveConstructionType3,
   CurveCoverage,
-  CurveHazard,
+  Hazard,
   CurveOccupancyType1,
   CurveOccupancyType2,
   CurveOccupancyType3,
@@ -17,7 +17,7 @@ from .models import (
 
 
 def curves_filter_json(parameters):
-  hazard_options = CurveHazard.objects.all()
+  hazard_options = Hazard.objects.all()
   if "hazard" in parameters and parameters["hazard"] != "":
     hazard_options = hazard_options.filter(key__in=parameters.getlist("hazard"))
 

@@ -52,7 +52,7 @@ EMAIL_FILE_PATH = 'tmp-email-messages/'
 
 #DATABASES = {
 #    'default': {
-#        'ENGINE': 'django.db.backends.sqlite3', # or django.contrib.gis.db.backends.postgis or django.db.backends.mysql
+#        'ENGINE': 'django.contrib.gis.db.backends.spatialite', # or django.db.backends.postgis or django.db.backends.mysql
 #        'NAME': BASE_DIR / 'db.sqlite3',
 #    },
 #}

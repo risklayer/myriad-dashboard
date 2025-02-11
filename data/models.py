@@ -8,6 +8,19 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.safestring import mark_safe
 
+from django.contrib.gis.db import models as gismodels
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import Distance as MDistance
+from django.contrib.gis.db.models.functions import Distance as DBDistance
+from base64 import b64encode
+
+from .utils import calculate_azimuth
+
+import geopy.distance
+from shapely.geometry import Polygon, mapping
+
+from django.conf import settings
+
 _json_script_escapes = {
   ord(">"): "\\u003E",
   ord("<"): "\\u003C",
@@ -139,7 +152,7 @@ class Country(models.Model):
   label = models.TextField()
 
   class Meta:
-      ordering = ['label']
+    ordering = ["label"]
 
   @classmethod
   def ensure_creation_by_iso(cls, code_iso: str, country_dict_by_iso: Dict[str, Dict[str, str]]):
@@ -229,20 +242,6 @@ class Nuts2Area(models.Model):
     return nuts2area
 
 
-class DataTableMetadata(models.Model):
-  key = models.TextField(unique=True)
-  source_metadata = models.JSONField(null=True, blank=True)
-
-  def to_dict(self):
-    return {
-      "key": self.key,
-      "source_metadata": self.source_metadata,
-    }
-
-  def __str__(self):
-    return "[" + self.key + "]"
-
-
 class KeyLabelSelection:
   @classmethod
   def get_or_create_by_label(cls, label: str, slug_key: Optional[str] = None, **kwargs):
@@ -266,17 +265,42 @@ class KeyLabelSelection:
     return str(self.label)
 
 
-class TableMetaHazard(models.Model, KeyLabelSelection):
+class Hazard(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True)
   label = models.TextField()
+
+  def to_dict(self):
+    ret_data = {
+      "key": self.key,
+      "label": self.label,
+    }
+    unit = TableHazardUnit.objects.filter(hazard=self).first()
+    if unit is not None:
+      ret_data["unit"] = unit.unit
+
+    return ret_data
+
+
+## Exposure At Risk Data Models
+
+
+class TableHazardUnit(models.Model):
+  hazard = models.OneToOneField(Hazard, on_delete=models.CASCADE)
   unit = models.TextField(null=True, blank=True)
+
+
+class DataTableMetadata(models.Model):
+  key = models.TextField(unique=True)
+  source_metadata = models.JSONField(null=True, blank=True)
 
   def to_dict(self):
     return {
       "key": self.key,
-      "label": self.label,
-      "unit": self.unit,
+      "source_metadata": self.source_metadata,
     }
+
+  def __str__(self):
+    return "[" + self.key + "]"
 
 
 class TableMetaExposure(models.Model, KeyLabelSelection):
@@ -308,7 +332,7 @@ class DataTableColumn(models.Model):
   label = models.TextField()
   description = models.TextField()
 
-  hazard = models.ForeignKey(TableMetaHazard, on_delete=models.CASCADE)
+  hazard = models.ForeignKey(Hazard, on_delete=models.CASCADE)
   exposure = models.ForeignKey(TableMetaExposure, on_delete=models.CASCADE, null=True, blank=True)
   threshold = models.ForeignKey(TableMetaThreshold, on_delete=models.CASCADE, null=True, blank=True)
   return_period = models.ForeignKey(
@@ -353,9 +377,7 @@ class DataTableColumnValue(models.Model):
     unique_together = ("data_table_column", "nuts_area")
 
 
-class CurveHazard(models.Model, KeyLabelSelection):
-  key = models.TextField(unique=True)
-  label = models.TextField()
+## Curve Data Models
 
 
 class CurveQuality(models.Model, KeyLabelSelection):
@@ -407,7 +429,7 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True, max_length=256)
   label = models.TextField()
 
-  hazard = models.ForeignKey(CurveHazard, on_delete=models.CASCADE)
+  hazard = models.ForeignKey(Hazard, on_delete=models.CASCADE)
   quality = models.ForeignKey(CurveQuality, on_delete=models.CASCADE, null=True, blank=True)
   con_description_1 = models.ForeignKey(
     CurveConstructionType1, on_delete=models.CASCADE, null=True, blank=True
@@ -535,3 +557,242 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
         "filename": self.key + " (complete).json",
       },
     ]
+
+
+## Hazard and risk scenario calculator --> Hrsc
+
+
+class HrscEventCollection(models.Model, KeyLabelSelection):
+  key = models.TextField(unique=True)
+  label = models.TextField()
+
+  hazard = models.ForeignKey(Hazard, on_delete=models.CASCADE)
+
+
+class HrscEvent(models.Model):
+  collection = models.ForeignKey(HrscEventCollection, on_delete=models.CASCADE)
+
+  location = gismodels.PointField(srid=settings.DEFAULT_SRID, geography=True, blank=True, null=True)
+
+  _blob_type_choices = [
+    ("none", "none"),
+    ("tiff_embed", "TIFF File (embedded)"),
+    ("tiff_ext", "TIFF File (external)"),
+  ]
+
+  footprint = models.BinaryField(null=True, blank=True)
+  footprint_type = models.TextField(choices=_blob_type_choices)
+
+  def get_metadata_attribute(self, key : str) -> Union[float, int, str]:
+    metadata = HrscEventMetadata.objects.filter(key=key, ).first()
+    if metadata:
+      metadatavalue = None
+      if metadata.type == "float":
+        metadatavalue = HrscEventMetadataValueFloat.objects.filter(metadata = metadata, event = self).first()
+      elif metadata.type == "string":
+        metadatavalue = HrscEventMetadataValueString.objects.filter(metadata = metadata, event = self).first()
+
+      if metadatavalue:
+        return metadatavalue.value
+
+    return None
+
+  def get_metadata_all(self) -> Dict[str, Union[float, int, str]]:
+    data = dict()
+    for metadatavalue in HrscEventMetadataValueFloat.objects.filter(event = self):
+      data[metadatavalue.metadata.key] = metadatavalue.value
+    for metadatavalue in HrscEventMetadataValueString.objects.filter(event = self):
+      data[metadatavalue.metadata.key] = metadatavalue.value
+
+    return data
+
+  def get_footprint(self) -> bytes:
+    if self.footprint_type == "lazy_py_geojson":
+      if self.collection.key == "tornado":
+        all_metadata = self.get_metadata_all()
+        start_lon = all_metadata["start_longitude"]
+        start_lat = all_metadata["start_latitude"]
+        end_lon = all_metadata["end_longitude"]
+        end_lat = all_metadata["end_latitude"]
+        path_width = all_metadata["path_width"]
+
+        azimuth = calculate_azimuth((start_lon, start_lat), (end_lon, end_lat))
+        angle1 = (azimuth + 90) % 360
+        angle2 = (azimuth - 90) % 360
+        point1 = geopy.distance.distance(kilometers=path_width / 2).destination((start_lat, start_lon), angle1)
+        point1 = (point1.latitude, point1.longitude)
+        point2 = geopy.distance.distance(kilometers=path_width / 2).destination((start_lat, start_lon), angle2)
+        point2 = (point2.latitude, point2.longitude)
+        point3 = geopy.distance.distance(kilometers=path_width / 2).destination((end_lat, end_lon), angle2)
+        point3 = (point3.latitude, point3.longitude)
+        point4 = geopy.distance.distance(kilometers=path_width / 2).destination((end_lat, end_lon), angle1)
+        point4 = (point4.latitude, point4.longitude)
+        polygon = Polygon([point1, point2, point3, point4, point1])
+        return {
+          'type': 'Feature',
+          'properties': all_metadata,
+          'geometry': mapping(polygon)
+        }
+
+      else:
+        raise Exception("cannot generate footprint for " + self.collection.key)
+    else:
+      return self.footprint
+
+  @classmethod
+  def create_with_attributes(
+    cls,
+    commit : bool,
+    collection : HrscEventCollection,
+    location_lon : float,
+    location_lat : float,
+    footprint_type : str,
+    footprint : Optional[bytes] = None,
+    metadata : Dict[str, str] = dict(),
+    metadata_reference_dict : Optional[Dict[str, "HrscEventMetadata"]] = None,
+  ):
+    location = Point(location_lon, location_lat, srid=settings.DEFAULT_SRID)
+    instance = cls(
+      collection = collection,
+      location = location,
+      footprint_type = footprint_type,
+      footprint = footprint,
+    )
+
+    if commit:
+      instance.save()
+
+    metadata_list = list()
+
+    for key, value in metadata.items():
+      metadata = None
+      if metadata_reference_dict is not None:
+        metadata = metadata_reference_dict.get(key, None)
+
+      if metadata is None:
+        metadata = HrscEventMetadata.objects.get(key = key)
+
+        if metadata_reference_dict is not None:
+          metadata_reference_dict[key] = metadata
+
+      metadata_value = None
+      if metadata.type == "float":
+        metadata_value = HrscEventMetadataValueFloat(
+          metadata = metadata,
+          event = instance,
+          value = float(value),
+        )
+      elif metadata.type == "string":
+        metadata_value = HrscEventMetadataValueString(
+          metadata = metadata,
+          event = instance,
+          value = value,
+        )
+      else:
+        raise Exception("unknown metadata type")
+
+      if commit:
+        metadata_value.save()
+      metadata_list.append(metadata_value)
+
+    return instance, metadata_list
+
+
+  @classmethod
+  def getByLocation(
+    cls, point=None, longitude=None, latitude=None, radius=1000, limit=100, event_filter=None
+  ):
+    if longitude is not None and latitude is not None:
+      point = Point(longitude, latitude, srid=settings.DEFAULT_SRID)
+
+    result = cls.objects.all()
+    if event_filter is not None:
+      result = event_filter
+
+    if radius is not None:
+      result = result.filter(location__distance_lt=(point, MDistance(km=radius)))
+
+    result = result.annotate(distance=DBDistance("location", point, geography=True)).order_by(
+      "distance"
+    )
+
+    if limit is not None:
+      result = result[:limit]
+
+    return result
+
+  def to_dict(self, include_foorprint_blob=False):
+    data = {
+      "id": self.id,
+      "collection_id": self.collection_id,
+      "location": {
+        "x": self.location.x,
+        "y": self.location.y,
+      }
+      if self.location
+      else None,
+      "footprint_type": self.footprint_type,
+    }
+
+    if include_foorprint_blob:
+      data["footprint"] = (
+        b64encode(self.footprint).decode(encoding="utf-8") if self.footprint else None
+      )
+
+    return data
+
+
+class HrscEventMetadata(models.Model, KeyLabelSelection):
+  key = models.TextField(unique=True)
+  label = models.TextField()
+
+  _blob_type_choices = [
+    ("float", "float"),
+    ("string", "string"),
+  ]
+
+  type = models.TextField(choices=_blob_type_choices)
+  enable_histogram = models.BooleanField()
+
+
+class HrscEventMetadataValueFloat(models.Model):
+  metadata = models.ForeignKey(HrscEventMetadata, on_delete=models.CASCADE)
+  event = models.ForeignKey(HrscEvent, on_delete=models.CASCADE)
+  value = models.FloatField()
+
+
+class HrscEventMetadataValueString(models.Model):
+  metadata = models.ForeignKey(HrscEventMetadata, on_delete=models.CASCADE)
+  event = models.ForeignKey(HrscEvent, on_delete=models.CASCADE)
+  value = models.TextField()
+
+
+class GridLocation(models.Model):
+  location = gismodels.PointField(srid=settings.DEFAULT_SRID, geography=True, blank=True, null=True, unique=True)
+
+
+class HrscValueCoordinateWinterstorm(models.Model):
+  event = models.ForeignKey(HrscEvent, on_delete=models.CASCADE)
+  location = models.ForeignKey(GridLocation, on_delete=models.CASCADE)
+
+  value = models.SmallIntegerField(db_index=True)
+
+
+class HrscScenarioType(models.Model, KeyLabelSelection):
+  key = models.TextField(unique=True)
+  label = models.TextField()
+  description = models.TextField()
+
+  curve = models.ForeignKey(VulnerabilityCurve, on_delete=models.CASCADE)
+  event_type = models.ManyToManyField(HrscEventCollection)
+  exposure_list = models.ManyToManyField(DataTableColumn)
+
+  def to_dict(self) -> dict:
+    return {
+      "key": self.key,
+      "label": self.label,
+      "description": self.description,
+      "curve": self.curve.key,
+      "event_type": self.event_type.key,
+      "exposure_list": self.exposure_list.key,
+    }

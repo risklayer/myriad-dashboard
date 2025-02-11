@@ -5,7 +5,7 @@ from data.models import (
   CurveConstructionType2,
   CurveConstructionType3,
   CurveCoverage,
-  CurveHazard,
+  Hazard,
   CurveOccupancyType1,
   CurveOccupancyType2,
   CurveOccupancyType3,
@@ -133,7 +133,7 @@ class Command(BaseCommand):
         if not isinstance(coverage, str) and isnan(coverage):
           coverage = None
 
-        hazard_instance = CurveHazard.get_or_create_by_label(hazard)
+        hazard_instance = Hazard.get_or_create_by_label(hazard)
         quality_instance = CurveQuality.get_or_create_by_label(quality)
         con_description_1_instance = CurveConstructionType1.get_or_create_by_label(
           con_description_1

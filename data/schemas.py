@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict
 from geojson_pydantic import MultiPolygon
 from ninja import ModelSchema, Schema
 
@@ -9,9 +9,11 @@ from data.models import (
   KeyLabelSelection,
   Nuts2Area,
   TableMetaExposure,
-  TableMetaHazard,
+  Hazard,
   TableMetaReturnPeriod,
   TableMetaThreshold,
+  HrscScenarioType,
+  HrscEvent,
 )
 
 
@@ -28,9 +30,11 @@ class KeyLabelSelectionSchema(Schema):
 
 
 class TableMetaHazardSchema(ModelSchema):
+  unit: Optional[str] = None
+
   class Meta:
-    model = TableMetaHazard
-    fields = ["key", "label", "unit"]
+    model = Hazard
+    fields = ["key", "label"]
 
 
 class TableMetaExposureSchema(ModelSchema):
@@ -184,3 +188,25 @@ class ShapeFeature(Schema):
 class AreaValuesSchema(Schema):
   NUTS_ID: str
   country_id: str
+
+
+class HrscScenarioTypeScheme(ModelSchema):
+  curve: str
+  event_type: str
+  exposure_list: str
+
+  class Meta:
+    model = HrscScenarioType
+    fields = ["key", "label", "description", "curve", "event_type", "exposure_list"]
+
+
+class HrscEventScheme(ModelSchema):
+  id: int
+  collection_id: int
+  location: Optional[Dict[str, float]] = None
+  footprint_type: str
+  footprint: Optional[str] = None
+
+  class Meta:
+    model = HrscEvent
+    fields = ["id", "footprint_type", "footprint"]

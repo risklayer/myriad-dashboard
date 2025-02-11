@@ -5,10 +5,11 @@ from data.models import (
   DataTableColumnValue,
   DataTableMetadata,
   Nuts2Area,
-  TableMetaHazard,
+  Hazard,
   TableMetaExposure,
   TableMetaThreshold,
   TableMetaReturnPeriod,
+  TableHazardUnit,
 )
 from django.core.management.base import BaseCommand
 from data.data_region.country_list import (
@@ -40,7 +41,9 @@ class Command(BaseCommand):
     parser.add_argument("--table-metadata", type=str, required=True, dest="table_metadata")
     parser.add_argument("--skip-existing", action="store_true", default=False, dest="skip_existing")
 
-  def handle(self, *args, filename: str, format: str, table_metadata: str, skip_existing: bool, **options):
+  def handle(
+    self, *args, filename: str, format: str, table_metadata: str, skip_existing: bool, **options
+  ):
     table_metadata = json.load(open(table_metadata))
 
     def ensureTableMetaParameterCreation(
@@ -48,16 +51,23 @@ class Command(BaseCommand):
     ):
       for key, data in data["values"].items():
         if isinstance(data, dict):
-          instance_cls = cls.get_or_create_by_label(
-            label=data["label"], slug_key=key, unit=data.get("unit", None)
-          )
+          unit = None
+          if cls == Hazard:
+            unit = data.pop("unit", None)
+            instance_cls = cls.get_or_create_by_label(label=data["label"], slug_key=key)
+          else:
+            instance_cls = cls.get_or_create_by_label(
+              label=data["label"], slug_key=key, unit=data.get("unit", None)
+            )
           cls_dict[key] = instance_cls
+          if unit:
+            TableHazardUnit.objects.get_or_create(hazard=instance_cls, unit=unit)
         else:
           instance_cls = cls.get_or_create_by_label(label=data, slug_key=key)
           cls_dict[key] = instance_cls
 
     meta_dict_hazard = dict()
-    ensureTableMetaParameterCreation(TableMetaHazard, table_metadata["hazard"], meta_dict_hazard)
+    ensureTableMetaParameterCreation(Hazard, table_metadata["hazard"], meta_dict_hazard)
     meta_dict_exposure = dict()
     ensureTableMetaParameterCreation(
       TableMetaExposure, table_metadata["exposure"], meta_dict_exposure
@@ -108,15 +118,15 @@ class Command(BaseCommand):
           print("loading bbox geometry")
           cur_geometry = con.cursor()
           res_geometry = cur_geometry.execute(
-            "SELECT NUTS_ID, minx, miny, maxx, maxy FROM \"rtree_"
+            'SELECT NUTS_ID, minx, miny, maxx, maxy FROM "rtree_'
             + table_name
-            + "_geom\" INNER JOIN \""
+            + '_geom" INNER JOIN "'
             + table_name
-            + "\" on \"rtree_"
+            + '" on "rtree_'
             + table_name
-            + "_geom\".id = \""
+            + '_geom".id = "'
             + table_name
-            + "\".fid"
+            + '".fid'
           )
           for row in res_geometry.fetchall():
             geometry_bbox[row["NUTS_ID"]] = (
@@ -177,7 +187,7 @@ class Command(BaseCommand):
           metadata.save()
 
           cur_columns = con.cursor()
-          res_columns = cur_columns.execute("SELECT * FROM \"" + table_name + "\" WHERE True")
+          res_columns = cur_columns.execute('SELECT * FROM "' + table_name + '" WHERE True')
           column_keys = set([d[0] for d in cur_columns.description])
           column_keys = column_keys.difference({"fid", "geom", "NUTS_ID", "CNTR_CODE"})
 

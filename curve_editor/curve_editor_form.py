@@ -15,7 +15,7 @@ from data.models import (
   CurveConstructionType2,
   CurveConstructionType3,
   CurveCoverage,
-  CurveHazard,
+  Hazard,
   CurveOccupancyType1,
   CurveOccupancyType2,
   CurveOccupancyType3,
@@ -23,6 +23,7 @@ from data.models import (
   CurveSector,
   Country,
   get_curve_field_label,
+  VulnerabilityCurve,
 )
 
 
@@ -38,7 +39,7 @@ class CurveSelectionField(ModelChoiceField):
 
 class CurveEditorFilterForm(Form):
   hazard = CurveSelectionField(
-    queryset=CurveHazard.objects.all(),
+    queryset=Hazard.objects.filter(vulnerabilitycurve__in=VulnerabilityCurve.objects.all()),
     empty_label="",
     to_field_name="key",
     required=False,

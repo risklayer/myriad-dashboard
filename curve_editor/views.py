@@ -1,5 +1,3 @@
-import json
-
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST

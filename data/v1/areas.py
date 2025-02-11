@@ -58,7 +58,7 @@ def shapes(
   nuts2area_filter = Nuts2Area.objects.all()
 
   if bbox:
-    bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = bbox
+    bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = bbox.split(",")
 
     nuts2area_filter = nuts2area_filter.filter(
       bbox_min_x__lt=bbox_max_x,

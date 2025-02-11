@@ -3,7 +3,7 @@ from enum import StrEnum
 from data.models import (
   Country,
   TableMetaExposure,
-  TableMetaHazard,
+  Hazard,
   TableMetaReturnPeriod,
   TableMetaThreshold,
 )
@@ -17,7 +17,7 @@ CACHE_TIMEOUT = 1
 # They are specified as StrEnum so they don't need to be coercer to strings for
 # use in queries (since the models don't use enums)
 countries = []
-table_meta_hazards = []
+hazards = []
 table_meta_exposures = []
 table_meta_thresholds = []
 table_meta_return_periods = []
@@ -26,9 +26,7 @@ try:
   countries = dict(
     map(lambda c: (c.label, c.country_code), Country.objects.all().order_by("country_code"))
   )
-  table_meta_hazards = dict(
-    map(lambda c: (c.key, c.key), TableMetaHazard.objects.all().order_by("key"))
-  )
+  hazards = dict(map(lambda c: (c.key, c.key), Hazard.objects.all().order_by("key")))
   table_meta_exposures = dict(
     map(lambda c: (c.key, c.key), TableMetaExposure.objects.all().order_by("key"))
   )
@@ -48,7 +46,7 @@ CountriesEnum = StrEnum(
 
 HazardOptionsEnum = StrEnum(
   "HazardOptionsEnum",
-  table_meta_hazards,
+  hazards,
 )
 
 ExposureOptionsEnum = StrEnum(
