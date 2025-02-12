@@ -11,6 +11,7 @@ urlpatterns = [
   path("api/v1/countries", api.api_countries, name="api_countries"),
   path("api/v1/nuts2areas", api.api_nuts2areas, name="api_nuts2areas"),
   path("api/v1/nuts2shapes", api.api_nuts2shapes, name="api_nuts2shapes"),
+  path("api/v1/nuts2shape/<str:nuts2_key>/values", api.api_nuts2shape_values, name="api_nuts2shape_values"),
   path("api/v1/column/hazard", api.api_column_hazard, name="api_column_hazard"),
   path("api/v1/column/exposure", api.api_column_exposure, name="api_column_exposure"),
   path("api/v1/column/threshold", api.api_column_threshold, name="api_column_threshold"),

@@ -53,6 +53,26 @@ paths:
             items:
               type: string
           description: Optional country code(s)
+        - in: query
+          name: column
+          schema:
+            type: array
+            items:
+              type: string
+          description: Optional columns to include inside the geojson file
+      responses:
+        '200' : {"description" : "success", "content" : { "application/json" : {} } }
+
+  /nuts2shape/{nuts2_key}/values:
+    get:
+      summary: Get all values for one nuts2 area
+      parameters:
+        - in: path
+          name: nuts2_key
+          required: true
+          schema:
+            type: string
+          description: The key of the nuts2 area
       responses:
         '200' : {"description" : "success", "content" : { "application/json" : {} } }
 

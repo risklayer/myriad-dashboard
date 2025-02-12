@@ -68,6 +68,8 @@ def api_nuts2shapes(request: HttpRequest):
       bbox_max_y__gt=bbox_min_y,
     )
 
+  columns = list(DataTableColumn.objects.filter(key__in = request.GET.getlist("column", [])))
+
   countries = request.GET.getlist("country", [])
   if len(countries) > 0:
     nuts2area_filter = nuts2area_filter.filter(country__country_code__in=countries)
@@ -83,11 +85,27 @@ def api_nuts2shapes(request: HttpRequest):
           "properties": {
             "NUTS_ID": area.key,
             "country_id": area.country_id,
+          } | {
+            c.key : DataTableColumnValue.objects.get(data_table_column = c, nuts_area = area).value for c in columns
           },
           "geometry": area.geom_json,
         }
         for area in nuts2area_filter
       ],
+    }
+  )
+
+
+@require_http_methods(["GET"])
+def api_nuts2shape_values(request: HttpRequest, nuts2_key: str):
+  area = Nuts2Area.objects.get(key = nuts2_key)
+
+  return JsonResponse(
+    {
+      "NUTS_ID": area.key,
+      "country_id": area.country_id,
+    } | {
+      c.key : DataTableColumnValue.objects.get(data_table_column = c, nuts_area = area).value for c in DataTableColumn.objects.all()
     }
   )
 
