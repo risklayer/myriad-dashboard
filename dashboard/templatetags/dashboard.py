@@ -14,7 +14,7 @@ def get_myriad_apps():
           "name": app.verbose_name,
           "description": app.description,
           "icon": app.icon,
-          "url": reverse(app.label + ":index"),
+          "url": reverse(app.label + ":" + getattr(app, "home", "index")),
         }
       )
   return myriad_apps

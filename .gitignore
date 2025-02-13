@@ -170,3 +170,5 @@ cython_debug/
 /.vscode/*
 !/.vscode/extensions.json
 /docker-volumes
+tsconfig.tsbuildinfo
+.rollup.cache

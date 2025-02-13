@@ -4,10 +4,10 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
+from data.curves import curves_filter_json
+
 from .curve_editor_form import CurveEditorFilterForm, CurveEditorRowForm
 
-from data.api import api_curves_filter_json
-from data.models import VulnerabilityCurve
 
 from data.models import VulnerabilityCurve
 
@@ -101,7 +101,7 @@ def filter_curves(request):
 
   filtered_row_ids_and_names = []
   if is_filtered:
-    curve_data = api_curves_filter_json(request.POST)
+    curve_data = curves_filter_json(request.POST)
     filtered_row_ids_and_names = curve_data["curves"]
 
   curve_form = CurveEditorRowForm(

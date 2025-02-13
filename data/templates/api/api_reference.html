@@ -7,26 +7,31 @@
 {% endblock title %}
 
 {% block head %}
-<link rel="stylesheet" href="{% static 'swagger-ui-dist/swagger-ui.css' %}" crossorigin="">
-<script src="{% static 'swagger-ui-dist/swagger-ui-bundle.js' %}" crossorigin=""></script>
-<script src="{% static 'swagger-ui-dist/swagger-ui-standalone-preset.js' %}" crossorigin=""></script>
-{% endblock %}
+  <link type="text/css"
+        rel="stylesheet"
+        href="{% static 'ninja/swagger-ui.css' %}" />
+  <link rel="shortcut icon" href="{% static 'ninja/favicon.png' %}" />
+  <style>
+      /* Fix specificity issue with nested bootstrap dark/light colour schemes. */
+      .parameters-col_description input,
+      .parameters-col_description select,
+      .parameters-col_description textarea {
+          color: var(--bs-body-color);
+      }
+  </style>
+{% endblock head %}
 
 {% block pagetitle %}
   <div class="d-flex justify-content-between">
-      <h1>OpenAPI Reference</h1>
+    <h1>OpenAPI Reference</h1>
   </div>
 {% endblock pagetitle %}
 
-{% block main %}
-<div id="swagger-ui" class="card mt-5"></div>
-
-<script>
-  window.onload = () => {
-    window.ui = SwaggerUIBundle({
-      url: 'openapi.yaml',
-      dom_id: '#swagger-ui',
-    });
-  };
-</script>
-{% endblock main %}
+{% block mainbody %}
+  <script type="application/json" id="swagger-settings">
+  {{ swagger_settings | safe }}
+  </script>
+  <div id="swagger-ui" class="card p-0 mt-4" data-bs-theme="light"></div>
+  <script src="{% static 'ninja/swagger-ui-bundle.js' %}"></script>
+  <script src="{% static 'ninja/swagger-ui-init.js' %}"></script>
+{% endblock mainbody %}

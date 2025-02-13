@@ -8,6 +8,7 @@ app_name = "dashboard"
 urlpatterns = [
   path("", views.index, name="home"),
   path("admin/", admin.site.urls),
-  path("data/", include("data.urls")),
-  path("curve-editor/", include("curve_editor.urls")),
+  path("data/", include("data.api")),
+  path("curve_editor/", include("curve_editor.urls")),
+  path("__reload__/", include("django_browser_reload.urls")),
 ]

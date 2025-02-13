@@ -6,7 +6,7 @@
   <head>
     <title>
       {% block title %}
-        MYRIAD Multi-Risk Toolkit
+        MYRIAD-EU Multi-Risk Toolkit
       {% endblock title %}
 
     </title>
@@ -23,14 +23,17 @@
   </head>
   <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     {% include "layouts/header.html" %}
-    <main id="main" class="p-3 md:p-10">
-      {% block pagetitle %}
-      {% endblock pagetitle %}
+    {% block main %}
+      <main id="main" class="p-3 md:p-10">
+        {% block pagetitle %}
+        {% endblock pagetitle %}
 
-      {% block main %}
-      {% endblock main %}
+        {% block mainbody %}
+        {% endblock mainbody %}
 
-    </main>
+      </main>
+    {% endblock main %}
+
     <template id="toast-template">
       <div class="toast align-items-center text-bg-primary border-0"
            role="alert"
@@ -49,13 +52,16 @@
     </template>
     <div id="toast-container" class="position-fixed top-0 end-0 p-3"></div>
   </body>
-  <script src="{% static '@popperjs/core/dist/umd/popper.min.js' %}" defer></script>
-  <script src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}" defer></script>
-  <script src="{% static 'htmx.org/dist/htmx.js' %}"></script>
-  <script src="{% static 'htmx-ext-class-tools/class-tools.js' %}"></script>
-  <script src="{% static 'chart.js/dist/chart.umd.js' %}"></script>
-  {% comment %} <script src="{% static 'htmx.org/dist/ext/debug.js' %}"></script> {% endcomment %}
-  {% django_htmx_script %}
-  {% comment %} <script src="{% static 'js/scripts.min.js' %}" defer></script> {% endcomment %}
-  <script src="{% static 'js/scripts.js' %}"></script>
+  {% block afterbody %}
+    <script src="{% static '@popperjs/core/dist/umd/popper.min.js' %}" defer></script>
+    <script src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}" defer></script>
+    <script src="{% static 'htmx.org/dist/htmx.js' %}"></script>
+    <script src="{% static 'htmx-ext-class-tools/class-tools.js' %}"></script>
+    <script src="{% static 'chart.js/dist/chart.umd.js' %}"></script>
+    {% comment %} <script src="{% static 'htmx.org/dist/ext/debug.js' %}"></script> {% endcomment %}
+    {% django_htmx_script %}
+    {% comment %} <script src="{% static 'js/scripts.min.js' %}" defer></script> {% endcomment %}
+    <script type="module" src="{% static 'js/scripts.js' %}"></script>
+  {% endblock afterbody %}
+
 </html>

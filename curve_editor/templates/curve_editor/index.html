@@ -7,6 +7,7 @@
 {% endblock title %}
 
 {% block head %}
+    {{ block.super }}
     <link rel="stylesheet"
           href="{% static 'css/curve_editor.css' %}"
           crossorigin="" />
@@ -19,7 +20,7 @@
     </div>
 {% endblock pagetitle %}
 
-{% block main %}
+{% block mainbody %}
     <div class="curve-grid-container w-100">
         {% for i, filter_form, curve_form in forms %}
             <div id="panel-{{ i }}"
@@ -43,4 +44,4 @@
     </div>
     <script src="{% static "js/curve_editor.js" %}"></script>
     <script id="update-curve-script"></script>
-{% endblock main %}
+{% endblock mainbody %}

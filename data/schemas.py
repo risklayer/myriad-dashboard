@@ -1,0 +1,186 @@
+from typing import Literal, Optional
+from geojson_pydantic import MultiPolygon
+from ninja import ModelSchema, Schema
+
+from data.models import (
+  Country,
+  DataTableColumn,
+  DataTableMetadata,
+  KeyLabelSelection,
+  Nuts2Area,
+  TableMetaExposure,
+  TableMetaHazard,
+  TableMetaReturnPeriod,
+  TableMetaThreshold,
+)
+
+
+class DataTableMetadataSchema(ModelSchema):
+  class Meta:
+    model = DataTableMetadata
+    fields = ["key", "source_metadata"]
+
+
+class KeyLabelSelectionSchema(Schema):
+  class Meta:
+    model = KeyLabelSelection
+    fields = ["key", "label"]
+
+
+class TableMetaHazardSchema(ModelSchema):
+  class Meta:
+    model = TableMetaHazard
+    fields = ["key", "label", "unit"]
+
+
+class TableMetaExposureSchema(ModelSchema):
+  class Meta:
+    model = TableMetaExposure
+    fields = ["key", "label"]
+
+
+class TableMetaThresholdSchema(ModelSchema):
+  class Meta:
+    model = TableMetaThreshold
+    fields = ["key", "label"]
+
+
+class TableMetaReturnPeriodSchema(ModelSchema):
+  class Meta:
+    model = TableMetaReturnPeriod
+    fields = ["key", "label"]
+
+
+class DataTableColumnSchema(ModelSchema):
+  return_period: Optional[TableMetaReturnPeriodSchema] = None
+  hazard: Optional[TableMetaHazardSchema] = None
+  exposure: Optional[TableMetaExposureSchema] = None
+  threshold: Optional[TableMetaThresholdSchema] = None
+
+  class Meta:
+    model = DataTableColumn
+    fields = [
+      "key",
+      "label",
+      "description",
+    ]
+
+
+class DataTableColumnSummarySchema(ModelSchema):
+  class Meta:
+    model = DataTableColumn
+    fields = [
+      "key",
+      "label",
+      "description",
+    ]
+
+
+# class DataTableColumnValueSchema(ModelSchema):
+#   class Meta:
+#     model = DataTableColumnValue
+#     fields = ["TODO"]
+
+
+# class CurveHazardSchema(ModelSchema):
+#   class Meta:
+#     model = CurveHazard
+#     fields = ["TODO"]
+
+
+# class CurveQualitySchema(ModelSchema):
+#   class Meta:
+#     model = CurveQuality
+#     fields = ["TODO"]
+
+
+# class CurveConstructionType1Schema(ModelSchema):
+#   class Meta:
+#     model = CurveConstructionType1
+#     fields = ["TODO"]
+
+
+# class CurveConstructionType2Schema(ModelSchema):
+#   class Meta:
+#     model = CurveConstructionType2
+#     fields = ["TODO"]
+
+
+# class CurveConstructionType3Schema(ModelSchema):
+#   class Meta:
+#     model = CurveConstructionType3
+#     fields = ["TODO"]
+
+
+# class CurveOccupancyType1Schema(ModelSchema):
+#   class Meta:
+#     model = CurveOccupancyType1
+#     fields = ["TODO"]
+
+
+# class CurveOccupancyType2Schema(ModelSchema):
+#   class Meta:
+#     model = CurveOccupancyType2
+#     fields = ["TODO"]
+
+
+# class CurveOccupancyType3Schema(ModelSchema):
+#   class Meta:
+#     model = CurveOccupancyType3
+#     fields = ["TODO"]
+
+
+# class CurveCoverageSchema(ModelSchema):
+#   class Meta:
+#     model = CurveCoverage
+#     fields = ["TODO"]
+
+
+# class CurveSectorSchema(ModelSchema):
+#   class Meta:
+#     model = CurveSector
+#     fields = ["TODO"]
+
+
+# class VulnerabilityCurveSchema(ModelSchema):
+#   class Meta:
+#     model = VulnerabilityCurve
+#     fields = ["TODO"]
+
+
+class CountrySchema(ModelSchema):
+  class Meta:
+    model = Country
+    fields = ["country_code", "label"]
+
+
+class Nuts2AreaSchema(ModelSchema):
+  country: CountrySchema
+
+  class Meta:
+    model = Nuts2Area
+    fields = [
+      "key",
+      "label",
+      # "bbox_min_x",
+      # "bbox_min_y",
+      # "bbox_max_x",
+      # "bbox_max_y",
+      # "geom_json",
+    ]
+
+
+class ShapeProperties(Schema):
+  NUTS_ID: str
+  country_id: str
+
+
+class ShapeFeature(Schema):
+  type: Literal["Feature"]
+  geometry: MultiPolygon
+  properties: ShapeProperties
+
+
+class AreaValuesSchema(Schema):
+  NUTS_ID: str
+  country_id: str

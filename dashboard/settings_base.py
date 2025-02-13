@@ -13,7 +13,7 @@ if SECRET_KEY.startswith("django-insecure") and not DEBUG:
 
 ALLOWED_HOSTS = ["*"]
 
-APP_NAME = "Myriad-EU dashboard"
+APP_NAME = "MYRIAD-EU Multi-Risk Toolkit Dashboard"
 
 # Application definition
 
@@ -31,11 +31,13 @@ INSTALLED_APPS = [
   "django_cotton",
   "django_htmx",
   "template_partials",
+  "django_browser_reload",
+  "ninja",
   # local
-  "data",
   "dashboard",
   "ui",
   "curve_editor",
+  "data",
 ]
 
 MIDDLEWARE = [
@@ -47,6 +49,8 @@ MIDDLEWARE = [
   "django.contrib.messages.middleware.MessageMiddleware",
   "django.middleware.clickjacking.XFrameOptionsMiddleware",
   "django_htmx.middleware.HtmxMiddleware",
+  "django.middleware.gzip.GZipMiddleware",
+  "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
 
 ROOT_URLCONF = "dashboard.urls"

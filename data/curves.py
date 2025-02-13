@@ -16,7 +16,7 @@ from .models import (
 )
 
 
-def api_curves_filter_json(parameters):
+def curves_filter_json(parameters):
   hazard_options = CurveHazard.objects.all()
   if "hazard" in parameters and parameters["hazard"] != "":
     hazard_options = hazard_options.filter(key__in=parameters.getlist("hazard"))

@@ -8,3 +8,4 @@ class DataConfig(AppConfig):
   description = "OpenAPI data backend."
   icon = "code"
   myriad = True
+  home = "openapi-view"

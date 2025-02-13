@@ -1,6 +1,8 @@
 {% load dashboard %}
 {% load static %}
-<a href="#main" class="skip-link">Skip to main content</a>
+
+<a xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#main"
+   class="skip-link">Skip to main content</a>
 <nav class="navbar navbar-expand-md" data-bs-theme="dark">
   <div class="container-fluid">
     <button class="navbar-toggler"
@@ -16,18 +18,84 @@
     <span class="navbar-brand p-0">
       <a href="{{ home_url }}">
         <img src="{% static 'img/myriad-logo-white.svg' %}"
-             alt="MYRIAD EU: Reducing risks together"
-             height="40">
+             alt="MYRIAD-EU: Reducing risks together"
+             height="40"
+             width="90" />
       </a>
+      <small class="mx-2"><strong>alpha</strong></small>
     </span>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav me-auto mb-2 mb-md-0">
+      <ul class="navbar-nav w-100 me-auto mb-2 mb-md-0">
         <li class="nav-item">
-          <a class="nav-link{% if request.path == home_url %} active{% endif %}"
-             {% if request.path == home_url %}aria-current="page"{% endif %}
-             href="{{ home_url }}">Home</a>
+          <a href="{{ home_url }}"
+             class="nav-link{% if request.path == home_url %} active{% endif %}"
+             {% if request.path == home_url %}aria-current="page"{% endif %}>
+            Home
+          </a>
         </li>
         {% dashboard_header_apps %}
+        <li class="nav-item dropdown ms-sm-auto">
+          <button class="btn btn-link nav-link py-2 px-0 px-lg-2 dropdown-toggle d-flex align-items-center"
+                  id="bd-theme"
+                  type="button"
+                  aria-expanded="false"
+                  data-bs-toggle="dropdown"
+                  data-bs-display="static"
+                  aria-label="Toggle theme (auto)">
+            <svg class="my-1 theme-icon-active"
+                 width="16"
+                 height="16"
+                 fill="currentColor">
+              <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#circle-half"></use>
+            </svg>
+            <span class="d-lg-none ms-2" id="bd-theme-text">Toggle theme</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="bd-theme-text">
+            <li>
+              <button type="button"
+                      class="dropdown-item d-flex align-items-center"
+                      data-bs-theme-value="light"
+                      aria-pressed="false">
+                <svg class="me-2 opacity-50" width="16" height="16" fill="currentColor">
+                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#sun-fill"></use>
+                </svg>
+                Light
+                <svg class="ms-auto d-none" width="16" height="16" fill="currentColor">
+                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#check2"></use>
+                </svg>
+              </button>
+            </li>
+            <li>
+              <button type="button"
+                      class="dropdown-item d-flex align-items-center"
+                      data-bs-theme-value="dark"
+                      aria-pressed="false">
+                <svg class="me-2 opacity-50" width="16" height="16" fill="currentColor">
+                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#moon-stars-fill"></use>
+                </svg>
+                Dark
+                <svg class="ms-auto d-none" width="16" height="16" fill="currentColor">
+                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#check2"></use>
+                </svg>
+              </button>
+            </li>
+            <li>
+              <button type="button"
+                      class="dropdown-item d-flex align-items-center active"
+                      data-bs-theme-value="auto"
+                      aria-pressed="true">
+                <svg class="me-2 opacity-50" width="16" height="16" fill="currentColor">
+                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#circle-half"></use>
+                </svg>
+                Auto
+                <svg class="ms-auto d-none" width="16" height="16" fill="currentColor">
+                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#check2"></use>
+                </svg>
+              </button>
+            </li>
+          </ul>
+        </li>
       </ul>
     </div>
   </div>
