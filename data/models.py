@@ -138,6 +138,9 @@ class Country(models.Model):
   country_code = models.TextField(unique=True)
   label = models.TextField()
 
+  class Meta:
+      ordering = ['label']
+
   @classmethod
   def ensure_creation_by_iso(cls, code_iso: str, country_dict_by_iso: Dict[str, Dict[str, str]]):
     code = country_dict_by_iso[code_iso]["code_2alpha"]
@@ -306,7 +309,7 @@ class DataTableColumn(models.Model):
   description = models.TextField()
 
   hazard = models.ForeignKey(TableMetaHazard, on_delete=models.CASCADE)
-  exposure = models.ForeignKey(TableMetaExposure, on_delete=models.CASCADE)
+  exposure = models.ForeignKey(TableMetaExposure, on_delete=models.CASCADE, null=True, blank=True)
   threshold = models.ForeignKey(TableMetaThreshold, on_delete=models.CASCADE, null=True, blank=True)
   return_period = models.ForeignKey(
     TableMetaReturnPeriod, on_delete=models.CASCADE, null=True, blank=True

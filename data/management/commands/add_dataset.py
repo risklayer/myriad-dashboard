@@ -198,6 +198,10 @@ class Command(BaseCommand):
             if "return_period" in column_metadata:
               return_period = meta_dict_return_period[column_metadata["return_period"]]
 
+            exposure = None
+            if "exposure" in column_metadata:
+              exposure = meta_dict_exposure[column_metadata["exposure"]]
+
             column, created = DataTableColumn.objects.get_or_create(
               data_table=metadata,
               key=column_key,
@@ -205,7 +209,7 @@ class Command(BaseCommand):
                 "label": column_key,
                 "description": column_metadata["description"],
                 "hazard": meta_dict_hazard[column_metadata["hazard"]],
-                "exposure": meta_dict_exposure[column_metadata["exposure"]],
+                "exposure": exposure,
                 "threshold": threshold,
                 "return_period": return_period,
               },
