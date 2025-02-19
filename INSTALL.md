@@ -6,7 +6,7 @@ Supported distribution: debian 12. Other Distributions should work as well, give
 * set timezone: `timedatectl set-timezone Europe/Berlin` (or other one, dependending where you are)
 * install required packages:
 * `apt install nginx uwsgi uwsgi-plugin-python3`
-* `apt install --no-install-recommends -y python3 python3-pip python3-venv python3-mysqldb`
+* `apt install --no-install-recommends -y python3 python3-pip python3-venv python3-mysqldb gdal-bin postgis`
 * `adduser myriad`
 * run as myriad user:
   ```bash
@@ -131,10 +131,13 @@ Supported distribution: debian 12. Other Distributions should work as well, give
 * copy `myriad/settings.py.template` to `/home/myriad/myriad-app/settings.py` and set everything up for "productive use"
 * install and set up postgres:
   ```bash
-  apt install postgresql
+  apt install postgresql postgresql-postgis
   sudo -u postgres bash
   createuser myriad
   createdb -O myriad myriad
+  psql # enter psotgres
+  \c myriad; # switch to newly created database
+  CREATE EXTENSION postgis; # make sure to load the extension
   ```
 * set up letsencrypt (start in `/root` directory, comment out https first for nginx):
   ```bash
