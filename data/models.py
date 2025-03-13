@@ -2,7 +2,7 @@ import json
 import math
 import numbers
 import re
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 from django.db import models
 from django.template.defaultfilters import slugify
@@ -568,6 +568,14 @@ class HrscEventCollection(models.Model, KeyLabelSelection):
 
   hazard = models.ForeignKey(Hazard, on_delete=models.CASCADE)
 
+  def to_dict(self):
+    return {
+      "id" : self.id,
+      "key" : self.key,
+      "label" : self.label,
+      "hazard": self.hazard.to_dict(),
+    }
+
 
 class HrscEvent(models.Model):
   collection = models.ForeignKey(HrscEventCollection, on_delete=models.CASCADE)
@@ -578,6 +586,7 @@ class HrscEvent(models.Model):
     ("none", "none"),
     ("tiff_embed", "TIFF File (embedded)"),
     ("tiff_ext", "TIFF File (external)"),
+    ("lazy_py_geojson", "On-the-fly calculation using python, produces geojson"),
   ]
 
   footprint = models.BinaryField(null=True, blank=True)
@@ -721,7 +730,7 @@ class HrscEvent(models.Model):
 
     return result
 
-  def to_dict(self, include_foorprint_blob=False):
+  def to_dict(self, include_footprint_blob=False):
     data = {
       "id": self.id,
       "collection_id": self.collection_id,
@@ -734,10 +743,11 @@ class HrscEvent(models.Model):
       "footprint_type": self.footprint_type,
     }
 
-    if include_foorprint_blob:
-      data["footprint"] = (
-        b64encode(self.footprint).decode(encoding="utf-8") if self.footprint else None
-      )
+    if include_footprint_blob:
+      footprint = self.get_footprint()
+      if isinstance(footprint, bytes):
+        footprint = b64encode(footprint).decode(encoding="utf-8")
+      data["footprint"] = footprint
 
     return data
 
@@ -746,12 +756,12 @@ class HrscEventMetadata(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True)
   label = models.TextField()
 
-  _blob_type_choices = [
+  _metadata_type_choices = [
     ("float", "float"),
     ("string", "string"),
   ]
 
-  type = models.TextField(choices=_blob_type_choices)
+  type = models.TextField(choices=_metadata_type_choices)
   enable_histogram = models.BooleanField()
 
 

@@ -2,6 +2,7 @@ from django.http import HttpRequest
 from django.views.decorators.cache import cache_page
 from ninja import Router
 from ninja.decorators import decorate_view
+from django.db.models import Q
 
 from typing import List
 
@@ -27,37 +28,45 @@ from django.contrib.gis.db.models.functions import Distance as DBDistance
 
 
 from data.schemas import (
-  HrscScenarioTypeScheme,
-  HrscEventScheme,
+  HrscScenarioTypeSchema,
+  HrscEventSchema,
+  HrscEventCollectionSchema,
 )
 
 
 router = Router(tags=["HRSC"])
 
 
-@router.get("/scenarios", tags=["HRSC"], response=List[HrscScenarioTypeScheme])
+@router.get("/scenarios", tags=["HRSC"], response=List[HrscScenarioTypeSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def scenarios(request: HttpRequest):
   """Returns a list of available Scenarios"""
   return [scenario.to_dict() for scenario in HrscScenarioType.objects.all()]
 
 
-@router.get("/event/{str:id}/detail", tags=["HRSC"], response=HrscEventScheme)
+@router.get("/collections", tags=["HRSC"], response=List[HrscEventCollectionSchema])
+@decorate_view(cache_page(CACHE_TIMEOUT))
+def collections(request: HttpRequest):
+  """Returns a list of available Collections"""
+  return [collection.to_dict() for collection in HrscEventCollection.objects.all()]
+
+
+@router.get("/event/{str:id}/detail", tags=["HRSC"], response=HrscEventSchema)
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def event_by_id(request: HttpRequest, id: int):
   """Returns the event details including footprint"""
-  return HrscEvent.objects.get(id=id).to_dict(include_foorprint_blob=True)
+  return HrscEvent.objects.get(id=id).to_dict(include_footprint_blob=True)
 
 
 # removed this endpoint, not efficient enough
-# @router.get("/events/{str:collection_key}", tags=["HRSC"], response=List[HrscEventScheme])
+# @router.get("/events/{str:collection_key}", tags=["HRSC"], response=List[HrscEventSchema])
 # @decorate_view(cache_page(CACHE_TIMEOUT))
 # def events_by_collection(request: HttpRequest, collection_key: str):
 #  """Returns a list of events inside this collection"""
 #  return [event.to_dict() for event in HrscEventCollection.objects.get(key=collection_key).hrscevent_set.all()]
 
 
-@router.get("/events/winterstorm/filter", tags=["HRSC"], response=List[HrscEventScheme])
+@router.get("/events/winterstorm/filter", tags=["HRSC"], response=List[HrscEventSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def events_by_collection_filter_ws(
   request: HttpRequest,
@@ -96,7 +105,7 @@ def events_by_collection_filter_ws(
   return [event.to_dict() for event in events]
 
 
-@router.get("/events/{str:collection_key}/filter", tags=["HRSC"], response=List[HrscEventScheme])
+@router.get("/events/{str:collection_key}/filter", tags=["HRSC"], response=List[HrscEventSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def events_by_collection_filter(
   request: HttpRequest,
@@ -106,61 +115,72 @@ def events_by_collection_filter(
   radius: float = 1000,
   limit: int = 100,
 ):
-  """Filter events by location, radius and parameters"""
+  """Filter events by location, radius and parameters"
+  We support passing of arbitrary metadata fields:
+
+  * "metadata_&lt;key&gt;": <key> is the metadata key that has to be equal,
+    a list can also be supplied which will be or'ed
+
+  * "metadata_&lt;key&gt;__max" or "__min": upper or lower boundary
+    (note: 2 underscores)
+  """
 
   events = HrscEvent.getByLocation(
     point=None,
     longitude=longitude,
     latitude=latitude,
     radius=radius,
-    limit=limit,
-    event_filter=HrscEventCollection.objects.get(key=collection_key).event_set.all(),
+    limit=None,
+    event_filter=HrscEventCollection.objects.get(key=collection_key).hrscevent_set.all(),
   )
 
   for key in request.GET.keys():
     if not key.startswith("metadata_"):
       continue
 
-    meta_list = list()
-    for value in request.GET.getlist(key):
-      metadata_key = key.replace("metadata_", "")
+    metadata_key = key.replace("metadata_", "")
 
-      if metadata_key.endswith("__max"):
-        metadata_key = metadata_key.replace("__max", "")
-        # we assume only one parameter is set here
+    if metadata_key.endswith("__max"):
+      metadata_key = metadata_key.replace("__max", "")
+      # we assume only one parameter is set here
 
-        metadata = HrscEventMetadata.objects.get(key=metadata_key)
+      metadata = HrscEventMetadata.objects.get(key=metadata_key)
 
-        if metadata.type == "float":
-          metadata_values = HrscEventMetadataValueFloat.objects.filter(
-            metadata=metadata, value__lte=value
-          )
-          events = events.filter(HrscEventMetadataValueFloat__in=metadata_values)
+      if metadata.type == "float":
+        metadata_values = HrscEventMetadataValueFloat.objects.filter(
+          metadata=metadata, value__lte=request.GET[key]
+        )
+        events = events.filter(hrsceventmetadatavaluefloat__in=metadata_values)
 
-      elif metadata_key.endswith("__min"):
-        metadata_key = metadata_key.replace("__min", "")
-        # we assume only one parameter is set here
+    elif metadata_key.endswith("__min"):
+      metadata_key = metadata_key.replace("__min", "")
+      # we assume only one parameter is set here
 
-        metadata = HrscEventMetadata.objects.get(key=metadata_key)
+      metadata = HrscEventMetadata.objects.get(key=metadata_key)
 
-        if metadata.type == "float":
-          metadata_values = HrscEventMetadataValueFloat.objects.filter(
-            metadata=metadata, value__gte=value
-          )
-          events = events.filter(HrscEventMetadataValueFloat__in=metadata_values)
-      else:
-        meta_list.append(HrscEventMetadata.objects.get(key=metadata_key))
+      if metadata.type == "float":
+        metadata_values = HrscEventMetadataValueFloat.objects.filter(
+          metadata=metadata, value__gte=request.GET[key]
+        )
+        events = events.filter(hrsceventmetadatavaluefloat__in=metadata_values)
+    else:
+      metadata = HrscEventMetadata.objects.get(key=metadata_key)
 
-    if len(meta_list) > 0:
-      for metadata in meta_list:
+      meta_or = Q(id__in=[])
+      for value in request.GET.getlist(key):
         if metadata.type == "float":
           metadata_values = HrscEventMetadataValueFloat.objects.filter(metadata=metadata, value=value)
-          events = events.filter(HrscEventMetadataValueFloat__in=metadata_values)
+          meta_or |= Q(hrsceventmetadatavaluefloat__in=metadata_values)
         elif metadata.type == "string":
           metadata_values = HrscEventMetadataValueString.objects.filter(
             metadata=metadata, value=value
           )
-          events = events.filter(HrscEventMetadataValueString__in=metadata_values)
+          meta_or |= Q(hrsceventmetadatavaluestring__in=metadata_values)
+        else:
+          raise Exception("unknown metadata type: " + metadata.type)
+
+      events = events.filter(meta_or)
+
+  events = events[:limit]
 
   return [event.to_dict() for event in events]
-

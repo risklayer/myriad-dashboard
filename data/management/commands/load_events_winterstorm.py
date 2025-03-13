@@ -19,7 +19,7 @@ from django.contrib.gis.geos import Point
 
 
 class Command(BaseCommand):
-  help = "Add a data set"
+  help = "Add a winterstorm data set"
 
   def add_arguments(self, parser):
     parser.add_argument(
