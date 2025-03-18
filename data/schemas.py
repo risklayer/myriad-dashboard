@@ -12,7 +12,7 @@ from data.models import (
   Hazard,
   TableMetaReturnPeriod,
   TableMetaThreshold,
-  HrscScenarioType,
+  HrscScenario,
   HrscEvent,
   HrscEventCollection,
 )
@@ -191,14 +191,15 @@ class AreaValuesSchema(Schema):
   country_id: str
 
 
-class HrscScenarioTypeSchema(ModelSchema):
-  curve: str
-  event_type: str
+class HrscScenarioSchema(ModelSchema):
+  hazard: str
+  event_collection: str
   exposure_list: str
+  mapping: Dict[str, str]
 
   class Meta:
-    model = HrscScenarioType
-    fields = ["key", "label", "description", "curve", "event_type", "exposure_list"]
+    model = HrscScenario
+    fields = ["key", "label", "description", "hazard", "event_collection"]
 
 
 class HrscEventSchema(ModelSchema):

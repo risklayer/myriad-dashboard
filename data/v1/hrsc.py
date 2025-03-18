@@ -12,7 +12,7 @@ from data.api_shared import (
   CACHE_TIMEOUT,
 )
 from data.models import (
-  HrscScenarioType,
+  HrscScenario,
   HrscEventCollection,
   HrscEvent,
   HrscValueCoordinateWinterstorm,
@@ -28,7 +28,7 @@ from django.contrib.gis.db.models.functions import Distance as DBDistance
 
 
 from data.schemas import (
-  HrscScenarioTypeSchema,
+  HrscScenarioSchema,
   HrscEventSchema,
   HrscEventCollectionSchema,
 )
@@ -37,11 +37,11 @@ from data.schemas import (
 router = Router(tags=["HRSC"])
 
 
-@router.get("/scenarios", tags=["HRSC"], response=List[HrscScenarioTypeSchema])
+@router.get("/scenarios", tags=["HRSC"], response=List[HrscScenarioSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def scenarios(request: HttpRequest):
   """Returns a list of available Scenarios"""
-  return [scenario.to_dict() for scenario in HrscScenarioType.objects.all()]
+  return [scenario.to_dict() for scenario in HrscScenario.objects.all()]
 
 
 @router.get("/collections", tags=["HRSC"], response=List[HrscEventCollectionSchema])

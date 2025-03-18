@@ -788,21 +788,29 @@ class HrscValueCoordinateWinterstorm(models.Model):
   value = models.SmallIntegerField(db_index=True)
 
 
-class HrscScenarioType(models.Model, KeyLabelSelection):
+class HrscScenario(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True)
   label = models.TextField()
   description = models.TextField()
 
-  curve = models.ForeignKey(VulnerabilityCurve, on_delete=models.CASCADE)
-  event_type = models.ManyToManyField(HrscEventCollection)
-  exposure_list = models.ManyToManyField(DataTableColumn)
+  hazard = models.ForeignKey(Hazard, on_delete=models.CASCADE)
+  event_collection = models.ForeignKey(HrscEventCollection, on_delete=models.CASCADE)
 
   def to_dict(self) -> dict:
     return {
       "key": self.key,
       "label": self.label,
       "description": self.description,
-      "curve": self.curve.key,
-      "event_type": self.event_type.key,
-      "exposure_list": self.exposure_list.key,
+      "hazard": self.hazard.key,
+      "event_collection": self.event_collection.key,
+      "mapping": {
+        m.exposure : m.vulnerability.key
+        for m in HrscScenarioExposureVulnerabilityMapping.objects.filter(scenario = self)
+      },
     }
+
+
+class HrscScenarioExposureVulnerabilityMapping(models.Model, KeyLabelSelection):
+  scenario = models.ForeignKey(HrscScenario, on_delete=models.CASCADE)
+  exposure = models.TextField() # models.ForeignKey(RegionDataExposure) <-- needs to be created
+  vulnerability = models.ForeignKey(VulnerabilityCurve, on_delete=models.CASCADE)
