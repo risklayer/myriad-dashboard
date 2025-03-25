@@ -169,7 +169,9 @@ def events_by_collection_filter(
       meta_or = Q(id__in=[])
       for value in request.GET.getlist(key):
         if metadata.type == "float":
-          metadata_values = HrscEventMetadataValueFloat.objects.filter(metadata=metadata, value=value)
+          metadata_values = HrscEventMetadataValueFloat.objects.filter(
+            metadata=metadata, value=value
+          )
           meta_or |= Q(hrsceventmetadatavaluefloat__in=metadata_values)
         elif metadata.type == "string":
           metadata_values = HrscEventMetadataValueString.objects.filter(

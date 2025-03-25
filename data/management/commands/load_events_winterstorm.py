@@ -17,6 +17,8 @@ import zipfile
 import csv
 from django.contrib.gis.geos import Point
 
+from django.db import transaction
+
 
 class Command(BaseCommand):
   help = "Add a winterstorm data set"
@@ -41,9 +43,7 @@ class Command(BaseCommand):
       help="If the file to load is inside an archive, then spcify the archive path with this argument and --filename as the path of the file inside the archive",
     )
 
-  def handle(
-    self, *args, filename: str, zip_filename: str, sparse: bool, **options
-  ):
+  def handle(self, *args, filename: str, zip_filename: str, sparse: bool, **options):
     hazard = Hazard.get_or_create_by_label("winterstorm", "Winter storm")
 
     collection = HrscEventCollection.get_or_create_by_label(
@@ -106,11 +106,12 @@ class Command(BaseCommand):
         print("  ... done")
 
         print("creating coordinates")
-        for row in reader:
-          longitude = float(row.pop("Longitude"))
-          latitude = float(row.pop("Latitude"))
-          location = GridLocation.objects.get_or_create(location=Point(longitude, latitude))
-          location_dict[(longitude, latitude)] = location
+        with transaction.atomic():
+          for row in reader:
+            longitude = float(row.pop("Longitude"))
+            latitude = float(row.pop("Latitude"))
+            location, _ = GridLocation.objects.get_or_create(location=Point(longitude, latitude))
+            location_dict[(longitude, latitude)] = location
 
         print("  ... done")
 

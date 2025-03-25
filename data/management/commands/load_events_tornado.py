@@ -33,23 +33,37 @@ class Command(BaseCommand):
       help="If the file to load is inside an archive, then spcify the archive path with this argument and --filename as the path of the file inside the archive",
     )
 
-  def handle(
-    self, *args, filename: str, zip_filename: str, **options
-  ):  # , skip_existing: bool
+  def handle(self, *args, filename: str, zip_filename: str, **options):  # , skip_existing: bool
     hazard = Hazard.get_or_create_by_label("tornado", "Tornados")
 
     collection = HrscEventCollection.get_or_create_by_label(
       slug_key="tornado", label="Collection of Tornados", hazard=hazard
     )
 
-    HrscEventMetadata.get_or_create_by_label("start_latitude", "start_latitude", type="float", enable_histogram=False)
-    HrscEventMetadata.get_or_create_by_label("start_longitude", "start_longitude", type="float", enable_histogram=False)
-    HrscEventMetadata.get_or_create_by_label("end_latitude", "end_latitude", type="float", enable_histogram=False)
-    HrscEventMetadata.get_or_create_by_label("end_longitude", "end_longitude", type="float", enable_histogram=False)
-    HrscEventMetadata.get_or_create_by_label("path_length", "path_length", type="float", enable_histogram=True)
-    HrscEventMetadata.get_or_create_by_label("path_width", "path_width", type="float", enable_histogram=True)
-    HrscEventMetadata.get_or_create_by_label("tornado_intensity", "tornado_intensity", type="float", enable_histogram=True)
-    HrscEventMetadata.get_or_create_by_label("wind_speed", "wind_speed", type="float", enable_histogram=True)
+    HrscEventMetadata.get_or_create_by_label(
+      "start_latitude", "start_latitude", type="float", enable_histogram=False
+    )
+    HrscEventMetadata.get_or_create_by_label(
+      "start_longitude", "start_longitude", type="float", enable_histogram=False
+    )
+    HrscEventMetadata.get_or_create_by_label(
+      "end_latitude", "end_latitude", type="float", enable_histogram=False
+    )
+    HrscEventMetadata.get_or_create_by_label(
+      "end_longitude", "end_longitude", type="float", enable_histogram=False
+    )
+    HrscEventMetadata.get_or_create_by_label(
+      "path_length", "path_length", type="float", enable_histogram=True
+    )
+    HrscEventMetadata.get_or_create_by_label(
+      "path_width", "path_width", type="float", enable_histogram=True
+    )
+    HrscEventMetadata.get_or_create_by_label(
+      "tornado_intensity", "tornado_intensity", type="float", enable_histogram=True
+    )
+    HrscEventMetadata.get_or_create_by_label(
+      "wind_speed", "wind_speed", type="float", enable_histogram=True
+    )
 
     with TemporaryDirectory() as tmpDir:
       file_path_to_load = filename
@@ -73,8 +87,8 @@ class Command(BaseCommand):
         events_to_create = list()
         event_metadata_to_create = list()
         for row in reader:
-          longitude = 0.5*(float(row.get("start_longitude"))+float(row.get("end_longitude")))
-          latitude = 0.5*(float(row.get("start_latitude"))+float(row.get("end_latitude")))
+          longitude = 0.5 * (float(row.get("start_longitude")) + float(row.get("end_longitude")))
+          latitude = 0.5 * (float(row.get("start_latitude")) + float(row.get("end_latitude")))
 
           event, metadata_values = HrscEvent.create_with_attributes(
             commit=False,

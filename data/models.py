@@ -570,9 +570,9 @@ class HrscEventCollection(models.Model, KeyLabelSelection):
 
   def to_dict(self):
     return {
-      "id" : self.id,
-      "key" : self.key,
-      "label" : self.label,
+      "id": self.id,
+      "key": self.key,
+      "label": self.label,
       "hazard": self.hazard.to_dict(),
     }
 
@@ -592,14 +592,20 @@ class HrscEvent(models.Model):
   footprint = models.BinaryField(null=True, blank=True)
   footprint_type = models.TextField(choices=_blob_type_choices)
 
-  def get_metadata_attribute(self, key : str) -> Union[float, int, str]:
-    metadata = HrscEventMetadata.objects.filter(key=key, ).first()
+  def get_metadata_attribute(self, key: str) -> Union[float, int, str]:
+    metadata = HrscEventMetadata.objects.filter(
+      key=key,
+    ).first()
     if metadata:
       metadatavalue = None
       if metadata.type == "float":
-        metadatavalue = HrscEventMetadataValueFloat.objects.filter(metadata = metadata, event = self).first()
+        metadatavalue = HrscEventMetadataValueFloat.objects.filter(
+          metadata=metadata, event=self
+        ).first()
       elif metadata.type == "string":
-        metadatavalue = HrscEventMetadataValueString.objects.filter(metadata = metadata, event = self).first()
+        metadatavalue = HrscEventMetadataValueString.objects.filter(
+          metadata=metadata, event=self
+        ).first()
 
       if metadatavalue:
         return metadatavalue.value
@@ -608,9 +614,9 @@ class HrscEvent(models.Model):
 
   def get_metadata_all(self) -> Dict[str, Union[float, int, str]]:
     data = dict()
-    for metadatavalue in HrscEventMetadataValueFloat.objects.filter(event = self):
+    for metadatavalue in HrscEventMetadataValueFloat.objects.filter(event=self):
       data[metadatavalue.metadata.key] = metadatavalue.value
-    for metadatavalue in HrscEventMetadataValueString.objects.filter(event = self):
+    for metadatavalue in HrscEventMetadataValueString.objects.filter(event=self):
       data[metadatavalue.metadata.key] = metadatavalue.value
 
     return data
@@ -628,20 +634,24 @@ class HrscEvent(models.Model):
         azimuth = calculate_azimuth((start_lon, start_lat), (end_lon, end_lat))
         angle1 = (azimuth + 90) % 360
         angle2 = (azimuth - 90) % 360
-        point1 = geopy.distance.distance(kilometers=path_width / 2).destination((start_lat, start_lon), angle1)
+        point1 = geopy.distance.distance(kilometers=path_width / 2).destination(
+          (start_lat, start_lon), angle1
+        )
         point1 = (point1.latitude, point1.longitude)
-        point2 = geopy.distance.distance(kilometers=path_width / 2).destination((start_lat, start_lon), angle2)
+        point2 = geopy.distance.distance(kilometers=path_width / 2).destination(
+          (start_lat, start_lon), angle2
+        )
         point2 = (point2.latitude, point2.longitude)
-        point3 = geopy.distance.distance(kilometers=path_width / 2).destination((end_lat, end_lon), angle2)
+        point3 = geopy.distance.distance(kilometers=path_width / 2).destination(
+          (end_lat, end_lon), angle2
+        )
         point3 = (point3.latitude, point3.longitude)
-        point4 = geopy.distance.distance(kilometers=path_width / 2).destination((end_lat, end_lon), angle1)
+        point4 = geopy.distance.distance(kilometers=path_width / 2).destination(
+          (end_lat, end_lon), angle1
+        )
         point4 = (point4.latitude, point4.longitude)
         polygon = Polygon([point1, point2, point3, point4, point1])
-        return {
-          'type': 'Feature',
-          'properties': all_metadata,
-          'geometry': mapping(polygon)
-        }
+        return {"type": "Feature", "properties": all_metadata, "geometry": mapping(polygon)}
 
       else:
         raise Exception("cannot generate footprint for " + self.collection.key)
@@ -651,21 +661,21 @@ class HrscEvent(models.Model):
   @classmethod
   def create_with_attributes(
     cls,
-    commit : bool,
-    collection : HrscEventCollection,
-    location_lon : float,
-    location_lat : float,
-    footprint_type : str,
-    footprint : Optional[bytes] = None,
-    metadata : Dict[str, str] = dict(),
-    metadata_reference_dict : Optional[Dict[str, "HrscEventMetadata"]] = None,
+    commit: bool,
+    collection: HrscEventCollection,
+    location_lon: float,
+    location_lat: float,
+    footprint_type: str,
+    footprint: Optional[bytes] = None,
+    metadata: Dict[str, str] = dict(),
+    metadata_reference_dict: Optional[Dict[str, "HrscEventMetadata"]] = None,
   ):
     location = Point(location_lon, location_lat, srid=settings.DEFAULT_SRID)
     instance = cls(
-      collection = collection,
-      location = location,
-      footprint_type = footprint_type,
-      footprint = footprint,
+      collection=collection,
+      location=location,
+      footprint_type=footprint_type,
+      footprint=footprint,
     )
 
     if commit:
@@ -679,7 +689,7 @@ class HrscEvent(models.Model):
         metadata = metadata_reference_dict.get(key, None)
 
       if metadata is None:
-        metadata = HrscEventMetadata.objects.get(key = key)
+        metadata = HrscEventMetadata.objects.get(key=key)
 
         if metadata_reference_dict is not None:
           metadata_reference_dict[key] = metadata
@@ -687,15 +697,15 @@ class HrscEvent(models.Model):
       metadata_value = None
       if metadata.type == "float":
         metadata_value = HrscEventMetadataValueFloat(
-          metadata = metadata,
-          event = instance,
-          value = float(value),
+          metadata=metadata,
+          event=instance,
+          value=float(value),
         )
       elif metadata.type == "string":
         metadata_value = HrscEventMetadataValueString(
-          metadata = metadata,
-          event = instance,
-          value = value,
+          metadata=metadata,
+          event=instance,
+          value=value,
         )
       else:
         raise Exception("unknown metadata type")
@@ -705,7 +715,6 @@ class HrscEvent(models.Model):
       metadata_list.append(metadata_value)
 
     return instance, metadata_list
-
 
   @classmethod
   def getByLocation(
@@ -778,7 +787,9 @@ class HrscEventMetadataValueString(models.Model):
 
 
 class GridLocation(models.Model):
-  location = gismodels.PointField(srid=settings.DEFAULT_SRID, geography=True, blank=True, null=True, unique=True)
+  location = gismodels.PointField(
+    srid=settings.DEFAULT_SRID, geography=True, blank=True, null=True, unique=True
+  )
 
 
 class HrscValueCoordinateWinterstorm(models.Model):
@@ -804,13 +815,13 @@ class HrscScenario(models.Model, KeyLabelSelection):
       "hazard": self.hazard.key,
       "event_collection": self.event_collection.key,
       "mapping": {
-        m.exposure : m.vulnerability.key
-        for m in HrscScenarioExposureVulnerabilityMapping.objects.filter(scenario = self)
+        m.exposure: m.vulnerability.key
+        for m in HrscScenarioExposureVulnerabilityMapping.objects.filter(scenario=self)
       },
     }
 
 
 class HrscScenarioExposureVulnerabilityMapping(models.Model, KeyLabelSelection):
   scenario = models.ForeignKey(HrscScenario, on_delete=models.CASCADE)
-  exposure = models.TextField() # models.ForeignKey(RegionDataExposure) <-- needs to be created
+  exposure = models.TextField()  # models.ForeignKey(RegionDataExposure) <-- needs to be created
   vulnerability = models.ForeignKey(VulnerabilityCurve, on_delete=models.CASCADE)
