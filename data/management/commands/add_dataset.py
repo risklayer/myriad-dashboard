@@ -10,6 +10,9 @@ from data.models import (
   TableMetaThreshold,
   TableMetaReturnPeriod,
   TableHazardUnit,
+  DataTableColumnMetadata,
+  DataTableColumnMetadataValueString,
+  DataTableColumnMetadataValueFloat,
 )
 from django.core.management.base import BaseCommand
 from data.data_region.country_list import (
@@ -80,6 +83,27 @@ class Command(BaseCommand):
     ensureTableMetaParameterCreation(
       TableMetaReturnPeriod, table_metadata["parameters"]["return_period"], meta_dict_return_period
     )
+
+    column_metadata_dict = dict()
+    if "additonal_metadata" in table_metadata["parameters"]:
+      for key, metadata_info in table_metadata["parameters"]["additonal_metadata"].items():
+        metadata_type = "float"
+        for value_key, value_value in table_metadata["parameters"]["additonal_metadata"][key][
+          "values"
+        ].items():
+          if not value_value.lstrip("-").replace(".", "").isdigit():
+            metadata_type = "string"
+            break
+
+        meta = DataTableColumnMetadata.get_or_create_by_label(
+          key=key,
+          label=metadata_info["label"],
+          unit=metadata_info.get("unit", None),
+          type=metadata_type,
+          enable_histogram=(metadata_type == "float"),
+        )
+
+        column_metadata_dict[key] = meta
 
     regexp_str = "^[a-zA-Z_\-][0-9a-zA-Z_\-]*$"
     table_name_check = re.compile(regexp_str)
@@ -227,6 +251,21 @@ class Command(BaseCommand):
             if not created:
               print("removing column " + str(column))
               DataTableColumnValue.objects.filter(data_table_column=column).delete()
+
+            for metadata_key in column_metadata_dict.keys() & column_metadata.keys():
+              metadata_inst = column_metadata_dict[metadata_key]
+              if metadata_inst.type == "string":
+                DataTableColumnMetadataValueString.objects.get_or_create(
+                  metadata=metadata_inst,
+                  column=column,
+                  defaults={"value": column_metadata[metadata_key]},
+                )
+              elif metadata_inst.type == "float":
+                DataTableColumnMetadataValueFloat.objects.get_or_create(
+                  metadata=metadata_inst,
+                  column=column,
+                  defaults={"value": column_metadata[metadata_key]},
+                )
 
             if skip_existing and not created:
               print("skipping " + column_key + " (already existing)")

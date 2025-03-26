@@ -377,6 +377,32 @@ class DataTableColumnValue(models.Model):
     unique_together = ("data_table_column", "nuts_area")
 
 
+class DataTableColumnMetadata(models.Model, KeyLabelSelection):
+  key = models.TextField(unique=True)
+  label = models.TextField()
+
+  _metadata_type_choices = [
+    ("float", "float"),
+    ("string", "string"),
+  ]
+
+  unit = models.TextField(null=True, blank=True, default=None)
+  type = models.TextField(choices=_metadata_type_choices)
+  enable_histogram = models.BooleanField()
+
+
+class DataTableColumnMetadataValueFloat(models.Model):
+  metadata = models.ForeignKey(DataTableColumnMetadata, on_delete=models.CASCADE)
+  column = models.ForeignKey(DataTableColumn, on_delete=models.CASCADE)
+  value = models.FloatField()
+
+
+class DataTableColumnMetadataValueString(models.Model):
+  metadata = models.ForeignKey(DataTableColumnMetadata, on_delete=models.CASCADE)
+  column = models.ForeignKey(DataTableColumn, on_delete=models.CASCADE)
+  value = models.TextField()
+
+
 ## Curve Data Models
 
 
