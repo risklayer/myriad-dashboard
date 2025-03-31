@@ -12,7 +12,7 @@ from data.models import (
   HrscEventCollection,
   HrscScenario,
   KeyLabelSelection,
-  Nuts2Area,
+  Nuts3Area,
   TableMetaExposure,
   TableMetaReturnPeriod,
   TableMetaThreshold,
@@ -170,11 +170,11 @@ class CountrySchema(ModelSchema):
     fields = ["country_code", "label"]
 
 
-class Nuts2AreaSchema(ModelSchema):
+class Nuts3AreaSchema(ModelSchema):
   country: CountrySchema
 
   class Meta:
-    model = Nuts2Area
+    model = Nuts3Area
     fields = [
       "key",
       "label",

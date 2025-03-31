@@ -278,7 +278,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Nuts2Area',
+            name='Nuts3Area',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('key', models.TextField(unique=True)),
@@ -352,7 +352,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('value', models.FloatField()),
                 ('data_table_column', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data.datatablecolumn')),
-                ('nuts_area', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data.nuts2area')),
+                ('nuts_area', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data.nuts3area')),
             ],
             options={
                 'unique_together': {('data_table_column', 'nuts_area')},

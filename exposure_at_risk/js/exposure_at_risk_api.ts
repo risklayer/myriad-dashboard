@@ -8,7 +8,7 @@ import {
   FeatureCollectionUnionShapeFeatureShapeFeatureArbitraryProperties,
   ShapeFeature,
   type CountriesEnum,
-  type Nuts2AreaSchema,
+  type Nuts3AreaSchema,
   type paths,
 } from "../../data/types/api";
 
@@ -49,7 +49,7 @@ export const getAreasMap = memoize(
   async function getAreasMap(
     countries: CountriesEnum | CountriesEnum[],
     bbox?: string
-  ): Promise<Record<string, Nuts2AreaSchema> | null> {
+  ): Promise<Record<string, Nuts3AreaSchema> | null> {
     if (Array.isArray(countries)) {
       return (
         await Promise.all(countries.map((country) => getAreasMap(country)))
@@ -137,7 +137,7 @@ export async function downloadGeoJSON({
       query: {
         countries: [countries!].flat().filter(Boolean),
         columns: [columns!].flat().filter(Boolean),
-        nuts2areas: [areas!].flat().filter(Boolean),
+        nuts3areas: [areas!].flat().filter(Boolean),
       },
     },
   });

@@ -78,7 +78,7 @@ class ExposureAtRiskRegionsForm(Form):
     selected_countries = set(self.data.getlist("countries"))
     selected_areas = set(self.data.getlist("areas"))
     all_selected = "ALL" in selected_countries
-    # regions = Nuts2Area.objects.all().order_by("label")
+    # regions = Nuts3Area.objects.all().order_by("label")
     countries_tree = []
     for country in countries:
       areas = country.areas.all().order_by("label")

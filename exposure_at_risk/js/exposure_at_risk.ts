@@ -21,7 +21,7 @@ import { LayersControlEvent } from "leaflet";
 import { template, uniq, without } from "lodash";
 import {
   DataTableColumnSchema,
-  Nuts2AreaSchema,
+  Nuts3AreaSchema,
   ShapeFeature,
   type CountriesEnum,
 } from "../../data/types/api";
@@ -273,7 +273,7 @@ async function updateMapAndTable() {
 function createShapeLayer(
   geojson: Feature[],
   colors: chroma.Scale<chroma.Color>,
-  areaDefinitions: Record<string, Nuts2AreaSchema>,
+  areaDefinitions: Record<string, Nuts3AreaSchema>,
   columnsMap: Record<string, DataTableColumnSchema>,
   columns: string[]
 ) {
@@ -339,7 +339,7 @@ function buildMapAndTableData({
 }: {
   shapes: ShapeFeature[];
   areas: string[];
-  areaDefinitions: Record<string, Nuts2AreaSchema>;
+  areaDefinitions: Record<string, Nuts3AreaSchema>;
   countries: CountriesEnum[];
   tableColumns: string[];
   mapColumns: string[];
@@ -406,7 +406,7 @@ function buildMapAndTableData({
 
     if (tableColumns.length && areaDefinitions[code]) {
       const datum = {
-        region: areaDefinitions[code] as Nuts2AreaSchema,
+        region: areaDefinitions[code] as Nuts3AreaSchema,
       } as TableDatum;
       const region_values: Record<string, number> = {};
       let geo: Feature;

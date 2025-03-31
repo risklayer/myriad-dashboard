@@ -1,5 +1,5 @@
-import { Nuts2AreaSchema } from "../../data/types/api";
+import { Nuts3AreaSchema } from "../../data/types/api";
 
 export type TableDatum = {
-  region: Nuts2AreaSchema;
+  region: Nuts3AreaSchema;
 } & { [code: string]: number };

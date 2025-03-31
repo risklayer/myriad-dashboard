@@ -4,7 +4,7 @@ from data.models import (
   DataTableColumn,
   DataTableColumnValue,
   DataTableMetadata,
-  Nuts2Area,
+  Nuts3Area,
   Hazard,
   TableMetaExposure,
   TableMetaThreshold,
@@ -183,7 +183,7 @@ class Command(BaseCommand):
               if code_2alpha in country_dict:
                 country_label = country_dict[code_2alpha]["name_short"]
 
-              geometry_shapes[nuts_id] = Nuts2Area.ensure_creation(
+              geometry_shapes[nuts_id] = Nuts3Area.ensure_creation(
                 nuts_id,
                 code_2alpha,
                 label,

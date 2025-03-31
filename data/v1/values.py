@@ -8,7 +8,7 @@ from data.api_shared import (
   CACHE_TIMEOUT,
   CountriesEnum,
 )
-from data.models import DataTableColumn, DataTableColumnValue, Nuts2Area
+from data.models import DataTableColumn, DataTableColumnValue, Nuts3Area
 from data.schemas import AreaValuesSchema
 
 router = Router(tags=["Values"])
@@ -30,14 +30,14 @@ def values(
   if len(columns) > 0:
     data_columns = data_columns.filter(key__in=columns)
 
-  nuts2area_filter = Nuts2Area.objects.all()
+  nuts3area_filter = Nuts3Area.objects.all()
 
   if len(countries) > 0 and "ALL" not in countries:
-    nuts2area_filter = nuts2area_filter.filter(country__country_code__in=countries)
+    nuts3area_filter = nuts3area_filter.filter(country__country_code__in=countries)
 
   if bbox and len(bbox):
     bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = bbox.split(",")
-    nuts2area_filter = nuts2area_filter.filter(
+    nuts3area_filter = nuts3area_filter.filter(
       bbox_min_x__lt=bbox_max_x,
       bbox_min_y__lt=bbox_max_y,
       bbox_max_x__gt=bbox_min_x,
@@ -48,7 +48,7 @@ def values(
     result[column.key] = {}
 
   for value in DataTableColumnValue.objects.filter(
-    data_table_column__in=data_columns, nuts_area__in=nuts2area_filter
+    data_table_column__in=data_columns, nuts_area__in=nuts3area_filter
   ):
     result[column.key][value.nuts_area.key] = value.value
 
@@ -56,9 +56,9 @@ def values(
 
 
 @router.get("/area", response=AreaValuesSchema | Dict[str, float])
-def area(request: HttpRequest, nuts2_key: str, columns: List[str] = Query([])):
-  """Returns nuts2 area with all or selected values"""
-  area = Nuts2Area.objects.get(key=nuts2_key)
+def area(request: HttpRequest, nuts3_key: str, columns: List[str] = Query([])):
+  """Returns nuts3 area with all or selected values"""
+  area = Nuts3Area.objects.get(key=nuts3_key)
 
   column_filter = (
     DataTableColumn.objects.filter(key__in=columns)

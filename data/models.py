@@ -173,7 +173,7 @@ class Country(models.Model):
     return "[" + self.country_code + "] " + str(self.label)
 
 
-class Nuts2Area(models.Model):
+class Nuts3Area(models.Model):
   country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name="areas")
   key = models.TextField(unique=True)
   label = models.TextField()
@@ -209,9 +209,9 @@ class Nuts2Area(models.Model):
   @classmethod
   def ensure_creation(
     cls,
-    nuts2_key: str,
+    nuts3_key: str,
     country_code: str,
-    nuts2_label: str,
+    nuts3_label: str,
     country_label: str,
     bbox: Tuple[str],
     geom_json: dict,
@@ -220,10 +220,10 @@ class Nuts2Area(models.Model):
       country_code=country_code, defaults={"label": country_label}
     )
 
-    nuts2area, created_nuts = Nuts2Area.objects.get_or_create(
-      key=nuts2_key,
+    nuts3area, created_nuts = Nuts3Area.objects.get_or_create(
+      key=nuts3_key,
       defaults={
-        "label": nuts2_label,
+        "label": nuts3_label,
         "country": country,
         "bbox_min_x": bbox[0],
         "bbox_min_y": bbox[1],
@@ -237,9 +237,9 @@ class Nuts2Area(models.Model):
       print("created country " + str(country))
 
     if created_nuts:
-      print("created nuts2area " + str(nuts2area))
+      print("created nuts3area " + str(nuts3area))
 
-    return nuts2area
+    return nuts3area
 
 
 class KeyLabelSelection:
@@ -369,7 +369,7 @@ class DataTableColumn(models.Model):
 
 class DataTableColumnValue(models.Model):
   data_table_column = models.ForeignKey(DataTableColumn, on_delete=models.CASCADE)
-  nuts_area = models.ForeignKey(Nuts2Area, on_delete=models.CASCADE)
+  nuts_area = models.ForeignKey(Nuts3Area, on_delete=models.CASCADE)
 
   value = models.FloatField()
 

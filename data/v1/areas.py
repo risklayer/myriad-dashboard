@@ -13,26 +13,26 @@ from data.models import (
   Country,
   DataTableColumn,
   DataTableColumnValue,
-  Nuts2Area,
+  Nuts3Area,
 )
 from data.schemas import (
   CountrySchema,
   FeatureCollectionSchema,
-  Nuts2AreaSchema,
+  Nuts3AreaSchema,
 )
 
 router = Router(tags=["Areas"])
 
 
-@router.get("", response=List[Nuts2AreaSchema])
+@router.get("", response=List[Nuts3AreaSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def areas(request: HttpRequest, bbox: str = "", countries: List[CountriesEnum] = Query([])):
   """Returns an array of selected NUTS2 areas"""
-  nuts2areas = filter_nuts2_areas(bbox, countries)
-  return nuts2areas
+  nuts3areas = filter_nuts3_areas(bbox, countries)
+  return nuts3areas
 
 
-@router.get("/map", response=Dict[str, Nuts2AreaSchema])
+@router.get("/map", response=Dict[str, Nuts3AreaSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def map(
   request: HttpRequest,
@@ -40,9 +40,9 @@ def map(
   countries: List[CountriesEnum] = Query([]),
 ):
   """Returns a map of selected NUTS2 areas"""
-  nuts2areas = filter_nuts2_areas(bbox, countries)
+  nuts3areas = filter_nuts3_areas(bbox, countries)
 
-  return {c.key: c for c in nuts2areas}
+  return {c.key: c for c in nuts3areas}
 
 
 @router.get("/shapes", response=FeatureCollectionSchema)
@@ -52,37 +52,37 @@ def shapes(
   bbox: str = "",
   countries: List[CountriesEnum] = Query([]),
   columns: List[str] = Query([]),
-  nuts2areas: List[str] = Query([]),
+  nuts3areas: List[str] = Query([]),
 ):
   """Returns a list of all NUTS2 shapes in a GeoJSON FeatureCollection, including column values if specified.
-  If using bbox, countries and nuts2areas will be ignored. If not using bbox, all nuts2areas are returned filtered by
-  either country or nuts2areas, or both. Please note that nuts2areas and countries as filter are working together additively.
+  If using bbox, countries and nuts3areas will be ignored. If not using bbox, all nuts3areas are returned filtered by
+  either country or nuts3areas, or both. Please note that nuts3areas and countries as filter are working together additively.
   """
-  nuts2area_filter = Nuts2Area.objects.all()
+  nuts3area_filter = Nuts3Area.objects.all()
 
   if bbox:
     bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = bbox.split(",")
 
-    nuts2area_filter = Nuts2Area.objects.filter(
+    nuts3area_filter = Nuts3Area.objects.filter(
       bbox_min_x__lt=bbox_max_x,
       bbox_min_y__lt=bbox_max_y,
       bbox_max_x__gt=bbox_min_x,
       bbox_max_y__gt=bbox_min_y,
     )
-  elif (len(countries) > 0 or len(nuts2areas) > 0) and "ALL" not in countries:
-    nuts2area_filter = Nuts2Area.objects.none()
+  elif (len(countries) > 0 or len(nuts3areas) > 0) and "ALL" not in countries:
+    nuts3area_filter = Nuts3Area.objects.none()
     if len(countries) > 0:
-      nuts2area_filter |= Nuts2Area.objects.filter(country__country_code__in=countries)
+      nuts3area_filter |= Nuts3Area.objects.filter(country__country_code__in=countries)
 
-    if len(nuts2areas) > 0:
-      nuts2area_filter |= Nuts2Area.objects.filter(key__in=nuts2areas)
+    if len(nuts3areas) > 0:
+      nuts3area_filter |= Nuts3Area.objects.filter(key__in=nuts3areas)
 
   column_filter = list(DataTableColumn.objects.filter(key__in=columns)) if len(columns) else []
 
   value_dict = {}
 
   all_values = DataTableColumnValue.objects.filter(
-    data_table_column__in=column_filter, nuts_area__in=nuts2area_filter
+    data_table_column__in=column_filter, nuts_area__in=nuts3area_filter
   ).select_related("data_table_column", "nuts_area")
 
   for value in all_values:
@@ -104,7 +104,7 @@ def shapes(
         | value_dict.get(area.key, dict()),
         "geometry": area.geom_json,
       }
-      for area in nuts2area_filter
+      for area in nuts3area_filter
     ],
   }
 
@@ -116,11 +116,11 @@ def countries(request: HttpRequest):
   return Country.objects.all().order_by("label")
 
 
-def filter_nuts2_areas(bbox: str, countries: List[CountriesEnum]):
-  nuts2areas = Nuts2Area.objects.all()
+def filter_nuts3_areas(bbox: str, countries: List[CountriesEnum]):
+  nuts3areas = Nuts3Area.objects.all()
   if bbox:
     bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = bbox
-    nuts2areas = nuts2areas.filter(
+    nuts3areas = nuts3areas.filter(
       bbox_min_x__lt=bbox_max_x,
       bbox_min_y__lt=bbox_max_y,
       bbox_max_x__gt=bbox_min_x,
@@ -128,5 +128,5 @@ def filter_nuts2_areas(bbox: str, countries: List[CountriesEnum]):
     )
 
   if len(countries) > 0 and "ALL" not in countries:
-    nuts2areas = nuts2areas.filter(country__country_code__in=countries)
-  return nuts2areas
+    nuts3areas = nuts3areas.filter(country__country_code__in=countries)
+  return nuts3areas
