@@ -53,22 +53,30 @@ def shapes(
   bbox: str = "",
   countries: List[CountriesEnum] = Query([]),
   columns: List[str] = Query([]),
+  nuts2areas: List[str] = Query([]),
 ):
-  """Returns a list of all NUTS2 shapes in a GeoJSON FeatureCollection, including column values if specified"""
+  """Returns a list of all NUTS2 shapes in a GeoJSON FeatureCollection, including column values if specified.
+If using bbox, countries and nuts2areas will be ignored. If not using bbox, all nuts2areas are returned filtered by
+either country or nuts2areas, or both. Please note that nuts2areas and countries as filter are working together additively.
+  """
   nuts2area_filter = Nuts2Area.objects.all()
 
   if bbox:
     bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = bbox.split(",")
 
-    nuts2area_filter = nuts2area_filter.filter(
+    nuts2area_filter = Nuts2Area.objects.filter(
       bbox_min_x__lt=bbox_max_x,
       bbox_min_y__lt=bbox_max_y,
       bbox_max_x__gt=bbox_min_x,
       bbox_max_y__gt=bbox_min_y,
     )
+  elif len(countries) > 0 or len(nuts2areas) > 0:
+    nuts2area_filter = Nuts2Area.objects.none()
+    if len(countries) > 0:
+      nuts2area_filter |= Nuts2Area.objects.filter(country__country_code__in=countries)
 
-  if len(countries) > 0:
-    nuts2area_filter = nuts2area_filter.filter(country__country_code__in=countries)
+    if len(nuts2areas) > 0:
+      nuts2area_filter |= Nuts2Area.objects.filter(key__in=nuts2areas)
 
   column_filter = list(DataTableColumn.objects.filter(key__in=columns)) if len(columns) else []
 
