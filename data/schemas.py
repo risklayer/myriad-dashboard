@@ -72,6 +72,11 @@ class DataTableColumnSchema(ModelSchema):
     ]
 
 
+class DataTableColumnsWithFilterOptionsSchema(Schema):
+  columns: List[DataTableColumnSchema]
+  filter_options: Dict[str, List[Union[str, float]]]
+
+
 class DataTableColumnSummarySchema(ModelSchema):
   class Meta:
     model = DataTableColumn
@@ -80,6 +85,11 @@ class DataTableColumnSummarySchema(ModelSchema):
       "label",
       "description",
     ]
+
+
+class DataTableColumnSummaryWithFilterOptionsSchema(Schema):
+  columns: List[DataTableColumnSummarySchema]
+  filter_options: Dict[str, List[Union[str, float]]]
 
 
 # class DataTableColumnValueSchema(ModelSchema):
