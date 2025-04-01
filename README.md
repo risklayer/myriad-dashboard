@@ -1,6 +1,22 @@
-# MYRIAD Multi-Risk Toolkit
+# MYRIAD-EU Multi-Risk Toolkit
 
 ## Development
+
+Before starting development, you will need to install both python and nodejs.
+
+Then run:
+
+```sh
+./tools/provision.sh
+```
+
+### Building JavaScript files in development
+
+This will watch for any changes to js files that are compiled:
+
+```sh
+npm run start
+```
 
 ### Recommended VSCode settings
 

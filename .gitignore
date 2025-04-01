@@ -170,5 +170,11 @@ cython_debug/
 /.vscode/*
 !/.vscode/extensions.json
 /docker-volumes
+/build/*
+
 tsconfig.tsbuildinfo
 .rollup.cache
+
+data/schema.json
+data/types/api.ts
+imports.sh

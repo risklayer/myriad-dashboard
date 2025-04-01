@@ -1,9 +1,9 @@
-from typing import List
+from typing import Dict, List
 
 from django.db.models import Q
 from django.http import HttpRequest
 from django.views.decorators.cache import cache_page
-from ninja import Router
+from ninja import Query, Router
 from ninja.decorators import decorate_view
 
 from data.api_shared import (
@@ -24,7 +24,7 @@ from data.schemas import (
   DataTableColumnSchema,
   DataTableColumnSummarySchema,
   TableMetaExposureSchema,
-  TableMetaHazardSchema,
+  HazardSchema,
   TableMetaReturnPeriodSchema,
   TableMetaThresholdSchema,
 )
@@ -36,33 +36,51 @@ router = Router(tags=["Columns"])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def columns(
   request: HttpRequest,
-  hazard: HazardOptionsEnum = "drought_drr",
-  exposure: ExposureOptionsEnum = "agGDP",
-  threshold: ThresholdOptionsEnum = "avg",
+  hazard: HazardOptionsEnum = None,
+  exposure: ExposureOptionsEnum = None,
+  threshold: ThresholdOptionsEnum = None,
   return_period: ReturnPeriodOptionsEnum = None,
+  columns: List[str] = Query([]),
 ):
   """Returns a list of all data columns with their metadata"""
-  columns = filter_columns(hazard, exposure, threshold, return_period)
+  columns = filter_columns(hazard, exposure, threshold, return_period, columns)
 
   return columns
+
+
+@router.get("/map", response=Dict[str, DataTableColumnSchema])
+@decorate_view(cache_page(CACHE_TIMEOUT))
+def columns_map(
+  request: HttpRequest,
+  hazard: HazardOptionsEnum = None,
+  exposure: ExposureOptionsEnum = None,
+  threshold: ThresholdOptionsEnum = None,
+  return_period: ReturnPeriodOptionsEnum = None,
+  columns: List[str] = Query([]),
+):
+  """Returns a list of all data columns with their metadata"""
+  columns = filter_columns(hazard, exposure, threshold, return_period, columns)
+
+  return {c.key: c for c in columns}
 
 
 @router.get("/summaries", response=List[DataTableColumnSummarySchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def column_summaries(
   request: HttpRequest,
-  hazard: HazardOptionsEnum = "drought_drr",
-  exposure: ExposureOptionsEnum = "agGDP",
-  threshold: ThresholdOptionsEnum = "avg",
+  hazard: HazardOptionsEnum = None,
+  exposure: ExposureOptionsEnum = None,
+  threshold: ThresholdOptionsEnum = None,
   return_period: ReturnPeriodOptionsEnum = None,
+  columns: List[str] = Query([]),
 ):
   """Returns a list of all data columns keys, labels and descriptions"""
-  columns = filter_columns(hazard, exposure, threshold, return_period)
+  columns = filter_columns(hazard, exposure, threshold, return_period, columns)
 
   return columns
 
 
-@router.get("/hazards", response=List[TableMetaHazardSchema])
+@router.get("/hazards", response=List[HazardSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def hazards(request: HttpRequest):
   """Returns a list of all hazard types"""
@@ -90,37 +108,35 @@ def return_periods(request: HttpRequest):
   return TableMetaReturnPeriod.objects.all().order_by("label")
 
 
-def filter_columns(hazard: str, exposure: str, threshold: str, return_period: str):
-  hazard_filter = Hazard.objects.all()
+def filter_columns(
+  hazard: str, exposure: str, threshold: str, return_period: str, column_keys: List[str]
+):
+  columns = DataTableColumn.objects.all()
   if hazard:
-    hazard_filter = hazard_filter.filter(key=hazard)
+    hazard_filter = Hazard.objects.objects.filter(key=hazard)
+    columns = columns.filter(Q(hazard__in=hazard_filter) | Q(hazard=None))
 
-  exposure_filter = TableMetaExposure.objects.all()
   if exposure:
-    exposure_filter = exposure_filter.filter(key=exposure)
+    exposure_filter = TableMetaExposure.objects.filter(key=exposure)
+    columns = columns.filter(Q(exposure__in=exposure_filter) | Q(exposure=None))
 
-  threshold_filter = TableMetaThreshold.objects.all()
   if threshold:
-    threshold_filter = threshold_filter.filter(key=threshold)
+    threshold_filter = TableMetaThreshold.objects.filter(key=threshold)
+    columns = columns.filter(Q(threshold__in=threshold_filter) | Q(threshold=None))
 
-  return_period_filter = TableMetaReturnPeriod.objects.all()
   if return_period:
-    return_period_filter = return_period_filter.filter(key=return_period)
+    return_period_filter = TableMetaReturnPeriod.objects.filter(key=return_period)
+    columns = columns.filter(Q(return_period__in=return_period_filter) | Q(return_period=None))
 
-  columns = (
-    DataTableColumn.objects.filter(
-      (Q(hazard__in=hazard_filter) | Q(hazard=None))
-      & (Q(exposure__in=exposure_filter) | Q(exposure=None))
-      & (Q(threshold__in=threshold_filter) | Q(threshold=None))
-      & (Q(return_period__in=return_period_filter) | Q(return_period=None))
-    )
-    .select_related(
-      "return_period",
-      "hazard",
-      "exposure",
-      "threshold",
-    )
-    .order_by("key")
-  )
+  if len(column_keys):
+    column_keys_filter = set(column_keys)
+    columns = columns.filter(Q(key__in=column_keys_filter) | Q(key=None))
+
+  columns = columns.select_related(
+    "return_period",
+    "hazard",
+    "exposure",
+    "threshold",
+  ).order_by("key")
 
   return columns

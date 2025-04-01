@@ -1,0 +1,76 @@
+{% load crispy_forms_tags %}
+{% load filters %}
+
+<form id="filters-form"
+      class="filters-form h-100 mh-100 d-flex flex-column overflow-y-auto p-2"
+      hx-post="{% url 'exposure_at_risk:refine_form' %}"
+      hx-trigger="change from:(#id_hazard,#id_exposure,#id_threshold,#id_return_period)"
+      hx-swap="outerHTML">
+  <fieldset id="filters-fieldset" class="p-2" aria-labelledby="filters-summary">
+    <details open>
+      <summary id="filters-summary" class="h6 px-1 py-0 mb-2">
+        Filters
+        {% include "shared/icon.html" with type="filter" class="me-1" %}
+      </summary>
+      {% crispy filter_form %}
+    </details>
+  </fieldset>
+  {% comment %} TODO decrease cutoff once metadata filters are in place {% endcomment %}
+  <fieldset id="filtered-dataset-fieldset"
+            class="p-2 mt-3"
+            aria-labelledby="filtered-dataset-summary">
+    <details open>
+      <summary id="filtered-dataset-summary" class="h6 px-1 py-0 mb-2">
+        Filtered datasets
+        {% include "shared/icon.html" with type="bar-chart" class="me-1" %}
+      </summary>
+      {% if filter_form.fields.column.choices|length > 500 %}
+        <p>Please select more filters</p>
+      {% else %}
+        <div class="column-list-wrapper overflow-y-auto overflow-x-hidden">
+          <ul class="list-group">
+            {% for column_option, key in filter_form.fields.column.choices %}
+              {% with column_instance=column_option.instance %}
+                <li class="list-group-item d-flex gap-1 align-items-start">
+                  <div class="col-10">
+                    <div id="pin-name-list-title-{{ column_instance.key }}">
+                      <b class="pin-label pin-label-{{ column_instance.key }}">
+                        {{ pinned|pin_label:key }}
+                      </b>
+                    </div>
+                    {% comment %} TODO remove key once metadata filters are in place (so it should always be differntiable) {% endcomment %}
+                    <div>{{ column_instance.label|desnake }}</div>
+                    {% if column_instance.hazard and not filter_form.cleaned_data.hazard or filter_form.fields.column_instance.choices|length == 1 %}
+                      <div>{{ column_instance.hazard.label }}</div>
+                    {% endif %}
+                    {% if column_instance.exposure and not filter_form.cleaned_data.exposure or filter_form.fields.column_instance.choices|length == 1 %}
+                      <div class="small">{{ column_instance.exposure.label }}</div>
+                    {% endif %}
+                    {% if column_instance.return_period and not filter_form.cleaned_data.return_period or filter_form.fields.column_instance.choices|length == 1 %}
+                      <div class="small">{{ column_instance.return_period.label }}</div>
+                    {% endif %}
+                    {% if column_instance.threshold and not filter_form.cleaned_data.threshold or filter_form.fields.column.choices|length == 1 %}
+                      <div class="small">{{ column_instance.threshold.label }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="btn-group-vertical col-2">
+                    {% include "shared/pin_button.html" with pinned=pinned key=key pinned_keys=pinned_keys index="list" panel="list-"|add:key pin_type="exposure" compact=True confirm=True only %}
+                    {% include "exposure_at_risk/show_on_map_button.html" with key=key compact=True active=column|equals:key only %}
+                    {% include "shared/add_to_table_button.html" with key=key compact=True only %}
+                  </div>
+                </li>
+              {% endwith %}
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+      <input type="hidden"
+             id="column-select-hidden"
+             name="column"
+             onchange="formUpdate()"
+             value="{{ column }}" />
+    </details>
+  </fieldset>
+</form>
+{% comment %} Would normally use e.g. hx-on::after-request, but that doesn't work on the form {% endcomment %}
+<script id="update-filters-script"></script>

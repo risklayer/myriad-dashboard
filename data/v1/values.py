@@ -32,7 +32,7 @@ def values(
 
   nuts2area_filter = Nuts2Area.objects.all()
 
-  if len(countries) > 0:
+  if len(countries) > 0 and "ALL" not in countries:
     nuts2area_filter = nuts2area_filter.filter(country__country_code__in=countries)
 
   if bbox and len(bbox):

@@ -34,9 +34,11 @@ INSTALLED_APPS = [
   "django_browser_reload",
   "ninja",
   # local
+  "shared",
   "dashboard",
   "ui",
-  "curve_editor",
+  "curve_explorer",
+  "exposure_at_risk",
   "data",
 ]
 
@@ -122,8 +124,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 STATICFILES_DIRS = [
-  os.path.join(BASE_DIR, "shared"),
   os.path.join(BASE_DIR, "node_modules"),
+  os.path.join(BASE_DIR, "build"),
+  os.path.join(BASE_DIR, "shared/build"),
 ]
 
 # Default primary key field type

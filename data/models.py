@@ -174,7 +174,7 @@ class Country(models.Model):
 
 
 class Nuts2Area(models.Model):
-  country = models.ForeignKey(Country, on_delete=models.CASCADE)
+  country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name="areas")
   key = models.TextField(unique=True)
   label = models.TextField()
 
@@ -506,16 +506,18 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
     return mark_safe(json.dumps(self.to_dict(), indent=2).translate(_json_script_escapes))
 
   def get_details_map(self):
-    allowed_keys = filter(
-      lambda k: not (k.startswith("_") or k in hidden_fields),
-      [*self.__dict__.keys(), *self.metadata.keys()],
+    allowed_keys = list(
+      filter(
+        lambda k: not (k.startswith("_") or k in hidden_fields),
+        [*self.__dict__.keys(), *self.metadata.keys()],
+      )
     )
     details = {}
     for key in allowed_keys:
       # For relationships, show the object not the ID
       if key.endswith("_id"):
         key = re.sub(r"_id$", "", key)
-      val = getattr(self, key, None) or getattr(self.metadata, key, None)
+      val = getattr(self, key, self.metadata.get(key, None))
       if (
         val is not None
         and val != ""
@@ -524,7 +526,7 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
       ):
         # Don't display years as decimals
         if key == "Year_Study":
-          val = int(val)
+          val = int(val.replace(".0", ""))
         # Convert to readable metadata titles
         label = get_curve_field_label(key)
 

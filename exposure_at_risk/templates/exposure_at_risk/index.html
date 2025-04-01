@@ -1,0 +1,141 @@
+{% extends "layouts/base.html" %}
+
+{% load static %}
+{% load filters %}
+{% load crispy_forms_tags %}
+{% load show_column_details %}
+{% load show_exposure_form %}
+
+{% block title %}
+  Exposure at Risk Calculator - {{ block.super }}
+{% endblock title %}
+
+{% block head %}
+  {{ block.super }}
+  <link rel="stylesheet"
+        href="{% static 'datatables.net-bs5/css/dataTables.bootstrap5.min.css' %}" />
+  <link rel="stylesheet"
+        href="{% static 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'deck.gl/dist/stylesheet.css' %}" />
+  <link rel="stylesheet" href="{% static 'leaflet/dist/leaflet.css' %}" />
+  <link rel="stylesheet"
+        href="{% static '@gnatih/leaflet.legend/src/leaflet.legend.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/exposure_at_risk.css' %}" />
+{% endblock head %}
+
+{% block pagetitle %}
+  <div class="d-flex justify-content-between">
+    <h1>Exposure at Risk Calculator</h1>
+    <div class="float-end"></div>
+  </div>
+{% endblock pagetitle %}
+
+{% block main %}
+  <main id="main" class="main">
+    <div class="layout-grid">
+      <div class="left-side-bars">
+        <header class="left-side-bars-header p-2 d-flex justify-content-between">
+          <h1>Exposure at Risk</h1>
+          <div id="settings_button" class="dropdown d-inline-block">
+            <button class="btn btn-outline-secondary dropdown-toggle"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    data-bs-auto-close="outside"
+                    aria-expanded="false"
+                    title="Settings">
+              {% include "shared/icon.html" with type="gear" class="me-1" %}
+            </button>
+            <form id="settings-form" class="dropdown-menu dropdown-menu-end p-2 shadow">
+              {% crispy settings_form %}
+            </form>
+          </div>
+        </header>
+        {% show_exposure_form request=request pinned=pinned pinned_keys=pinned_keys %}
+        <div id="regions-form-wrapper"
+             class="regions-form-wrapper h-100 mh-100 d-flex flex-column overflow-y-auto p-2">
+          {% include "shared/pin.html" with actions_template="exposure_at_risk/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="exposure" list_title="Pinned datasets" add_to_table=True only %}
+          <form id="table-datasets-form"
+                class="table-datasets-form mt-2"
+                aria-labelledby="table-datasets-summary">
+            <details open>
+              <summary class="h6 px-1 py-0 mb-2" id="table-datasets-summary">
+                Table datasets
+                {% include "shared/icon.html" with type="table" class="me-1" %}
+              </summary>
+              <div class="table-datasets-wrapper overflow-auto mb-2">
+                <select multiple
+                        id="table-columns"
+                        name="table_columns"
+                        class="select-array-multiple d-none">
+                  {% for column_key in table_columns %}
+                    <option value="{{ column_key }}" selected>{{ column_key }}</option>
+                  {% endfor %}
+                </select>
+                <ul class="list-group mb-2">
+                  {% for column_key in table_columns %}
+                    {% include "exposure_at_risk/table_datasets_list_item.html" with key=column_key pin_label=pinned|pin_label:column_key only %}
+                  {% endfor %}
+                  {% include "exposure_at_risk/table_datasets_list_total_item.html" with key="max_overlap" pin_label="Maximum overlapping exposure" class="summary-column" only %}
+                  {% include "exposure_at_risk/table_datasets_list_total_item.html" with key="max_combined" pin_label="Maximum combined exposure" class="summary-column" only %}
+                </ul>
+              </div>
+            </details>
+          </form>
+          <form id="regions-form"
+                class="regions-form mt-2"
+                aria-labelledby="areas-summary">
+            <details open>
+              <summary class="h6 px-1 py-0 mb-2" id="areas-summary">
+                Regions
+                {% include "shared/icon.html" with type="diagram-3" class="me-1" %}
+              </summary>
+              <div class="areas-wrapper overflow-auto mb-2">
+                {% include "exposure_at_risk/select_tree.html" with elements=countries open=True only %}
+              </div>
+            </details>
+          </form>
+        </div>
+      </div>
+      <div class="map-wrapper">
+        <div id="map"></div>
+      </div>
+      <div id="table-wrapper" class="table-wrapper p-2 border-top">
+        <table id="values-table">
+        </table>
+      </div>
+      <div id="right-toolbar-wrapper"
+           class="right-toolbar-wrapper d-flex flex-column overflow-y-auto p-2">
+        <div class="p-2">
+          {% comment %} <hr class="m-0" /> {% endcomment %}
+          <div class="right-toolbar-contents">
+            <div id="area-details" class="area-details"></div>
+            <div id="column-details" class="column-details p-2">
+              {% if not column %}
+                <p>
+                  Please use filters to select datasets, and select one or more regions to display
+                </p>
+              {% endif %}
+              {% show_column_details key=column pinned=pinned pinned_keys=pinned_keys %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <template id="table-datasets-list-item-template">
+        {% include "exposure_at_risk/table_datasets_list_item.html" with key="COLUMNKEY" pin_label="" only %}
+      </template>
+    </main>
+  {% endblock main %}
+
+  {% block afterbody %}
+    {{ block.super }}
+    {% comment %}
+  [JSZip](https://stuk.github.io/jszip/) is needed for
+  [Excel export](https://datatables.net/reference/button/excelHtml5)
+    {% endcomment %}
+    <script src="{% static 'jszip/dist/jszip.min.js' %}"></script>
+    <script type="module"
+            id="exposure_at_risk_script"
+            src="{% static 'js/exposure_at_risk.js' %}"
+            data-latitude="{{ latitude }}"
+            data-longitude="{{ longitude }}"></script>
+  {% endblock afterbody %}

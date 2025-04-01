@@ -16,7 +16,7 @@
     </button>
     {% url "home" as home_url %}
     <span class="navbar-brand p-0">
-      <a href="{{ home_url }}">
+      <a xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}{{ home_url }}">
         <img src="{% static 'img/myriad-logo-white.svg' %}"
              alt="MYRIAD-EU: Reducing risks together"
              height="40"
@@ -42,12 +42,7 @@
                   data-bs-toggle="dropdown"
                   data-bs-display="static"
                   aria-label="Toggle theme (auto)">
-            <svg class="my-1 theme-icon-active"
-                 width="16"
-                 height="16"
-                 fill="currentColor">
-              <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#circle-half"></use>
-            </svg>
+            {% include "shared/icon.html" with type="circle-half" class="my-1 theme-icon-active" %}
             <span class="d-lg-none ms-2" id="bd-theme-text">Toggle theme</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end"
@@ -57,13 +52,9 @@
                       class="dropdown-item d-flex align-items-center"
                       data-bs-theme-value="light"
                       aria-pressed="false">
-                <svg class="me-2 opacity-50" width="16" height="16" fill="currentColor">
-                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#sun-fill"></use>
-                </svg>
+                {% include "shared/icon.html" with type="sun-fill" class="me-2 opacity-50" %}
                 Light
-                <svg class="ms-auto d-none" width="16" height="16" fill="currentColor">
-                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#check2"></use>
-                </svg>
+                {% include "shared/icon.html" with type="check2" class="ms-auto d-none" %}
               </button>
             </li>
             <li>
@@ -71,13 +62,9 @@
                       class="dropdown-item d-flex align-items-center"
                       data-bs-theme-value="dark"
                       aria-pressed="false">
-                <svg class="me-2 opacity-50" width="16" height="16" fill="currentColor">
-                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#moon-stars-fill"></use>
-                </svg>
+                {% include "shared/icon.html" with type="moon-stars-fill" class="me-2 opacity-50" %}
                 Dark
-                <svg class="ms-auto d-none" width="16" height="16" fill="currentColor">
-                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#check2"></use>
-                </svg>
+                {% include "shared/icon.html" with type="check2" class="ms-auto d-none" %}
               </button>
             </li>
             <li>
@@ -85,13 +72,9 @@
                       class="dropdown-item d-flex align-items-center active"
                       data-bs-theme-value="auto"
                       aria-pressed="true">
-                <svg class="me-2 opacity-50" width="16" height="16" fill="currentColor">
-                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#circle-half"></use>
-                </svg>
+                {% include "shared/icon.html" with type="circle-half" class="me-2 opacity-50" %}
                 Auto
-                <svg class="ms-auto d-none" width="16" height="16" fill="currentColor">
-                  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#check2"></use>
-                </svg>
+                {% include "shared/icon.html" with type="check2" class="ms-auto d-none" %}
               </button>
             </li>
           </ul>

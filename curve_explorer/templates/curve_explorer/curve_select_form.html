@@ -1,0 +1,12 @@
+{% load crispy_forms_tags %}
+
+<form class="curve-form"
+      method="post"
+      hx-post="{% url 'curve_explorer:show_curve' %}"
+      hx-swap="none"
+      hx-trigger="change"
+      hx-indicator="#curve-panel-{{ panel }}"
+      enctype="multipart/form-data"
+      novalidate>
+  {% crispy curve_form %}
+</form>

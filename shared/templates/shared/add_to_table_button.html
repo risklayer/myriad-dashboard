@@ -1,0 +1,10 @@
+<button class="table-column-button btn btn-outline-secondary text-nowrap {% if compact %}border-0 p-1{% endif %} {{ class }}"
+        type="button"
+        {% if toggle != False %} data-bs-toggle="button" aria-pressed="false" {% endif %}
+        {% if compact %}title="Include in table"{% endif %}
+        name="table-column-button"
+        value="{{ key }}"
+        onclick="toggleTable(this.value)">
+  {% include "shared/icon.html" with type=icon|default:"table" class="me-1" size=16 %}
+  {% if not compact %}Include in table{% endif %}
+</button>

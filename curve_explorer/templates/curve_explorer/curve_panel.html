@@ -1,0 +1,21 @@
+{% load filters %}
+
+<div id="curve-panel-{{ panel }}"
+     class="curve-panel htmx-indicator"
+     hx-swap-oob="outerHTML">
+  <h2 id="pin-name-title-{{ panel }}"
+      class="h5 p-0 mb-2 text-center rounded-5 curve-title pin-label pin-label-{{ curve.key }}">
+    {% if curve %}
+      {{ pinned|pin_label:curve.key }}
+    {% else %}
+      No curve selected
+    {% endif %}
+  </h2>
+  {% include "shared/action_buttons.html" with pinned=pinned key=curve.key pinned_keys=pinned_keys panel=panel pin_type="curve" only %}
+  {% include "curve_explorer/curve_chart.html" with curve=curve panel=panel only %}
+  {% include "curve_explorer/curve_values.html" with curve=curve panel=panel only %}
+  {% include "curve_explorer/details_table.html" with curve=curve panel=panel only %}
+  <input type="hidden"
+         name="item_selected_{{ panel }}"
+         value="{{ curve.key }}" />
+</div>

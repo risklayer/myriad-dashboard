@@ -1,14 +1,10 @@
-{% load static %}
-
 <ul class="row g-3 py-5 row-cols-1 row-cols-lg-3 list-unstyled">
   {% for app in myriad_apps %}
     <li>
       <a href="{{ app.url }}"
          class="feature col card shadow btn d-flex align-items-center justify-content-center">
         <div class="icon-link icon-link-hover text-bg-primary bg-gradient fs-2 m-4 p-3 aspect-1x1 rounded">
-          <svg width="128" height="128" fill="currentColor" class="ratio-1x1">
-            <use xlink:href='{% static "bootstrap-icons/bootstrap-icons.svg" %}#{{ app.icon }}' />
-          </svg>
+          {% include "shared/icon.html" with type=app.icon class="ratio-1x1" size=128 %}
         </div>
         <h3 class="fs-2 text-body-emphasis">{{ app.name }}</h3>
         <p>{{ app.description }}</p>

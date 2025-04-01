@@ -1,0 +1,48 @@
+{% extends "layouts/base.html" %}
+
+{% load static %}
+
+{% block title %}
+    Curve Explorer - {{ block.super }}
+{% endblock title %}
+
+{% block head %}
+    {{ block.super }}
+    <link rel="stylesheet"
+          href="{% static 'css/curve_explorer.css' %}"
+          crossorigin="" />
+{% endblock head %}
+
+{% block pagetitle %}
+    <div class="d-flex justify-content-between">
+        <h1>Vulnerability Curve Explorer</h1>
+        <div class="float-end">
+            {% include "shared/pin.html" with actions_template="curve_explorer/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="curve" list_title="Pinned curves" dropdown=True only %}
+        </div>
+    </div>
+{% endblock pagetitle %}
+
+{% block mainbody %}
+    <div class="curve-grid-container w-100">
+        {% for i, filter_form, curve_form in forms %}
+            <div id="panel-{{ i }}"
+                 class="curve-card card shadow mb-3"
+                 hx-vals='{ "panel": {{ i }} }'>
+                <div class="curve-card-body card-body">
+                    <h2 class="card-heading h4 pb-2">Curve {{ i|add:1 }}</h2>
+                    {% if filter_form %}
+                        {% include "curve_explorer/curve_filter_form.html" with filter_form=filter_form panel=i only %}
+                    {% endif %}
+                    {% include "curve_explorer/curve_select_form.html" with curve_form=curve_form panel=i only %}
+                    {% include "curve_explorer/curve_panel.html" with panel=i only %}
+                </div>
+            </div>
+        {% endfor %}
+        <div id="combined-curve-chart-card"
+             class="card shadow mt-md-0 mx-md-3 mx-xxxl-0 p-0 d-none">
+            {% include "curve_explorer/curve_chart.html" with caption="Curve comparison" panel=2 only %}
+        </div>
+    </div>
+    <script src="{% static "js/curve_explorer.js" %}"></script>
+    <script id="update-curve-script"></script>
+{% endblock mainbody %}

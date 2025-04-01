@@ -1,0 +1,71 @@
+{% load filters %}
+
+{% if dropdown %}
+  <div id="pinned_button" class="dropdown" hx-swap-oob="outerHTML">
+    <button class="btn btn-outline-secondary dropdown-toggle"
+            hx-ext="class-tools"
+            {% if key %}classes="add glow-appear, remove glow-appear:2s"{% endif %}
+            type="button"
+            {% if not pinned_keys %}disabled{% endif %}
+            data-bs-toggle="dropdown"
+            data-bs-auto-close="outside"
+            aria-expanded="false">
+      {% include "shared/icon.html" with type="pin" class="me-1" %}
+      {{ list_title }}
+      {% if pinned_keys %}({{ pinned_keys | length }}){% endif %}
+    </button>
+    <div class="dropdown-menu dropdown-menu-end p-0 border-0">
+      <ul class="list-group">
+      {% else %}
+        <fieldset id="pinned_list" class="dropdown" hx-swap-oob="outerHTML">
+          <details aria-labelledby="pinned-summary" open>
+            <summary class="h6 px-1 py-0 mb-2" id="regions-summary">
+              {{ list_title }}
+              {% if pinned_keys %}({{ pinned_keys | length }}){% endif %}
+              {% include "shared/icon.html" with type="pin" class="me-1" %}
+            </summary>
+            <ul class="list-group overflow-y-auto overflow-x-hidden">
+            {% endif %}
+            {% for pin_key, pin_name, pin_label, pin_item in pinned %}
+              <li class="list-group-item d-flex align-items-start justify-content-between">
+                <div class="me-3">
+                  {% if pin_label %}
+                    <b class="pin-label pin-label-{{ pin_key }}">{{ pin_label }}</b>
+                    <br />
+                  {% else %}
+                    {{ pin_name|desnake }}
+                  {% endif %}
+                </div>
+                <div class="btn-group float-end">
+                  {% include actions_template with pin_key=pin_key pin_name=pin_name pin_label=pin_label pin_item=pin_item only %}
+                  {% include "shared/pin_button.html" with pinned=None key=pin_key pinned_keys=None index=forloop.counter0 class="btn-sm me-1 border-0" rename=True panel="dropdown" pin_type=pin_type compact=dropdown|not_value only %}
+                  {% include "shared/pin_button.html" with pinned=pinned key=pin_key pinned_keys=pinned_keys index=forloop.counter0 class="btn-sm border-0" confirm=True rename=False panel="dropdown" pin_type=pin_type compact=dropdown|not_value only %}
+                </div>
+              </li>
+            {% endfor %}
+            {% if dropdown %}
+            </ul>
+          </div>
+        </div>
+      {% else %}
+      </ul>
+    </fieldset>
+  {% endif %}
+  {% for panel in show_panel_pin_buttons %}
+    <h2 id="pin-name-title-{{ panel }}"
+        hx-swap-oob="innerHTML"
+        hx-ext="class-tools"
+        class="h5 p-0 mb-2 text-center rounded-5"
+        classes="add glow-appear, remove glow-appear:2s">{{ name }}</h2>
+    {% include "shared/action_buttons.html" with pinned=pinned key=key pinned_keys=pinned_keys panel=panel pin_type=pin_type oob=True add_to_table=add_to_table only %}
+  {% endfor %}
+  {% if return_list_button and key %}
+    <div id="pin-name-list-title-{{ key }}" hx-swap-oob="outerHTML">
+      {% if name %}<b>{{ name }}</b>{% endif %}
+    </div>
+    {% include "shared/pin_button.html" with pinned=pinned key=key pinned_keys=pinned_keys index="list" panel="list-"|add:key pin_type=pin_type compact=True class="col-2" oob=True confirm=True only %}
+  {% endif %}
+  {% if key %}
+    <span class="pin-label pin-label-{{ key }}"
+          hx-swap-oob="innerHTML:.pin-label-{{ key }}">{{ name }}</span>
+  {% endif %}

@@ -1,0 +1,28 @@
+<ul class="list-group select-tree">
+  {% for element in elements %}
+    <li class="list-group-item py-0 px-2">
+      {% if element.children %}
+        <details {% if open or element.indeterminate %}open{% endif %}>
+          <summary>
+          {% endif %}
+          <div class="form-check d-inline-block {% if element.children %}ms-1{% else %}ms-2{% endif %}">
+            <input type="checkbox"
+                   name="{{ element.type }}"
+                   value="{{ element.value }}"
+                   class="form-check-input select-tree-input select-tree-input-{{ level|default:1 }}"
+                   onchange="formUpdate(this)"
+                   id="{{ element.type }}-select-{{ element.value }}"
+                   data-parent="{{ parent.value }}"
+                   {% if element.selected %}checked{% endif %}
+                   {% if element.indeterminate %}indeterminate{% endif %} />
+            <label for="{{ element.type }}-select-{{ element.value }}"
+                   class="form-check-label">{{ element.label }}</label>
+          </div>
+          {% if element.children %}
+          </summary>
+          {% include "exposure_at_risk/select_tree.html" with elements=element.children parent=element level=level|default:1|add:1 only %}
+        </details>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>

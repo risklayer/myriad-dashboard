@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "incremental": false,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    "allowJs": false,
+    "checkJs": false,
+    "sourceMap": true,
+    "inlineSources": true,
+    "removeComments": true,
+    "isolatedModules": false,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true
+  }
+}

@@ -1,0 +1,38 @@
+{% load crispy_forms_tags %}
+
+<details class="curve-filter-details" open>
+  <summary>
+    <h3 class="d-inline-block h5 mb-3">
+      <span>Dataset filter</span>
+      {% include "shared/icon.html" with type="filter" class="me-2" size=24 %}
+    </h3>
+  </summary>
+  <form method="post"
+        class="curve-filter-form"
+        hx-post="{% url 'curve_explorer:filter_curves' %}"
+        hx-trigger="change"
+        hx-swap="outerHTML"
+        hx-select="#id_panel_{{ panel }}_row"
+        hx-target="#id_panel_{{ panel }}_row"
+        hx-include="#id_panel_{{ panel }}_row"
+        hx-indicator="#curve-panel-{{ panel }}"
+        enctype="multipart/form-data"
+        novalidate>
+    {% crispy filter_form %}
+    <div class="clearfix">
+      <button type="button"
+              class="btn btn-outline-secondary float-end me-2"
+              onclick="copyFilters({{ panel }})">
+        {% if panel == 1 %}
+          {% include "shared/icon.html" with type="arrow-left" class="me-1 d-none d-md-inline-block" %}
+          {% include "shared/icon.html" with type="arrow-up" class="me-1 d-md-none" %}
+        {% endif %}
+        Copy filters
+        {% if panel == 0 %}
+          {% include "shared/icon.html" with type="arrow-right" class="me-1 d-none d-md-inline-block" %}
+          {% include "shared/icon.html" with type="arrow-down" class="me-1 d-md-none" %}
+        {% endif %}
+      </button>
+    </div>
+  </form>
+</details>

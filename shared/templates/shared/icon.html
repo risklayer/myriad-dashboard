@@ -1,0 +1,8 @@
+{% load static %}
+
+<svg width="{{ size|default:16 }}"
+     height="{{ size|default:16 }}"
+     fill="{{ color|default:'currentColor' }}"
+     class="{{ class }}">
+  <use xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#{{ type }}" />
+</svg>

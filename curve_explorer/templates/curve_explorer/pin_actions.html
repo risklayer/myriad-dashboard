@@ -1,0 +1,19 @@
+{% for i in '01'|make_list %}
+  <button class="btn btn-outline-secondary text-nowrap btn-sm me-1 border-0"
+          hx-post="{% url 'curve_explorer:show_curve' %}"
+          hx-swap="none"
+          hx-indicator="#curve-panel-{{ i }}"
+          hx-vals='{ "panel": {{ i }} }'
+          data-bs-auto-close="false"
+          title="Show in panel {{ i }}"
+          name="row"
+          value="{{ pin_key }}">
+    {% if i == '0' %}
+      {% include "shared/icon.html" with type="arrow-up-square" class="me-1 d-md-none" size=16 %}
+      {% include "shared/icon.html" with type="arrow-down-left-square" class="me-1 d-none d-md-inline-block" size=16 %}
+    {% else %}
+      {% include "shared/icon.html" with type="arrow-down-square" class="me-1 d-md-none" size=16 %}
+      {% include "shared/icon.html" with type="arrow-down-right-square" class="me-1 d-none d-md-inline-block" size=16 %}
+    {% endif %}
+  </button>
+{% endfor %}

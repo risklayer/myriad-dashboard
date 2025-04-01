@@ -1,3 +1,10 @@
+$blue: #292bfe;
+$indigo: #760ee2;
+$purple: #8600dd;
+
+$focus-ring-opacity: 0.25;
+$focus-ring-color: rgba($purple, $focus-ring-opacity) !default;
+
 $grid-breakpoints: (
   xs: 0,
   sm: 576px,

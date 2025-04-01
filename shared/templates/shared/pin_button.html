@@ -1,0 +1,40 @@
+{% if delete %}
+  <span id="pin_button_{% if rename %}rename_{% endif %}{{ index }}-{{ panel }}"
+        class="d-none"
+        hx-swap-oob="outerHTML"></span>
+{% else %}
+  <button id="pin_button_{% if rename %}rename_{% endif %}{{ index }}-{{ panel }}"
+          class="btn {% if key in pinned_keys and not rename %}btn-outline-danger{% else %}btn-outline-secondary{% endif %} text-nowrap {% if compact %}border-0 p-1{% endif %} {{ class }}"
+          hx-post="{% if key in pinned_keys and not rename %}{% url "shared:unpin" pin_type %}{% else %}{% url "shared:pin" pin_type %}{% endif %}"
+          hx-swap="none"
+          {% if oob %}hx-swap-oob="outerHTML"{% endif %}
+          {% if key in pinned_keys and confirm %}hx-confirm="Remove this from your list?"{% endif %}
+          hx-disable-elt
+          {% if rename or key not in pinned_keys %}hx-prompt="Enter a meaningful description:"{% endif %}
+          {% if rename %}hx-vals='{"rename":true}'{% endif %}
+          hx-params="item_selected_0,item_selected_1,panel,key"
+          hx-include="[name^='item_selected_'],[name=panel]"
+          name="key"
+          value="{{ key }}"
+          {% if compact %}title="{% if rename %}Rename{% elif key in pinned_keys %}Unpin{% else %}Pin{% endif %}
+          "
+          {% endif %}>
+    <span class="htmx-indicator spinner-border spinner-border-sm me-1"></span>
+    {% if rename %}
+      {% include "shared/icon.html" with type="pencil" class="me-1" size=16 %}
+    {% elif key in pinned_keys %}
+      {% include "shared/icon.html" with type="pin-fill" class="me-1" size=16 %}
+    {% else %}
+      {% include "shared/icon.html" with type="pin" class="me-1" size=16 %}
+    {% endif %}
+    {% if not compact %}
+      {% if rename %}
+        Rename
+      {% elif key in pinned_keys %}
+        Unpin
+      {% else %}
+        Pin
+      {% endif %}
+    {% endif %}
+  </button>
+{% endif %}

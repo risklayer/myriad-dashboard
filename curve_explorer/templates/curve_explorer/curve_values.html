@@ -1,0 +1,45 @@
+<div class="curve-values mt-xxl-2">
+  {% if curve %}
+    {% with curve.get_curve_structures as curve_structures %}
+      <details class="curve-values-details mb-2 w-100">
+        <summary>Curve values</summary>
+        {% for data in curve_structures %}
+          <div class="card my-2">
+            <div class="card-header">
+              <label class="form-label small m-0 py-1"
+                     for="id_curve_values_{{ data.key }}-{{ panel }}">
+                {{ data.label }}
+              </label>
+              <div class="btn-group float-end" role="group">
+                <button type="button"
+                        class="btn btn-sm"
+                        onclick="copyToClipboard('#id_curve_values_{{ data.key }}-{{ panel }}')"
+                        title="Copy to clipboard">
+                  {% include "shared/icon.html" with type="copy" class="me-1" %}
+                  Copy
+                </button>
+                <button type="button"
+                        class="btn btn-sm"
+                        onclick="downloadFile('#id_curve_values_{{ data.key }}-{{ panel }}')">
+                  {% include "shared/icon.html" with type="download" class="me-1" %}
+                  Download
+                </button>
+              </div>
+            </div>
+            <div class="card-body form-group p-0">
+              <textarea class="form-control w-100 border-0"
+                        readonly
+                        data-format="{{data.format}}"
+                        data-filename="{{data.filename}}"
+                        name="curve_values_{{ data.key }}"
+                        id="id_curve_values_{{ data.key }}-{{panel}}"
+                        rows="5">{{data.value}}</textarea>
+            </div>
+          </div>
+        {% endfor %}
+      </details>
+    {% endwith %}
+  {% else %}
+    <div class="placeholder bg-secondary col-3 mb-2"></div>
+  {% endif %}
+</div>

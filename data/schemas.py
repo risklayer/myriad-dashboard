@@ -1,4 +1,5 @@
-from typing import Literal, Optional, Dict, Union
+from typing import Dict, List, Literal, Optional, Union
+
 from geojson_pydantic import MultiPolygon
 from ninja import ModelSchema, Schema
 
@@ -6,15 +7,15 @@ from data.models import (
   Country,
   DataTableColumn,
   DataTableMetadata,
+  Hazard,
+  HrscEvent,
+  HrscEventCollection,
+  HrscScenario,
   KeyLabelSelection,
   Nuts2Area,
   TableMetaExposure,
-  Hazard,
   TableMetaReturnPeriod,
   TableMetaThreshold,
-  HrscScenario,
-  HrscEvent,
-  HrscEventCollection,
 )
 
 
@@ -30,7 +31,7 @@ class KeyLabelSelectionSchema(Schema):
     fields = ["key", "label"]
 
 
-class TableMetaHazardSchema(ModelSchema):
+class HazardSchema(ModelSchema):
   unit: Optional[str] = None
 
   class Meta:
@@ -58,7 +59,7 @@ class TableMetaReturnPeriodSchema(ModelSchema):
 
 class DataTableColumnSchema(ModelSchema):
   return_period: Optional[TableMetaReturnPeriodSchema] = None
-  hazard: Optional[TableMetaHazardSchema] = None
+  hazard: Optional[HazardSchema] = None
   exposure: Optional[TableMetaExposureSchema] = None
   threshold: Optional[TableMetaThresholdSchema] = None
 
@@ -183,12 +184,19 @@ class ShapeProperties(Schema):
 class ShapeFeature(Schema):
   type: Literal["Feature"]
   geometry: MultiPolygon
-  properties: ShapeProperties
+  # TODO: this outputs the correct types in TS and in the results, but doesn't
+  # reflect the ShapeProperties fields in Swagger
+  properties: Union[Dict[str, str | float], ShapeProperties]
 
 
 class AreaValuesSchema(Schema):
   NUTS_ID: str
   country_id: str
+
+
+class FeatureCollectionSchema(Schema):
+  type: Literal["FeatureCollection"]
+  features: List[ShapeFeature]
 
 
 class HrscScenarioSchema(ModelSchema):
@@ -218,7 +226,7 @@ class HrscEventCollectionSchema(ModelSchema):
   id: int
   key: str
   label: str
-  hazard: TableMetaHazardSchema
+  hazard: HazardSchema
 
   class Meta:
     model = HrscEventCollection

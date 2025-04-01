@@ -9,18 +9,18 @@ from data.models import (
 )
 
 
-CACHE_TIMEOUT = 1
+CACHE_TIMEOUT = 1000
 
 # Dynamic "Enum" types for the purpose of displaying options in swagger
 # Need to determine if this will create issues after importing data,
 # e.g. might require a server restart before using API.
 # They are specified as StrEnum so they don't need to be coercer to strings for
 # use in queries (since the models don't use enums)
-countries = []
-hazards = []
-table_meta_exposures = []
-table_meta_thresholds = []
-table_meta_return_periods = []
+countries = dict()
+hazards = dict()
+table_meta_exposures = dict()
+table_meta_thresholds = dict()
+table_meta_return_periods = dict()
 
 try:
   countries = dict(
@@ -41,7 +41,7 @@ except Exception:
 
 CountriesEnum = StrEnum(
   "CountriesEnum",
-  countries,
+  {"All": "ALL"} | countries,
 )
 
 HazardOptionsEnum = StrEnum(

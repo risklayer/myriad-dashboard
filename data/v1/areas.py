@@ -2,7 +2,6 @@ from typing import Dict, List
 
 from django.http import HttpRequest
 from django.views.decorators.cache import cache_page
-from geojson_pydantic import FeatureCollection
 from ninja import Query, Router
 from ninja.decorators import decorate_view
 
@@ -18,8 +17,8 @@ from data.models import (
 )
 from data.schemas import (
   CountrySchema,
+  FeatureCollectionSchema,
   Nuts2AreaSchema,
-  ShapeFeature,
 )
 
 router = Router(tags=["Areas"])
@@ -35,7 +34,7 @@ def areas(request: HttpRequest, bbox: str = "", countries: List[CountriesEnum] =
 
 @router.get("/map", response=Dict[str, Nuts2AreaSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
-def shapes_map(
+def map(
   request: HttpRequest,
   bbox: str = "",
   countries: List[CountriesEnum] = Query([]),
@@ -46,7 +45,7 @@ def shapes_map(
   return {c.key: c for c in nuts2areas}
 
 
-@router.get("/shapes", response=FeatureCollection[ShapeFeature])
+@router.get("/shapes", response=FeatureCollectionSchema)
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def shapes(
   request: HttpRequest,
@@ -56,8 +55,8 @@ def shapes(
   nuts2areas: List[str] = Query([]),
 ):
   """Returns a list of all NUTS2 shapes in a GeoJSON FeatureCollection, including column values if specified.
-If using bbox, countries and nuts2areas will be ignored. If not using bbox, all nuts2areas are returned filtered by
-either country or nuts2areas, or both. Please note that nuts2areas and countries as filter are working together additively.
+  If using bbox, countries and nuts2areas will be ignored. If not using bbox, all nuts2areas are returned filtered by
+  either country or nuts2areas, or both. Please note that nuts2areas and countries as filter are working together additively.
   """
   nuts2area_filter = Nuts2Area.objects.all()
 
@@ -70,7 +69,7 @@ either country or nuts2areas, or both. Please note that nuts2areas and countries
       bbox_max_x__gt=bbox_min_x,
       bbox_max_y__gt=bbox_min_y,
     )
-  elif len(countries) > 0 or len(nuts2areas) > 0:
+  elif (len(countries) > 0 or len(nuts2areas) > 0) and "ALL" not in countries:
     nuts2area_filter = Nuts2Area.objects.none()
     if len(countries) > 0:
       nuts2area_filter |= Nuts2Area.objects.filter(country__country_code__in=countries)
@@ -79,6 +78,17 @@ either country or nuts2areas, or both. Please note that nuts2areas and countries
       nuts2area_filter |= Nuts2Area.objects.filter(key__in=nuts2areas)
 
   column_filter = list(DataTableColumn.objects.filter(key__in=columns)) if len(columns) else []
+
+  value_dict = {}
+
+  all_values = DataTableColumnValue.objects.filter(
+    data_table_column__in=column_filter, nuts_area__in=nuts2area_filter
+  ).select_related("data_table_column", "nuts_area")
+
+  for value in all_values:
+    if value.nuts_area.key not in value_dict:
+      value_dict[value.nuts_area.key] = {}
+    value_dict[value.nuts_area.key][value.data_table_column.key] = value.value
 
   return {
     "type": "FeatureCollection",
@@ -91,10 +101,7 @@ either country or nuts2areas, or both. Please note that nuts2areas and countries
           "NUTS_ID": area.key,
           "country_id": area.country.country_code,
         }
-        | {
-          c.key: DataTableColumnValue.objects.get(data_table_column=c, nuts_area=area).value
-          for c in column_filter
-        },
+        | value_dict.get(area.key, dict()),
         "geometry": area.geom_json,
       }
       for area in nuts2area_filter
@@ -120,6 +127,6 @@ def filter_nuts2_areas(bbox: str, countries: List[CountriesEnum]):
       bbox_max_y__gt=bbox_min_y,
     )
 
-  if len(countries) > 0:
+  if len(countries) > 0 and "ALL" not in countries:
     nuts2areas = nuts2areas.filter(country__country_code__in=countries)
   return nuts2areas
