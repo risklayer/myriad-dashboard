@@ -96,7 +96,7 @@ class Command(BaseCommand):
             break
 
         meta = DataTableColumnMetadata.get_or_create_by_label(
-          key=key,
+          slug_key=key,
           label=metadata_info["label"],
           unit=metadata_info.get("unit", None),
           type=metadata_type,
@@ -258,13 +258,21 @@ class Command(BaseCommand):
                 DataTableColumnMetadataValueString.objects.get_or_create(
                   metadata=metadata_inst,
                   column=column,
-                  defaults={"value": column_metadata[metadata_key]},
+                  defaults={
+                    "value": table_metadata["parameters"]["additonal_metadata"][metadata_key][
+                      "values"
+                    ][column_metadata[metadata_key]]
+                  },
                 )
               elif metadata_inst.type == "float":
                 DataTableColumnMetadataValueFloat.objects.get_or_create(
                   metadata=metadata_inst,
                   column=column,
-                  defaults={"value": column_metadata[metadata_key]},
+                  defaults={
+                    "value": table_metadata["parameters"]["additonal_metadata"][metadata_key][
+                      "values"
+                    ][column_metadata[metadata_key]]
+                  },
                 )
 
             if skip_existing and not created:
