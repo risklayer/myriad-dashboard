@@ -1,14 +1,9 @@
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import (
-  Fieldset,
   Layout,
-  Reset,
 )
 from django.forms import (
   Form,
-)
-from django.forms.fields import (
-  ChoiceField,
 )
 
 

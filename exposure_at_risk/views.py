@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
-from data.models import Country
 from exposure_at_risk.exposure_at_risk_form import (
   ExposureAtRiskRegionsForm,
   ExposureAtRiskSettingsForm,
