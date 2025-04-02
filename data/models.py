@@ -21,6 +21,9 @@ from shapely.geometry import Polygon, mapping
 
 from django.conf import settings
 
+import rasterio
+import os.path
+
 _json_script_escapes = {
   ord(">"): "\\u003E",
   ord("<"): "\\u003C",
@@ -265,6 +268,18 @@ class KeyLabelSelection:
     return str(self.label)
 
 
+class RasterInstance:
+  def get_probability_value(self, longitude: float, latitude: float):
+    if self.file_type == "tiff":
+      with rasterio.open(os.path.join(settings.RASTER_DATA_ROOT, self.file)) as tiff_file:
+        transformer = rasterio.transform.AffineTransformer(tiff_file.transform)
+        x, y = transformer.rowcol(longitude, latitude)
+        return float(tiff_file.read(1)[x][y])
+
+    else:
+      raise Exception("unknown file_type")
+
+
 class Hazard(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True)
   label = models.TextField()
@@ -279,6 +294,40 @@ class Hazard(models.Model, KeyLabelSelection):
       ret_data["unit"] = unit.unit
 
     return ret_data
+
+
+## Tourism indicators
+
+
+class TourismIndicator(models.Model, KeyLabelSelection):
+  key = models.TextField(unique=True)
+  label = models.TextField()
+
+  def to_dict(self):
+    return {
+      "key": self.key,
+      "label": self.label,
+    }
+
+
+class TourismIndicatorValueString(models.Model, KeyLabelSelection):
+  nuts_area = models.ForeignKey(Nuts3Area, on_delete=models.CASCADE)
+  indicator = models.ForeignKey(TourismIndicator, on_delete=models.CASCADE)
+
+  value = models.TextField()
+
+  class Meta:
+    unique_together = ("indicator", "nuts_area")
+
+
+class TourismIndicatorValueFloat(models.Model, KeyLabelSelection):
+  indicator = models.ForeignKey(TourismIndicator, on_delete=models.CASCADE)
+  nuts_area = models.ForeignKey(Nuts3Area, on_delete=models.CASCADE)
+
+  value = models.FloatField()
+
+  class Meta:
+    unique_together = ("indicator", "nuts_area")
 
 
 ## Exposure At Risk Data Models
@@ -827,6 +876,97 @@ class HrscValueCoordinateWinterstorm(models.Model):
   value = models.SmallIntegerField(db_index=True)
 
 
+class HrscExposureRaster(models.Model, KeyLabelSelection):
+  key = models.TextField(unique=True)
+  label = models.TextField()
+
+  cell_size = models.FloatField()
+  severity_unit = models.TextField()
+
+  def to_dict(self):
+    return {
+      "id": self.id,
+      "key": self.key,
+      "label": self.label,
+      "cell_size": self.cell_size,
+    }
+
+
+class HrscExposureRasterInstance(models.Model):
+  exposure_raster = models.ForeignKey(HrscExposureRaster, on_delete=models.CASCADE)
+  severity_value = models.FloatField()
+
+  _file_type_choices = [
+    ("tiff", "TIFF File"),
+  ]
+
+  file_type = models.TextField(choices=_file_type_choices)
+  file = models.FilePathField(path=settings.RASTER_DATA_ROOT)
+
+# class HrscExposureRasterValue(models.Model):
+#  exposure_instance = models.ForeignKey(HrscExposureRasterInstance, on_delete=models.CASCADE)
+#  location = models.ForeignKey(GridLocation, on_delete=models.CASCADE)
+#
+#  value = models.FloatField()
+
+
+class HrscExposureColumn(models.Model, KeyLabelSelection):
+  key = models.TextField(unique=True)
+  label = models.TextField()
+
+  severity_unit = models.TextField()
+
+  def to_dict(self):
+    return {
+      "id": self.id,
+      "key": self.key,
+      "label": self.label,
+      "severity_unit": self.severity_unit,
+    }
+
+
+class HrscExposureColumnInstance(models.Model, KeyLabelSelection):
+  exposure_column = models.ForeignKey(HrscExposureColumn, on_delete=models.CASCADE)
+  severity_value = models.FloatField()
+
+
+class HrscExposureColumnValue(models.Model):
+  exposure = models.ForeignKey(HrscExposureColumn, on_delete=models.CASCADE)
+  nuts3area = models.ForeignKey(Nuts3Area, on_delete=models.CASCADE)
+
+  value = models.FloatField()
+
+
+class HrscHazardProbabilityRaster(models.Model):
+  hazard = models.ForeignKey(Hazard, on_delete=models.CASCADE)
+
+  severity_unit = models.TextField()
+
+  def get_probability_value(self, severity_value: float, longitude: float, latitude: float):
+    return HrscHazardProbabilityRasterInstance.objects.get(
+      probability_raster=self, severity_value=severity_value
+    ).get_probability_value(longitude, latitude)
+
+
+class HrscHazardProbabilityRasterInstance(models.Model, RasterInstance):
+  probability_raster = models.ForeignKey(HrscHazardProbabilityRaster, on_delete=models.CASCADE)
+  severity_value = models.FloatField()
+
+  _file_type_choices = [
+    ("tiff", "TIFF File"),
+  ]
+
+  file_type = models.TextField(choices=_file_type_choices)
+  file = models.FilePathField(path=settings.RASTER_DATA_ROOT)
+
+
+# class HrscHazardProbabilityRasterValue(models.Model):
+#  probability_instance = models.ForeignKey(HrscHazardProbabilityRasterInstance, on_delete=models.CASCADE)
+#  location = models.ForeignKey(GridLocation, on_delete=models.CASCADE)
+#
+#  value = models.FloatField()
+
+
 class HrscScenario(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True)
   label = models.TextField()
@@ -851,5 +991,5 @@ class HrscScenario(models.Model, KeyLabelSelection):
 
 class HrscScenarioExposureVulnerabilityMapping(models.Model, KeyLabelSelection):
   scenario = models.ForeignKey(HrscScenario, on_delete=models.CASCADE)
-  exposure = models.TextField()  # models.ForeignKey(RegionDataExposure) <-- needs to be created
+  exposure = models.ForeignKey(HrscExposureRaster, on_delete=models.CASCADE)
   vulnerability = models.ForeignKey(VulnerabilityCurve, on_delete=models.CASCADE)
