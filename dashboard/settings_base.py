@@ -145,3 +145,5 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 DEFAULT_SRID = 4326
+
+RASTER_DATA_ROOT = os.path.join(BASE_DIR, "data_raster")

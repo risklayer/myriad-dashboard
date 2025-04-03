@@ -13,6 +13,7 @@ api_v1.add_router("/columns", "data.v1.columns.router")
 api_v1.add_router("/areas", "data.v1.areas.router")
 api_v1.add_router("/curves", "data.v1.curves.router")
 api_v1.add_router("/hrsc", "data.v1.hrsc.router")
+api_v1.add_router("/tourism", "data.v1.tourism.router")
 
 urlpatterns = [
   path("api/v1/", api_v1.urls),

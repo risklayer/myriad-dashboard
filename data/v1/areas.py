@@ -14,6 +14,9 @@ from data.models import (
   DataTableColumn,
   DataTableColumnValue,
   Nuts3Area,
+  TourismIndicator,
+  TourismIndicatorValueString,
+  TourismIndicatorValueFloat,
 )
 from data.schemas import (
   CountrySchema,
@@ -53,6 +56,7 @@ def shapes(
   countries: List[CountriesEnum] = Query([]),
   columns: List[str] = Query([]),
   nuts3areas: List[str] = Query([]),
+  tourismIndicators: List[str] = Query([]),
 ):
   """Returns a list of all NUTS2 shapes in a GeoJSON FeatureCollection, including column values if specified.
   If using bbox, countries and nuts3areas will be ignored. If not using bbox, all nuts3areas are returned filtered by
@@ -77,18 +81,32 @@ def shapes(
     if len(nuts3areas) > 0:
       nuts3area_filter |= Nuts3Area.objects.filter(key__in=nuts3areas)
 
-  column_filter = list(DataTableColumn.objects.filter(key__in=columns)) if len(columns) else []
+  value_dict = {
+    key : dict() for key in nuts3area_filter.values_list("key", flat=True)
+  }
 
-  value_dict = {}
+  for column in DataTableColumn.objects.filter(key__in=columns):
+    all_values = DataTableColumnValue.objects.filter(
+      data_table_column=column, nuts_area__in=nuts3area_filter
+    ).select_related("nuts_area")
 
-  all_values = DataTableColumnValue.objects.filter(
-    data_table_column__in=column_filter, nuts_area__in=nuts3area_filter
-  ).select_related("data_table_column", "nuts_area")
+    for value in all_values:
+      value_dict[value.nuts_area_id][value.data_table_column.key] = value.value
 
-  for value in all_values:
-    if value.nuts_area.key not in value_dict:
-      value_dict[value.nuts_area.key] = {}
-    value_dict[value.nuts_area.key][value.data_table_column.key] = value.value
+  for indicator in TourismIndicator.objects.filter(key__in=tourismIndicators):
+    all_values = TourismIndicatorValueString.objects.filter(
+      indicator=indicator, nuts_area__in=nuts3area_filter
+    ).select_related("nuts_area")
+
+    for value in all_values:
+      value_dict[value.nuts_area_id][value.data_table_column.key] = value.value
+
+    all_values = TourismIndicatorValueFloat.objects.filter(
+      indicator=indicator, nuts_area__in=nuts3area_filter
+    ).select_related("nuts_area")
+
+    for value in all_values:
+      value_dict[value.nuts_area_id][value.data_table_column.key] = value.value
 
   return {
     "type": "FeatureCollection",
@@ -101,7 +119,7 @@ def shapes(
           "NUTS_ID": area.key,
           "country_id": area.country.country_code,
         }
-        | value_dict.get(area.key, dict()),
+        | value_dict.get(area.id, dict()),
         "geometry": area.geom_json,
       }
       for area in nuts3area_filter

@@ -942,6 +942,14 @@ class HrscHazardProbabilityRaster(models.Model):
 
   severity_unit = models.TextField()
 
+  def to_dict(self):
+    return {
+      "id": self.id,
+      "hazard": self.hazard.to_dict(),
+      "severity_unit": self.severity_unit,
+      "severities": [i.severity_value for i in HrscHazardProbabilityRasterInstance.objects.filter(probability_raster = self)]
+    }
+
   def get_probability_value(self, severity_value: float, longitude: float, latitude: float):
     return HrscHazardProbabilityRasterInstance.objects.get(
       probability_raster=self, severity_value=severity_value

@@ -16,6 +16,8 @@ from data.models import (
   TableMetaExposure,
   TableMetaReturnPeriod,
   TableMetaThreshold,
+  TourismIndicator,
+  HrscHazardProbabilityRaster,
 )
 
 
@@ -241,3 +243,24 @@ class HrscEventCollectionSchema(ModelSchema):
   class Meta:
     model = HrscEventCollection
     fields = ["key", "label"]
+
+
+class TourismIndicatorSchema(ModelSchema):
+  id: int
+  key: str
+  label: str
+
+  class Meta:
+    model = TourismIndicator
+    fields = ["key", "label"]
+
+
+class HrscHazardProbabilityRasterSchema(ModelSchema):
+  id: int
+  severity_unit: str
+  hazard: HazardSchema
+  severities: List[float]
+
+  class Meta:
+    model = HrscHazardProbabilityRaster
+    fields = ["severity_unit"]

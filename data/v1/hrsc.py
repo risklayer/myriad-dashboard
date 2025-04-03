@@ -19,6 +19,7 @@ from data.models import (
   HrscEventMetadata,
   HrscEventMetadataValueFloat,
   HrscEventMetadataValueString,
+  HrscHazardProbabilityRaster,
 )
 
 from django.contrib.gis.measure import Distance as MDistance
@@ -31,6 +32,7 @@ from data.schemas import (
   HrscScenarioSchema,
   HrscEventSchema,
   HrscEventCollectionSchema,
+  HrscHazardProbabilityRasterSchema,
 )
 
 
@@ -186,3 +188,23 @@ def events_by_collection_filter(
   events = events[:limit]
 
   return [event.to_dict() for event in events]
+
+
+@router.get("/hazard_probabilities/raster/list", tags=["HRSC"], response=List[HrscHazardProbabilityRasterSchema])
+@decorate_view(cache_page(CACHE_TIMEOUT))
+def hazard_probabilities_raster_list(request: HttpRequest):
+  """Return a probability value for a given hazard and severity"""
+  return [r.to_dict() for r in HrscHazardProbabilityRaster.objects.all()]
+
+
+@router.get("/hazard_probabilities/raster/value/{str:hazard_key}", tags=["HRSC"], response=float)
+@decorate_view(cache_page(CACHE_TIMEOUT))
+def hazard_probabilities_raster_value(
+  request: HttpRequest,
+  hazard_key: str,
+  longitude: float,
+  latitude: float,
+  severity: float,
+):
+  """Return a probability value for a given hazard and severity"""
+  return HrscHazardProbabilityRaster.objects.get(hazard__key = hazard_key).get_probability_value(severity, longitude, latitude)

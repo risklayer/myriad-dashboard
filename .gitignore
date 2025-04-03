@@ -178,3 +178,5 @@ tsconfig.tsbuildinfo
 data/schema.json
 data/types/api.ts
 imports.sh
+
+data_raster/
