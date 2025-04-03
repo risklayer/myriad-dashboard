@@ -34,7 +34,7 @@ class Command(BaseCommand):
     )
 
   def handle(self, *args, filename: str, zip_filename: str, **options):  # , skip_existing: bool
-    hazard = Hazard.get_or_create_by_label("tornado", "Tornados")
+    hazard = Hazard.get_or_create_by_label(label="Tornados", slug_key="tornado")
 
     collection = HrscEventCollection.get_or_create_by_label(
       slug_key="tornado", label="Collection of Tornados", hazard=hazard
