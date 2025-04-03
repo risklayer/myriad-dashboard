@@ -76,9 +76,19 @@ class Command(BaseCommand):
         reader = csv.DictReader(csvfile)
 
         print("creating events")
+        sparse_counter = 0
         for fieldname in reader.fieldnames:
           if fieldname in {"Longitude", "Latitude"}:
             continue
+
+          if sparse:
+            sparse_counter += 1
+            # we are using a prime number here to have some pseudo-randomness in the distribution of the footprint values
+            if sparse_counter > 503:
+              sparse_counter = 0
+            else:
+              continue
+
           event = None
 
           metadata_filter = HrscEventMetadataValueString.objects.filter(
@@ -122,7 +132,6 @@ class Command(BaseCommand):
         print("creating event footprint values")
         values_to_create = list()
         i = 0
-        sparse_counter = 0
         for row in reader:
           longitude = float(row.pop("Longitude"))
           latitude = float(row.pop("Latitude"))
@@ -131,24 +140,17 @@ class Command(BaseCommand):
             if val == "-1":
               continue
 
-            if key in events:
-              if sparse:
-                sparse_counter += 1
-                # we are using a prime number here to have some pseudo-randomness in the distribution of the footprint values
-                if sparse_counter > 503:
-                  sparse_counter = 0
-                else:
-                  continue
+            if sparse:
+              if key not in events:
+                continue
 
-              values_to_create.append(
-                HrscValueCoordinateWinterstorm(
-                  event=events[key],
-                  value=val,
-                  location=location_dict[(longitude, latitude)],
-                )
+            values_to_create.append(
+              HrscValueCoordinateWinterstorm(
+                event=events[key],
+                value=val,
+                location=location_dict[(longitude, latitude)],
               )
-            else:
-              print("       skipping " + key)
+            )
 
           i += 1
           if i > 5000:
