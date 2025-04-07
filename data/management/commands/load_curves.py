@@ -27,9 +27,10 @@ class Command(BaseCommand):
 
   def add_arguments(self, parser):
     parser.add_argument("--filename", type=str, required=True)
+    parser.add_argument("--sheet", type=str)
 
-  def handle(self, *args, filename: str, **options):
-    data = pandas.read_excel(filename, sheet_name="Sheet1")
+  def handle(self, *args, filename: str, sheet : str = "Sheet1", **options):
+    data = pandas.read_excel(filename, sheet_name=sheet)
 
     # remove all curves, only support complete reset
     VulnerabilityCurve.objects.all().delete()
@@ -46,7 +47,7 @@ class Command(BaseCommand):
       occ_description_3 = row["Occ_Description_3"]
       coverage = row["Coverage"]
       myriad_sectors_list = [c.strip() for c in row["MYRIAD_Sectors_Applicable"].split(";")]
-      country_list = [c.strip() for c in row["Country"].split(",")]
+      country_list = [c.strip() for c in row["Country"].split(",")] if isinstance(row["Country"], str) else []
       x_values = row["IM_vals"]
       y_values = row["Y_vals"]
       if isinstance(y_values, (float, int)):
@@ -175,7 +176,8 @@ class Command(BaseCommand):
 
         key = h.hexdigest()[0:8] + "-" + slugify(name)
 
-        name += " [" + str(occ_description_1) + "]"
+        if occ_description_1 is not None:
+          name += " [" + str(occ_description_1) + "]"
 
         if len(key) > 256:
           raise Exception("key too long")
