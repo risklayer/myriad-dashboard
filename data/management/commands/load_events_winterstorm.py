@@ -101,7 +101,7 @@ class Command(BaseCommand):
               collection=collection,
               location=None,
               footprint=None,
-              footprint_type="none",
+              footprint_type="lazy_py_coord_vals",
             )
             event_metadata = HrscEventMetadataValueString(
               metadata=label_meta, event=event, value=fieldname

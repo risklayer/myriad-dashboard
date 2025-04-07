@@ -55,9 +55,9 @@ def collections(request: HttpRequest):
 
 @router.get("/event/{str:id}/detail", tags=["HRSC"], response=HrscEventSchema)
 @decorate_view(cache_page(CACHE_TIMEOUT))
-def event_by_id(request: HttpRequest, id: int):
+def event_by_id(request: HttpRequest, id: int, bbox: str = ""):
   """Returns the event details including footprint"""
-  return HrscEvent.objects.get(id=id).to_dict(include_footprint_blob=True)
+  return HrscEvent.objects.get(id=id).to_dict(include_footprint_blob=True, footprint_bbox = bbox.split(","))
 
 
 # removed this endpoint, not efficient enough

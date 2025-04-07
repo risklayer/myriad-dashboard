@@ -227,7 +227,7 @@ class HrscEventSchema(ModelSchema):
   collection_id: int
   location: Optional[Dict[str, float]] = None
   footprint_type: str
-  footprint: Union[str, dict, None] = None
+  footprint: Union[str, dict, None, List] = None
 
   class Meta:
     model = HrscEvent

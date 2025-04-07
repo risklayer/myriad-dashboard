@@ -9,7 +9,7 @@ from django.template.defaultfilters import slugify
 from django.utils.safestring import mark_safe
 
 from django.contrib.gis.db import models as gismodels
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import Point, Polygon as geos_Polygon
 from django.contrib.gis.measure import Distance as MDistance
 from django.contrib.gis.db.models.functions import Distance as DBDistance
 from base64 import b64encode
@@ -669,6 +669,7 @@ class HrscEvent(models.Model):
     ("tiff_embed", "TIFF File (embedded)"),
     ("tiff_ext", "TIFF File (external)"),
     ("lazy_py_geojson", "On-the-fly calculation using python, produces geojson"),
+    ("lazy_py_coord_vals", "On-the-fly calculation using python, produces list of points with values"),
   ]
 
   footprint = models.BinaryField(null=True, blank=True)
@@ -703,7 +704,7 @@ class HrscEvent(models.Model):
 
     return data
 
-  def get_footprint(self) -> bytes:
+  def get_footprint(self, bbox = Tuple[float]) -> bytes:
     if self.footprint_type == "lazy_py_geojson":
       if self.collection.key == "tornado":
         all_metadata = self.get_metadata_all()
@@ -734,9 +735,28 @@ class HrscEvent(models.Model):
         point4 = (point4.latitude, point4.longitude)
         polygon = Polygon([point1, point2, point3, point4, point1])
         return {"type": "Feature", "properties": all_metadata, "geometry": mapping(polygon)}
-
       else:
         raise Exception("cannot generate footprint for " + self.collection.key)
+
+    elif self.footprint_type == "lazy_py_coord_vals":
+      if self.collection.key == "winterstorm":
+        print(repr(HrscValueCoordinateWinterstorm.objects.filter(event = self)))
+        return [
+          [value.location.location.x, value.location.location.y, value.value]
+          for value in
+          HrscValueCoordinateWinterstorm.objects.filter(event = self)
+          #if
+          #  value.location.location.x > float(bbox[0]) # bbox_min_x
+          # and
+          #  value.location.location.y > float(bbox[1]) # bbox_min_y
+          # and
+          #  value.location.location.x < float(bbox[2]) # bbox_max_x
+          # and
+          #  value.location.location.y < float(bbox[3]) # bbox_max_y
+        ]
+      else:
+        raise Exception("cannot generate footprint for " + self.collection.key)
+
     else:
       return self.footprint
 
@@ -821,7 +841,7 @@ class HrscEvent(models.Model):
 
     return result
 
-  def to_dict(self, include_footprint_blob=False):
+  def to_dict(self, include_footprint_blob = False, footprint_bbox : Tuple[float] = None):
     data = {
       "id": self.id,
       "collection_id": self.collection_id,
@@ -835,7 +855,7 @@ class HrscEvent(models.Model):
     }
 
     if include_footprint_blob:
-      footprint = self.get_footprint()
+      footprint = self.get_footprint(bbox = footprint_bbox)
       if isinstance(footprint, bytes):
         footprint = b64encode(footprint).decode(encoding="utf-8")
       data["footprint"] = footprint
