@@ -180,3 +180,4 @@ data/types/api.ts
 imports.sh
 
 data_raster/
+/*.gpkg

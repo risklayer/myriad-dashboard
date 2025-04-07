@@ -1,6 +1,6 @@
 {% for app in myriad_apps %}
   <li class="nav-item">
-    <a class="nav-link{% if request.path == app.url %} active{% endif %}"
+    <a class="nav-link{% if request.path == app.url %} active{% endif %} text-nowrap"
        {% if request.path == app.url %}aria-current="page"{% endif %}
        href="{{ app.url }}">{{ app.name }}</a>
   </li>
