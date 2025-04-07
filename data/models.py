@@ -247,7 +247,7 @@ class Nuts3Area(models.Model):
 
 class KeyLabelSelection:
   @classmethod
-  def get_or_create_by_label(cls, label: str, slug_key: Optional[str] = None, **kwargs):
+  def get_or_create_by_label(cls, label: str, slug_key: Optional[str] = None, created_info : bool = False, **kwargs):
     if label is None:
       return None
 
@@ -255,6 +255,9 @@ class KeyLabelSelection:
       slug_key = slugify(label)
 
     instance, created = cls.objects.get_or_create(key=slug_key, defaults={"label": label} | kwargs)
+
+    if created_info:
+      return instance, created
 
     return instance
 
@@ -310,6 +313,7 @@ class TourismIndicator(models.Model, KeyLabelSelection):
     }
 
 
+# TODO: remove
 class TourismIndicatorValueString(models.Model, KeyLabelSelection):
   nuts_area = models.ForeignKey(Nuts3Area, on_delete=models.CASCADE)
   indicator = models.ForeignKey(TourismIndicator, on_delete=models.CASCADE)
@@ -320,6 +324,7 @@ class TourismIndicatorValueString(models.Model, KeyLabelSelection):
     unique_together = ("indicator", "nuts_area")
 
 
+# TODO: rename to TourismIndicatorValue
 class TourismIndicatorValueFloat(models.Model, KeyLabelSelection):
   indicator = models.ForeignKey(TourismIndicator, on_delete=models.CASCADE)
   nuts_area = models.ForeignKey(Nuts3Area, on_delete=models.CASCADE)
