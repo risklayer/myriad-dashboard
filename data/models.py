@@ -313,19 +313,7 @@ class TourismIndicator(models.Model, KeyLabelSelection):
     }
 
 
-# TODO: remove
-class TourismIndicatorValueString(models.Model, KeyLabelSelection):
-  nuts_area = models.ForeignKey(Nuts3Area, on_delete=models.CASCADE)
-  indicator = models.ForeignKey(TourismIndicator, on_delete=models.CASCADE)
-
-  value = models.TextField()
-
-  class Meta:
-    unique_together = ("indicator", "nuts_area")
-
-
-# TODO: rename to TourismIndicatorValue
-class TourismIndicatorValueFloat(models.Model, KeyLabelSelection):
+class TourismIndicatorValue(models.Model, KeyLabelSelection):
   indicator = models.ForeignKey(TourismIndicator, on_delete=models.CASCADE)
   nuts_area = models.ForeignKey(Nuts3Area, on_delete=models.CASCADE)
 

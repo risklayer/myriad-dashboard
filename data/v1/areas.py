@@ -15,8 +15,7 @@ from data.models import (
   DataTableColumnValue,
   Nuts3Area,
   TourismIndicator,
-  TourismIndicatorValueString,
-  TourismIndicatorValueFloat,
+  TourismIndicatorValue,
 )
 from data.schemas import (
   CountrySchema,
@@ -94,14 +93,7 @@ def shapes(
       value_dict[value.nuts_area_id][value.data_table_column.key] = value.value
 
   for indicator in TourismIndicator.objects.filter(key__in=tourismIndicators):
-    all_values = TourismIndicatorValueString.objects.filter(
-      indicator=indicator, nuts_area__in=nuts3area_filter
-    ).select_related("nuts_area")
-
-    for value in all_values:
-      value_dict[value.nuts_area_id][value.data_table_column.key] = value.value
-
-    all_values = TourismIndicatorValueFloat.objects.filter(
+    all_values = TourismIndicatorValue.objects.filter(
       indicator=indicator, nuts_area__in=nuts3area_filter
     ).select_related("nuts_area")
 

@@ -3,7 +3,7 @@ import sqlite3
 from data.models import (
   Nuts3Area,
   TourismIndicator,
-  TourismIndicatorValueFloat,
+  TourismIndicatorValue,
 )
 from django.core.management.base import BaseCommand
 from data.data_region.country_list import (
@@ -125,7 +125,7 @@ class Command(BaseCommand):
             indicator_dict[column_key], created = TourismIndicator.get_or_create_by_label(label = column_key, created_info=True)
 
             if not created:
-              TourismIndicatorValueFloat.objects.filter(indicator = indicator_dict[column_key]).delete()
+              TourismIndicatorValue.objects.filter(indicator = indicator_dict[column_key]).delete()
 
           for row in res_columns.fetchall():
             for column in column_keys:
@@ -135,14 +135,14 @@ class Command(BaseCommand):
                 continue
 
               all_values.append(
-                TourismIndicatorValueFloat(
+                TourismIndicatorValue(
                   indicator = indicator_dict[column],
                   nuts_area=geometry_shapes[row["NUTS_ID"]],
                   value=data_value,
                 )
               )
 
-      TourismIndicatorValueFloat.objects.bulk_create(all_values)
+      TourismIndicatorValue.objects.bulk_create(all_values)
 
     elif format == "xlsx":
       pass
