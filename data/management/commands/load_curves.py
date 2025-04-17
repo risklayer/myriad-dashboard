@@ -27,13 +27,14 @@ class Command(BaseCommand):
 
   def add_arguments(self, parser):
     parser.add_argument("--filename", type=str, required=True)
-    parser.add_argument("--sheet", type=str)
+    parser.add_argument("--sheet", type=str, default="Sheet1")
+    parser.add_argument("--clear-existing", dest="clear_existing", action='store_true')
 
-  def handle(self, *args, filename: str, sheet : str = "Sheet1", **options):
+  def handle(self, *args, filename: str, sheet: str, clear_existing: bool, **options):
     data = pandas.read_excel(filename, sheet_name=sheet)
 
-    # remove all curves, only support complete reset
-    VulnerabilityCurve.objects.all().delete()
+    if clear_existing:
+      VulnerabilityCurve.objects.all().delete()
 
     for index, row in data.iterrows():
       name = row["Name"]
