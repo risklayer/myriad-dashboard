@@ -80,9 +80,7 @@ def shapes(
     if len(nuts3areas) > 0:
       nuts3area_filter |= Nuts3Area.objects.filter(key__in=nuts3areas)
 
-  value_dict = {
-    key : dict() for key in nuts3area_filter.values_list("key", flat=True)
-  }
+  value_dict = {key: dict() for key in nuts3area_filter.values_list("key", flat=True)}
 
   for column in DataTableColumn.objects.filter(key__in=columns):
     all_values = DataTableColumnValue.objects.filter(

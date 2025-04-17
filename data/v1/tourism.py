@@ -2,11 +2,9 @@ from django.http import HttpRequest
 from django.views.decorators.cache import cache_page
 from ninja import Router
 from ninja.decorators import decorate_view
-from django.db.models import Q
 
 from typing import List
 
-from django.conf import settings
 
 from data.api_shared import (
   CACHE_TIMEOUT,
@@ -28,4 +26,3 @@ router = Router(tags=["TOURISM"])
 def indicators(request: HttpRequest):
   """Returns a list of available Scenarios"""
   return [indicator.to_dict() for indicator in TourismIndicator.objects.all()]
-

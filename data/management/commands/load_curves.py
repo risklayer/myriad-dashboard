@@ -28,7 +28,7 @@ class Command(BaseCommand):
   def add_arguments(self, parser):
     parser.add_argument("--filename", type=str, required=True)
     parser.add_argument("--sheet", type=str, default="Sheet1")
-    parser.add_argument("--clear-existing", dest="clear_existing", action='store_true')
+    parser.add_argument("--clear-existing", dest="clear_existing", action="store_true")
 
   def handle(self, *args, filename: str, sheet: str, clear_existing: bool, **options):
     data = pandas.read_excel(filename, sheet_name=sheet)
@@ -48,7 +48,9 @@ class Command(BaseCommand):
       occ_description_3 = row["Occ_Description_3"]
       coverage = row["Coverage"]
       myriad_sectors_list = [c.strip() for c in row["MYRIAD_Sectors_Applicable"].split(";")]
-      country_list = [c.strip() for c in row["Country"].split(",")] if isinstance(row["Country"], str) else []
+      country_list = (
+        [c.strip() for c in row["Country"].split(",")] if isinstance(row["Country"], str) else []
+      )
       x_values = row["IM_vals"]
       y_values = row["Y_vals"]
       if isinstance(y_values, (float, int)):

@@ -15,11 +15,6 @@ import re
 
 import fiona
 
-import json
-
-from django.db import models
-from typing import Type, Dict
-
 
 country_dict = get_country_dict_by_2alpha()
 nuts_dict = get_nuts_by_code()
@@ -33,9 +28,7 @@ class Command(BaseCommand):
     parser.add_argument("--filename", type=str, required=True)
     parser.add_argument("--format", type=str, required=True, choices=["gpkg-sqlite"])
 
-  def handle(
-    self, *args, filename: str, format: str, **options
-  ):
+  def handle(self, *args, filename: str, format: str, **options):
     regexp_str = "^[a-zA-Z_\-][0-9a-zA-Z_\-]*$"
     table_name_check = re.compile(regexp_str)
     if format == "gpkg-sqlite":
@@ -122,10 +115,12 @@ class Command(BaseCommand):
 
           indicator_dict = dict()
           for column_key in column_keys:
-            indicator_dict[column_key], created = TourismIndicator.get_or_create_by_label(label = column_key, created_info=True)
+            indicator_dict[column_key], created = TourismIndicator.get_or_create_by_label(
+              label=column_key, created_info=True
+            )
 
             if not created:
-              TourismIndicatorValue.objects.filter(indicator = indicator_dict[column_key]).delete()
+              TourismIndicatorValue.objects.filter(indicator=indicator_dict[column_key]).delete()
 
           for row in res_columns.fetchall():
             for column in column_keys:
@@ -136,7 +131,7 @@ class Command(BaseCommand):
 
               all_values.append(
                 TourismIndicatorValue(
-                  indicator = indicator_dict[column],
+                  indicator=indicator_dict[column],
                   nuts_area=geometry_shapes[row["NUTS_ID"]],
                   value=data_value,
                 )
