@@ -20,6 +20,7 @@ from data.models import (
   HrscEventMetadataValueFloat,
   HrscEventMetadataValueString,
   HrscHazardProbabilityRaster,
+  HrscExposure,
 )
 
 from django.contrib.gis.measure import Distance as MDistance
@@ -33,6 +34,7 @@ from data.schemas import (
   HrscEventSchema,
   HrscEventCollectionSchema,
   HrscHazardProbabilityRasterSchema,
+  HrscExposureSchema,
 )
 
 
@@ -46,6 +48,13 @@ def scenarios(request: HttpRequest):
   return [scenario.to_dict() for scenario in HrscScenario.objects.all()]
 
 
+@router.get("/exposures", tags=["HRSC"], response=List[HrscExposureSchema])
+@decorate_view(cache_page(CACHE_TIMEOUT))
+def exposures(request: HttpRequest):
+  """Returns a list of available Exposures"""
+  return [exposure.to_dict() for exposure in HrscExposure.objects.all()]
+
+
 @router.get("/collections", tags=["HRSC"], response=List[HrscEventCollectionSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def collections(request: HttpRequest):
@@ -57,7 +66,9 @@ def collections(request: HttpRequest):
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def event_by_id(request: HttpRequest, id: int, bbox: str = ""):
   """Returns the event details including footprint"""
-  return HrscEvent.objects.get(id=id).to_dict(include_footprint_blob=True, footprint_bbox = bbox.split(","))
+  return HrscEvent.objects.get(id=id).to_dict(
+    include_footprint_blob=True, footprint_bbox=bbox.split(",")
+  )
 
 
 # removed this endpoint, not efficient enough
@@ -190,7 +201,11 @@ def events_by_collection_filter(
   return [event.to_dict() for event in events]
 
 
-@router.get("/hazard_probabilities/raster/list", tags=["HRSC"], response=List[HrscHazardProbabilityRasterSchema])
+@router.get(
+  "/hazard_probabilities/raster/list",
+  tags=["HRSC"],
+  response=List[HrscHazardProbabilityRasterSchema],
+)
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def hazard_probabilities_raster_list(request: HttpRequest):
   """Return a probability value for a given hazard and severity"""
@@ -207,4 +222,6 @@ def hazard_probabilities_raster_value(
   severity: float,
 ):
   """Return a probability value for a given hazard and severity"""
-  return HrscHazardProbabilityRaster.objects.get(hazard__key = hazard_key).get_probability_value(severity, longitude, latitude)
+  return HrscHazardProbabilityRaster.objects.get(hazard__key=hazard_key).get_probability_value(
+    severity, longitude, latitude
+  )

@@ -18,6 +18,7 @@ from data.models import (
   TableMetaThreshold,
   TourismIndicator,
   HrscHazardProbabilityRaster,
+  HrscExposure,
 )
 
 
@@ -264,3 +265,15 @@ class HrscHazardProbabilityRasterSchema(ModelSchema):
   class Meta:
     model = HrscHazardProbabilityRaster
     fields = ["severity_unit"]
+
+
+class HrscExposureSchema(ModelSchema):
+  id: int
+  key: str
+  label: str
+  raster: Dict[str, Union[str, float]]
+  nuts3_column: bool
+
+  class Meta:
+    model = HrscExposure
+    fields = ["key", "label"]

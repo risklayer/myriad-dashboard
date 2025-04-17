@@ -9,7 +9,7 @@ from django.template.defaultfilters import slugify
 from django.utils.safestring import mark_safe
 
 from django.contrib.gis.db import models as gismodels
-from django.contrib.gis.geos import Point, Polygon as geos_Polygon
+from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import Distance as MDistance
 from django.contrib.gis.db.models.functions import Distance as DBDistance
 from base64 import b64encode
@@ -247,7 +247,9 @@ class Nuts3Area(models.Model):
 
 class KeyLabelSelection:
   @classmethod
-  def get_or_create_by_label(cls, label: str, slug_key: Optional[str] = None, created_info : bool = False, **kwargs):
+  def get_or_create_by_label(
+    cls, label: str, slug_key: Optional[str] = None, created_info: bool = False, **kwargs
+  ):
     if label is None:
       return None
 
@@ -657,7 +659,10 @@ class HrscEvent(models.Model):
     ("tiff_embed", "TIFF File (embedded)"),
     ("tiff_ext", "TIFF File (external)"),
     ("lazy_py_geojson", "On-the-fly calculation using python, produces geojson"),
-    ("lazy_py_coord_vals", "On-the-fly calculation using python, produces list of points with values"),
+    (
+      "lazy_py_coord_vals",
+      "On-the-fly calculation using python, produces list of points with values",
+    ),
   ]
 
   footprint = models.BinaryField(null=True, blank=True)
@@ -692,7 +697,7 @@ class HrscEvent(models.Model):
 
     return data
 
-  def get_footprint(self, bbox = Tuple[float]) -> bytes:
+  def get_footprint(self, bbox=Tuple[float]) -> bytes:
     if self.footprint_type == "lazy_py_geojson":
       if self.collection.key == "tornado":
         all_metadata = self.get_metadata_all()
@@ -728,12 +733,11 @@ class HrscEvent(models.Model):
 
     elif self.footprint_type == "lazy_py_coord_vals":
       if self.collection.key == "winterstorm":
-        print(repr(HrscValueCoordinateWinterstorm.objects.filter(event = self)))
+        print(repr(HrscValueCoordinateWinterstorm.objects.filter(event=self)))
         return [
           [value.location.location.x, value.location.location.y, value.value]
-          for value in
-          HrscValueCoordinateWinterstorm.objects.filter(event = self)
-          #if
+          for value in HrscValueCoordinateWinterstorm.objects.filter(event=self)
+          # if
           #  value.location.location.x > float(bbox[0]) # bbox_min_x
           # and
           #  value.location.location.y > float(bbox[1]) # bbox_min_y
@@ -829,7 +833,7 @@ class HrscEvent(models.Model):
 
     return result
 
-  def to_dict(self, include_footprint_blob = False, footprint_bbox : Tuple[float] = None):
+  def to_dict(self, include_footprint_blob=False, footprint_bbox: Tuple[float] = None):
     data = {
       "id": self.id,
       "collection_id": self.collection_id,
@@ -843,7 +847,7 @@ class HrscEvent(models.Model):
     }
 
     if include_footprint_blob:
-      footprint = self.get_footprint(bbox = footprint_bbox)
+      footprint = self.get_footprint(bbox=footprint_bbox)
       if isinstance(footprint, bytes):
         footprint = b64encode(footprint).decode(encoding="utf-8")
       data["footprint"] = footprint
@@ -889,25 +893,25 @@ class HrscValueCoordinateWinterstorm(models.Model):
   value = models.SmallIntegerField(db_index=True)
 
 
-class HrscExposureRaster(models.Model, KeyLabelSelection):
+class HrscExposure(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True)
   label = models.TextField()
 
-  cell_size = models.FloatField()
-  severity_unit = models.TextField()
-
   def to_dict(self):
+    raster = HrscExposureRaster.objects.filter(exposure=self).first()
     return {
       "id": self.id,
       "key": self.key,
       "label": self.label,
-      "cell_size": self.cell_size,
+      "raster": raster.to_dict() if raster else None,
+      "nuts3_column": HrscExposureColumnValue.objects.filter(exposure=self).exists(),
     }
 
 
-class HrscExposureRasterInstance(models.Model):
-  exposure_raster = models.ForeignKey(HrscExposureRaster, on_delete=models.CASCADE)
-  severity_value = models.FloatField()
+class HrscExposureRaster(models.Model):
+  exposure = models.ForeignKey(HrscExposure, on_delete=models.CASCADE)
+
+  cell_size = models.FloatField()
 
   _file_type_choices = [
     ("tiff", "TIFF File"),
@@ -916,35 +920,16 @@ class HrscExposureRasterInstance(models.Model):
   file_type = models.TextField(choices=_file_type_choices)
   file = models.FilePathField(path=settings.RASTER_DATA_ROOT)
 
-# class HrscExposureRasterValue(models.Model):
-#  exposure_instance = models.ForeignKey(HrscExposureRasterInstance, on_delete=models.CASCADE)
-#  location = models.ForeignKey(GridLocation, on_delete=models.CASCADE)
-#
-#  value = models.FloatField()
-
-
-class HrscExposureColumn(models.Model, KeyLabelSelection):
-  key = models.TextField(unique=True)
-  label = models.TextField()
-
-  severity_unit = models.TextField()
-
   def to_dict(self):
     return {
-      "id": self.id,
-      "key": self.key,
-      "label": self.label,
-      "severity_unit": self.severity_unit,
+      "cell_size": self.cell_size,
+      "file_type": self.file_type,
+      "file": str(self.file),
     }
 
 
-class HrscExposureColumnInstance(models.Model, KeyLabelSelection):
-  exposure_column = models.ForeignKey(HrscExposureColumn, on_delete=models.CASCADE)
-  severity_value = models.FloatField()
-
-
 class HrscExposureColumnValue(models.Model):
-  exposure = models.ForeignKey(HrscExposureColumn, on_delete=models.CASCADE)
+  exposure = models.ForeignKey(HrscExposure, on_delete=models.CASCADE)
   nuts3area = models.ForeignKey(Nuts3Area, on_delete=models.CASCADE)
 
   value = models.FloatField()
@@ -960,7 +945,10 @@ class HrscHazardProbabilityRaster(models.Model):
       "id": self.id,
       "hazard": self.hazard.to_dict(),
       "severity_unit": self.severity_unit,
-      "severities": [i.severity_value for i in HrscHazardProbabilityRasterInstance.objects.filter(probability_raster = self)]
+      "severities": [
+        i.severity_value
+        for i in HrscHazardProbabilityRasterInstance.objects.filter(probability_raster=self)
+      ],
     }
 
   def get_probability_value(self, severity_value: float, longitude: float, latitude: float):
@@ -1012,5 +1000,5 @@ class HrscScenario(models.Model, KeyLabelSelection):
 
 class HrscScenarioExposureVulnerabilityMapping(models.Model, KeyLabelSelection):
   scenario = models.ForeignKey(HrscScenario, on_delete=models.CASCADE)
-  exposure = models.ForeignKey(HrscExposureRaster, on_delete=models.CASCADE)
+  exposure = models.ForeignKey(HrscExposure, on_delete=models.CASCADE)
   vulnerability = models.ForeignKey(VulnerabilityCurve, on_delete=models.CASCADE)
