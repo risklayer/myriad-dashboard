@@ -5,6 +5,7 @@ import django.contrib.gis.db.models.fields
 import django.db.models.deletion
 from django.db import migrations, models
 
+from django.conf import settings
 
 class Migration(migrations.Migration):
 
@@ -280,7 +281,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('cell_size', models.FloatField()),
                 ('file_type', models.TextField(choices=[('tiff', 'TIFF File')])),
-                ('file', models.FilePathField(path='/home/simon/myriad/myriad-dashboard/data_raster')),
+                ('file', models.FilePathField(path=settings.RASTER_DATA_ROOT)),
                 ('exposure', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data.hrscexposure')),
             ],
         ),
@@ -298,7 +299,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('severity_value', models.FloatField()),
                 ('file_type', models.TextField(choices=[('tiff', 'TIFF File')])),
-                ('file', models.FilePathField(path='/home/simon/myriad/myriad-dashboard/data_raster')),
+                ('file', models.FilePathField(path=settings.RASTER_DATA_ROOT)),
                 ('probability_raster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data.hrschazardprobabilityraster')),
             ],
             bases=(models.Model, data.models.RasterInstance),
