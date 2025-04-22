@@ -19,6 +19,8 @@ from django.contrib.gis.geos import Point
 
 from django.db import transaction
 
+from typing import Optional
+
 
 class Command(BaseCommand):
   help = "Add a winterstorm data set"
@@ -32,8 +34,9 @@ class Command(BaseCommand):
     )
     parser.add_argument(
       "--sparse",
-      action="store_true",
-      help="Only use every 503rd entry to reduce the footprint of the database for testing purposes.",
+      type=float,
+      default=None,
+      help="Only use every xth entry to reduce the footprint of the database for testing purposes.",
     )
     parser.add_argument(
       "--zip-filename",
@@ -43,7 +46,7 @@ class Command(BaseCommand):
       help="If the file to load is inside an archive, then spcify the archive path with this argument and --filename as the path of the file inside the archive",
     )
 
-  def handle(self, *args, filename: str, zip_filename: str, sparse: bool, **options):
+  def handle(self, *args, filename: str, zip_filename: str, sparse: Optional[float], **options):
     hazard = Hazard.get_or_create_by_label(label="Winter storm", slug_key="winterstorm")
 
     collection = HrscEventCollection.get_or_create_by_label(
@@ -84,7 +87,7 @@ class Command(BaseCommand):
           if sparse:
             sparse_counter += 1
             # we are using a prime number here to have some pseudo-randomness in the distribution of the footprint values
-            if sparse_counter > 503:
+            if sparse_counter > sparse:
               sparse_counter = 0
             else:
               continue
