@@ -24,6 +24,7 @@ export default {
         lib: ["es6", "dom"],
         target: "es6",
       },
+      sourceMap: !isProduction,
     }),
     isProduction && (await import("@rollup/plugin-terser")).default(),
   ],

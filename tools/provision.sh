@@ -17,4 +17,4 @@ npx openapi-typescript data/schema.json -o data/types/api.ts --make-paths-enum -
 
 npm run build-prod
 
-python3 ./manage.py collectstatic --noinput
+python3 ./manage.py collectstatic --noinput --clear

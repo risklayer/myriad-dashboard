@@ -16,6 +16,14 @@ from .settings_base import *
 
 #SECURE_SSL_REDIRECT = True
 #DEBUG = False
+
+if DEBUG:
+  # Don't use default NpmStringFinder, which is slow in dev
+  STATICFILES_FINDERS.remove("dashboard.finders.NpmStringFinder")
+  STATICFILES_DIRS.append(
+    os.path.join(BASE_DIR, "node_modules"),
+  )
+
 #ALLOWED_HOSTS = ["www.example.com"]
 
 # disable the admin interface for production!

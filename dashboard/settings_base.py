@@ -125,10 +125,32 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 STATICFILES_DIRS = [
-  os.path.join(BASE_DIR, "node_modules"),
   os.path.join(BASE_DIR, "build"),
   os.path.join(BASE_DIR, "shared/build"),
 ]
+
+STATICFILES_FINDERS = [
+  "django.contrib.staticfiles.finders.FileSystemFinder",
+  "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+  "dashboard.finders.NpmStringFinder",
+]
+
+NPM_FILE_PATTERNS = {
+  "@gnatih/leaflet.legend": ["src/leaflet.legend.css"],
+  "@popperjs": ["core/dist/umd/popper.min.js"],
+  "bootstrap-icons": ["bootstrap-icons.svg"],
+  "bootstrap": ["dist/js/bootstrap.min.js"],
+  "chart.js": ["dist/chart.umd.js"],
+  "datatables.net-bs5": ["css/dataTables.bootstrap5.min.css"],
+  "datatables.net-buttons-bs5": ["css/buttons.bootstrap5.min.css"],
+  "htmx-ext-class-tools": ["class-tools.js"],
+  "htmx.org": ["dist/htmx.min.js"],
+  "jszip": ["dist/jszip.min.js"],
+  "leaflet": ["dist/leaflet.css", "dist/images/*.png"],
+  "@fontsource": ["barlow/*.css", "barlow/files/barlow*.*"],
+}
+
+# NPM_STATIC_FILES_PREFIX = "vendor"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -137,7 +159,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+STORAGES = {
+  "default": {
+    "BACKEND": "django.core.files.storage.FileSystemStorage",
+  },
+  "staticfiles": {
+    "BACKEND": "dashboard.storage.ForgivingManifestStaticFilesStorage",
+  },
+}
 
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
