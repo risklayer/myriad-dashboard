@@ -1,56 +1,46 @@
+import math
+from json import dumps
+from typing import List
+
+import numpy as np
+import rasterio
+from django.conf import settings
+from django.contrib.gis.db.models.functions import Distance as DBDistance
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import Distance as MDistance
+from django.db.models import Q
 from django.http import HttpRequest
 from django.views.decorators.cache import cache_page
 from ninja import Query, Router
 from ninja.decorators import decorate_view
-from django.db.models import Q
-
-from typing import List
-
-from django.conf import settings
+from rasterio.io import MemoryFile
+from rasterio.transform import from_origin
+from shapely import from_geojson, geometry
 
 from data.api_shared import (
   CACHE_TIMEOUT,
 )
 from data.models import (
-  HrscScenario,
-  HrscEventCollection,
   HrscEvent,
-  HrscValueCoordinateWinterstorm,
+  HrscEventCollection,
   HrscEventMetadata,
   HrscEventMetadataValueFloat,
   HrscEventMetadataValueString,
-  HrscHazardProbabilityRaster,
   HrscExposure,
   HrscExposureRaster,
+  HrscHazardProbabilityRaster,
+  HrscScenario,
   HrscScenarioExposureVulnerabilityMapping,
+  HrscValueCoordinateWinterstorm,
   Nuts3Area,
 )
-
-from django.contrib.gis.measure import Distance as MDistance
-from django.contrib.gis.geos import Point
-
-from django.contrib.gis.db.models.functions import Distance as DBDistance
-
-
 from data.schemas import (
-  HrscScenarioSchema,
-  HrscEventSchema,
   HrscEventCollectionSchema,
-  HrscHazardProbabilityRasterSchema,
+  HrscEventSchema,
   HrscExposureSchema,
+  HrscHazardProbabilityRasterSchema,
+  HrscScenarioSchema,
 )
-
-import rasterio
-from rasterio.io import MemoryFile
-import numpy as np
-import math
-
-from shapely import geometry
-from shapely import from_geojson
-
-from rasterio.transform import from_origin
-
-from json import dumps
 
 router = Router(tags=["HRSC"])
 
@@ -65,8 +55,11 @@ def scenarios(request: HttpRequest):
 @router.get("/scenario/calculate_impact/{str:exposure_key}", tags=["HRSC"], response=dict)
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def calculate_impact(
-  request: HttpRequest, exposure_key: str, event_id: List[int] = Query([]), bbox: str = None,
-  include_geometry : bool = True
+  request: HttpRequest,
+  exposure_key: str,
+  event_id: List[int] = Query([]),
+  bbox: str = None,
+  include_geometry: bool = True,
 ):
   """calculate the risk footprint for a given scenario and exposure, returns a geojson"""
   exposure = HrscExposure.objects.get(key=exposure_key)
@@ -229,10 +222,7 @@ def calculate_impact(
 
   num_areas_found = np.zeros((steps_y, steps_x), dtype="int")
   memfile_xy_raster = [
-    [
-      rasterio.transform.xy(result_transform, pos_y, pos_x)
-      for pos_x in range(steps_x)
-    ]
+    [rasterio.transform.xy(result_transform, pos_y, pos_x) for pos_x in range(steps_x)]
     for pos_y in range(steps_y)
   ]
 
@@ -240,13 +230,14 @@ def calculate_impact(
     area_geojson_obj = from_geojson(dumps(area.geom_json))
     for pos_y in range(steps_y):
       for pos_x in range(steps_x):
-        #memfile_x, memfile_y = rasterio.transform.xy(result_transform, pos_y, pos_x)
+        # memfile_x, memfile_y = rasterio.transform.xy(result_transform, pos_y, pos_x)
         memfile_x, memfile_y = memfile_xy_raster[pos_y][pos_x]
-        if area.bbox_min_x < memfile_x \
-          and area.bbox_min_y < memfile_y \
-          and area.bbox_max_x > memfile_x \
-          and area.bbox_max_y > memfile_y:
-
+        if (
+          area.bbox_min_x < memfile_x
+          and area.bbox_min_y < memfile_y
+          and area.bbox_max_x > memfile_x
+          and area.bbox_max_y > memfile_y
+        ):
           point = geometry.Point(memfile_x, memfile_y)
           if area_geojson_obj.contains(point):
             num_areas_found[pos_y][pos_x] += 1
@@ -313,7 +304,7 @@ def collections(request: HttpRequest):
 def event_by_id(request: HttpRequest, id: int, bbox: str = ""):
   """Returns the event details including footprint"""
   return HrscEvent.objects.get(id=id).to_dict(
-    include_footprint_blob=True, footprint_bbox=bbox.split(",")
+    include_footprint_blob=True, footprint_bbox=bbox.split(","), include_metadata=True
   )
 
 
@@ -332,8 +323,8 @@ def events_by_collection_filter_ws(
   longitude: float = None,
   latitude: float = None,
   radius: float = 1000,
-  value_min: float = None,
-  value_max: float = None,
+  value__min: float = None,
+  value__max: float = None,
   limit: int = 100,
 ):
   """
@@ -342,24 +333,14 @@ def events_by_collection_filter_ws(
   by wind speed inside the footprints
   """
 
-  point = Point(longitude, latitude, srid=settings.DEFAULT_SRID)
-
-  values = HrscValueCoordinateWinterstorm.objects.filter(
-    event__collection=HrscEventCollection.objects.get(key="winterstorm"),
-    location__location__distance_lt=(point, MDistance(km=radius)),
+  events = get_events_by_collection_filter_ws(
+    longitude,
+    latitude,
+    radius,
+    value__min,
+    value__max,
+    limit,
   )
-
-  if value_min:
-    values = values.filter(value__gte=value_min)
-
-  if value_max:
-    values = values.filter(value__lte=value_max)
-
-  values = values.annotate(
-    distance=DBDistance("location__location", point, geography=True)
-  ).order_by("distance")
-
-  events = HrscEvent.objects.filter(id__in=values.values("event").distinct()[:limit])
 
   return [event.to_dict() for event in events]
 
@@ -383,17 +364,38 @@ def events_by_collection_filter(
   * "metadata_&lt;key&gt;__max" or "__min": upper or lower boundary
     (note: 2 underscores)
   """
+  filters: dict = request.GET
+
+  events = get_events_by_collection_filter(
+    collection_key, longitude, latitude, radius, limit, filters
+  )
+
+  return [event.to_dict() for event in events]
+
+
+def get_events_by_collection_filter(
+  collection_key: str,
+  longitude: float = None,
+  latitude: float = None,
+  radius: float = 1000,
+  limit: int = 100,
+  filters: dict = dict(),
+):
+  collection = HrscEventCollection.objects.filter(key=collection_key).first()
+  if not collection:
+    return HrscEvent.objects.none()
 
   events = HrscEvent.getByLocation(
     point=None,
     longitude=longitude,
     latitude=latitude,
     radius=radius,
-    limit=None,
-    event_filter=HrscEventCollection.objects.get(key=collection_key).hrscevent_set.all(),
+    # limit=limit,
+    # event_filter=collection.hrscevent_set,
+    event_filter=HrscEvent.objects.filter(collection__key=collection_key),
   )
 
-  for key in request.GET.keys():
+  for key in filters.keys():
     if not key.startswith("metadata_"):
       continue
 
@@ -407,7 +409,7 @@ def events_by_collection_filter(
 
       if metadata.type == "float":
         metadata_values = HrscEventMetadataValueFloat.objects.filter(
-          metadata=metadata, value__lte=request.GET[key]
+          metadata=metadata, value__lte=filters[key]
         )
         events = events.filter(hrsceventmetadatavaluefloat__in=metadata_values)
 
@@ -419,14 +421,14 @@ def events_by_collection_filter(
 
       if metadata.type == "float":
         metadata_values = HrscEventMetadataValueFloat.objects.filter(
-          metadata=metadata, value__gte=request.GET[key]
+          metadata=metadata, value__gte=filters[key]
         )
         events = events.filter(hrsceventmetadatavaluefloat__in=metadata_values)
     else:
       metadata = HrscEventMetadata.objects.get(key=metadata_key)
 
       meta_or = Q(id__in=[])
-      for value in request.GET.getlist(key):
+      for value in filters.getlist(key):
         if metadata.type == "float":
           metadata_values = HrscEventMetadataValueFloat.objects.filter(
             metadata=metadata, value=value
@@ -442,9 +444,10 @@ def events_by_collection_filter(
 
       events = events.filter(meta_or)
 
-  events = events[:limit]
-
-  return [event.to_dict() for event in events]
+  events = events.order_by("?").prefetch_related(
+    "hrsceventmetadatavaluestring_set", "hrsceventmetadatavaluefloat_set"
+  )[:limit]
+  return events
 
 
 @router.get(
@@ -471,3 +474,42 @@ def hazard_probabilities_raster_value(
   return HrscHazardProbabilityRaster.objects.get(hazard__key=hazard_key).get_probability_value(
     severity, longitude, latitude
   )
+
+
+def get_events_by_collection_filter_ws(
+  longitude: float = None,
+  latitude: float = None,
+  radius: float = 1000,
+  value__min: float = None,
+  value__max: float = None,
+  limit: int = 100,
+):
+  """
+  Filter Winterstorm events by location, radius and parameters.
+  Due to witnerstorms covering a large and diffuse area, we filter
+  by wind speed inside the footprints
+  """
+
+  point = Point(longitude, latitude, srid=settings.DEFAULT_SRID)
+
+  values = HrscValueCoordinateWinterstorm.objects.filter(
+    event__collection__key="winterstorm",
+    location__location__distance_lt=(point, MDistance(km=radius)),
+  )
+
+  if value__min:
+    values = values.filter(value__gte=value__min)
+
+  if value__max:
+    values = values.filter(value__lte=value__max)
+
+  values = list(
+    values.annotate(distance=DBDistance("location__location", point, geography=True))
+    .order_by("distance")
+    .values_list("event_id", flat=True)
+    .distinct()[:limit]
+  )
+
+  events = HrscEvent.objects.filter(id__in=values)
+
+  return events

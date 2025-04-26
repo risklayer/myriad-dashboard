@@ -13,5 +13,6 @@ urlpatterns = [
   path("curve_explorer/", include("curve_explorer.urls")),
   path("exposure_at_risk/", include("exposure_at_risk.urls")),
   path("vulnerability_index_editor/", include("vulnerability_index_editor.urls")),
+  path("scenario_calculator/", include("scenario_calculator.urls")),
   path("__reload__/", include("django_browser_reload.urls")),
 ]

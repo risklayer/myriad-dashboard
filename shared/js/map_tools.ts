@@ -1,5 +1,6 @@
 import chroma from "chroma-js";
-import L, { GeoJSON as LeafletGeoJSON } from "leaflet";
+import L from "leaflet";
+import "leaflet-defaulticon-compatibility";
 
 import "leaflet-contour";
 import "leaflet.control.opacity/src/L.Control.Opacity";
@@ -16,6 +17,9 @@ import {
 import { BaseMaps, BaseMapTypes, grayscaleLayer } from "./base_map_layers";
 import { activateButton, deactivateButton } from "./dom_tools";
 import { floatTo3Digits } from "./utils";
+
+// Using regular import fails to import proj4 properly.
+import "../../node_modules/georaster-layer-for-leaflet/dist/v3/webpack/bundle/georaster-layer-for-leaflet.min.js";
 
 export type ZoomToFitOption = "event" | "column" | "regions" | "auto" | false;
 export type FormUpdateOptions = { zoomToFit?: ZoomToFitOption };
@@ -194,6 +198,7 @@ export enum LayerNames {
   FilteredItems = "filtered_items_layer",
   EventFootprint = "event_footprint_layer",
   SearchLocation = "search_location_layer",
+  GeoRaster = "geo_raster",
 }
 
 export function createMap({
@@ -242,6 +247,7 @@ export function createMap({
     //   filtered_items_layer: L.FeatureGroup<FilteredEventData>;
     //   event_footprint_layer: LeafletGeoJSON;
     //   search_location_layer: L.FeatureGroup;
+    //   geo_raster: L.GridLayer | null;
     // }
     pick(
       {
@@ -250,6 +256,7 @@ export function createMap({
         filtered_items_layer: createFilteredEventsLayer().addTo(main_map),
         event_footprint_layer: createEventFootprintLayer().addTo(main_map),
         search_location_layer: createSearchLocationLayer().addTo(main_map),
+        geo_raster: null as unknown as L.GridLayer,
       },
       Object.keys(layers)
     );
@@ -388,8 +395,86 @@ export function createMap({
    */
   function cleanupLayer(key: keyof typeof LAYERS) {
     if (LAYERS[key]) {
-      LAYERS[key]!.clearLayers();
+      if (key === LayerNames.GeoRaster) {
+        if (LAYERS[key]) {
+          LAYERS[key].removeFrom(main_map);
+          // @ts-ignore
+          LAYERS[key] = null;
+        }
+      } else {
+        LAYERS[key]!.clearLayers();
+      }
     }
+  }
+
+  async function setGeoRasterLayer(
+    {
+      tiffString,
+      paletteName,
+      invertColors,
+      quantisation,
+    }: {
+      tiffString: string;
+      paletteName: chroma.BrewerPaletteName;
+      invertColors: boolean;
+      quantisation: QuantisationType;
+    },
+    geoRasterOptions = {}
+  ) {
+    // https://github.com/GeoTIFF/georaster-layer-for-leaflet
+
+    // Tiff content is returned as part of the data in BASE64 format. Convert to
+    // ASCII, then put in an array buffer to parse to geotiff library for
+    // parsing. (It also supports Blob, but only if the projection metadata is
+    // in the file, see https://github.com/GeoTIFF/georaster/issues/83).
+    const tiffArray = Uint8Array.from(atob(tiffString), (c) => c.charCodeAt(0));
+    const buffer = new ArrayBuffer(tiffArray.length);
+    const view = new Uint8Array(buffer);
+    view.set(tiffArray);
+    const georaster = await window.parseGeoraster(
+      buffer,
+      { projection: 4326 },
+      true
+    );
+
+    // console.log("georaster:", georaster);
+
+    const values = georaster.values
+      .flat()
+      .map((v) => Array.from(v))
+      .flat();
+
+    const { colors } = calculateColors({
+      values,
+      paletteName,
+      invertColors,
+      quantisation,
+    });
+
+    /*
+    GeoRasterLayer is an extension of GridLayer,
+    which means can use GridLayer options like opacity.
+
+    Just make sure to include the georaster option!
+
+    Optionally set the pixelValuesToColorFn function option to customize
+    how values for a pixel are translated to a color.
+
+    https://leafletjs.com/reference.html#gridlayer
+    */
+    LAYERS[LayerNames.GeoRaster] = new window.GeoRasterLayer({
+      georaster,
+      opacity: 0.7,
+      pixelValuesToColorFn: colors,
+      ...geoRasterOptions,
+      // pixelValuesToColorFn: (values) =>
+      //   values[0] === 42 ? "#ffffff" : "#000000",
+      resolution: 64, // optional parameter for adjusting display resolution
+    }).addTo(main_map);
+    zoomTo(LAYERS[LayerNames.GeoRaster]!, {
+      padding: [10, 10],
+      maxZoom: 11,
+    });
   }
 
   /**
@@ -482,6 +567,7 @@ export function createMap({
     zoomTo,
     updateMapButtonStates,
     updateTableButtonStates,
+    setGeoRasterLayer,
   };
 }
 
@@ -571,7 +657,7 @@ export function footprintToCartesian(
   y: number[][];
   z: (number | null)[][];
 } {
-  const [yAll, xAll, _] = unzip(data);
+  const [xAll, yAll, _] = unzip(data);
   const minX = min(xAll)!;
   const maxX = max(xAll)!;
   const minY = min(yAll)!;
@@ -608,7 +694,7 @@ export function footprintToCartesian(
   y.forEach((val: number[], i: number) => yMap.set(val[0]!, i));
 
   data.forEach(
-    ([yVal, xVal, zVal]) => (z[yMap.get(yVal)!]![xMap.get(xVal)!] = zVal)
+    ([xVal, yVal, zVal]) => (z[yMap.get(yVal)!]![xMap.get(xVal)!] = zVal)
   );
 
   return {

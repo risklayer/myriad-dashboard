@@ -1,0 +1,13 @@
+<button class="show-on-map-button btn btn-outline-secondary text-nowrap {% if active %}active{% endif %} {% if compact %}border-0{% endif %} {{ class }}"
+        type="button"
+        data-bs-toggle="button"
+        aria-pressed="{% if active %}true{% else %}false{% endif %}"
+        {% if compact %}title="Show on map"{% endif %}
+        value="{{ key }}"
+        hx-get="{% url 'scenario_calculator:event_details' key=key %}"
+        hx-target="#event-details"
+        hx-swap="innerHTML"
+        onclick="formUpdate(this)">
+  {% include "shared/icon.html" with type="map" class="d-none d-md-inline-block" size=16 %}
+  {% if not compact %}Show on map{% endif %}
+</button>

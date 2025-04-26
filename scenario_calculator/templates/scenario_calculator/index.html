@@ -1,0 +1,130 @@
+{% extends "layouts/base.html" %}
+
+{% load static %}
+{% load filters %}
+{% load crispy_forms_tags %}
+{% load show_event_details %}
+{% load show_scenario_form %}
+
+{% block title %}
+  Multi-hazard scenario calculator and DSS - {{ block.super }}
+{% endblock title %}
+
+{% block head %}
+  {{ block.super }}
+  <link rel="stylesheet"
+        href="{% static 'datatables.net-bs5/css/dataTables.bootstrap5.min.css' %}" />
+  <link rel="stylesheet"
+        href="{% static 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'leaflet/dist/leaflet.css' %}" />
+  <link rel="stylesheet"
+        href="{% static '@gnatih/leaflet.legend/src/leaflet.legend.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/scenario_calculator.css' %}" />
+{% endblock head %}
+
+{% block pagetitle %}
+{% endblock pagetitle %}
+
+{% block main %}
+  <main id="main" class="main">
+    <div class="layout-grid">
+      <div class="left-side-bars">
+        <header class="left-side-bars-header p-2 d-flex justify-content-between">
+          <h1 class="h5 fs-5">Multi-hazard scenario calculator &amp; DSS</h1>
+        </header>
+        <div class="filters-form-wrapper h-100 mh-100 d-flex flex-column overflow-y-auto px-2">
+          {% include "shared/settings_form.html" with form=settings_form only %}
+          {% include "shared/regions_form.html" with countries=countries open=False only %}
+          {% include "scenario_calculator/probability_forms.html" with probability_shared_form=probability_shared_form probability_forms=probability_forms only %}
+          {% show_scenario_form request=request filter_form=filter_form pinned=pinned pinned_keys=pinned_keys event=event %}
+          <input type="hidden"
+                 id="event-select-hidden"
+                 name="event"
+                 form="filters-form"
+                 onchange="formUpdate()"
+                 value="{{ event }}" />
+        </div>
+        {% comment %} <div id="regions-form-wrapper" class="regions-form-wrapper h-100 mh-100 d-flex flex-column overflow-y-auto p-2">
+        </div> {% endcomment %}
+      </div>
+      <div class="map-wrapper">
+        <div id="map"></div>
+      </div>
+      <div id="table-wrapper" class="table-wrapper p-2 border-top">
+        <table id="values-table">
+        </table>
+      </div>
+      <div id="right-toolbar-wrapper"
+           class="right-toolbar-wrapper d-flex flex-column overflow-y-auto p-2">
+        <div class="p-2">
+          {% comment %} <hr class="m-0" /> {% endcomment %}
+          <div class="right-toolbar-contents">
+            <div id="area-details" class="area-details mb-2"></div>
+            <details class="mb-2" open>
+              <summary class="h6 p-0 mb-2" id="table-events-summary">
+                Event details
+                {% include "shared/icon.html" with type="file-richtext" class="me-1" %}
+              </summary>
+              <div id="event-details" class="event-details">
+                {% if not event %}
+                  <p>
+                    Please use filters to select events, and select one or more regions to display
+                  </p>
+                {% endif %}
+                {% show_event_details key=event pinned=pinned pinned_keys=pinned_keys %}
+              </div>
+            </details>
+            {% include "shared/pin.html" with actions_template="scenario_calculator/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="event" list_title="Pinned events" add_to_table=True only %}
+            <form id="table-events-form"
+                  class="table-events-form mb-2"
+                  aria-labelledby="table-events-summary">
+              <details {% if table_events %}open{% endif %}>
+                <summary class="h6 p-0 mb-2" id="table-events-summary">
+                  Combine events
+                  {% include "shared/icon.html" with type="intersect" class="me-1" %}
+                </summary>
+                <div class="table-events-wrapper overflow-auto mb-2">
+                  <select multiple
+                          id="table-events"
+                          name="table_events"
+                          class="select-array-multiple d-none">
+                    {% for event in table_events %}
+                      <option value="{{ event.key }}" selected>{{ event.key }}</option>
+                    {% endfor %}
+                  </select>
+                  <ul class="list-group mb-2">
+                    {% for event in table_events %}
+                      {% include "scenario_calculator/table_events_list_item.html" with key=event.key label=event.label pin_label=pinned|pin_label:event.key only %}
+                    {% endfor %}
+                    {% comment %} {% include "scenario_calculator/table_events_list_total_item.html" with key="max_overlap" pin_label="Maximum overlapping exposure (2 hazards)" class="summary-column" only %}
+                    {% include "scenario_calculator/table_events_list_total_item.html" with key="max_combined" pin_label="Maximum combined exposure (2 hazards)" class="summary-column" only %} {% endcomment %}
+                  </ul>
+                </div>
+              </details>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <template id="table-events-list-item-template">
+      {% include "scenario_calculator/table_events_list_item.html" with key="EVENTKEY" label="EVENTLABEL" pin_label="" only %}
+    </template>
+  </main>
+{% endblock main %}
+
+{% block afterbody %}
+  {{ block.super }}
+  {% comment %}
+  [JSZip](https://stuk.github.io/jszip/) is needed for
+  [Excel export](https://datatables.net/reference/button/excelHtml5)
+  {% endcomment %}
+  <script src="{% static 'jszip/dist/jszip.min.js' %}"></script>
+  <script src="{% static 'georaster/dist/georaster.browser.bundle.min.js' %}"></script>
+  <script type="module"
+          id="scenario_calculator_script"
+          src="{% static 'js/scenario_calculator.js' %}"
+          data-radius="{{ filter_form.fields.radius.value|default:radius }}"
+          data-latitude="{{ filter_form.fields.latitude.value|default:latitude }}"
+          data-longitude="{{ filter_form.fields.longitude.value|default:longitude }}"
+          data-winterstorm-radius="{{ data_winterstorm_radius|default:100 }}"></script>
+{% endblock afterbody %}

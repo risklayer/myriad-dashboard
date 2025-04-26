@@ -1,0 +1,29 @@
+{% load filters %}
+{% load scenario_filters %}
+
+<h2 id="pin-name-title-0"
+    class="h5 p-0 mb-2 text-center rounded-5 exposure-title pin-label pin-label-{{ event.key|slugify }}">
+  {% if event %}{{ pinned|pin_label:event.key }}{% endif %}
+</h2>
+<input type="hidden" name="item_selected_0" value="{{ event.key }}" />
+{% if event %}
+  <div id="event-details-inner">
+    {% if not summary_event %}
+      {% include "shared/action_buttons.html" with pinned=pinned key=event.key label=event.label pinned_keys=pinned_keys panel="0" pin_type="event" add_to_table=True add_to_table_icon="intersect" add_to_table_text="Combine event" additional_button="scenario_calculator/show_on_map_button.html" only %}
+    {% endif %}
+    <table id="event-details-table" class="table table-stacked-headless">
+      <tbody>
+        <tr>
+          <th scope="row" data-name="key" data-value="{{ event.key }}">Event</th>
+          <td>{{ event.collection.hazard.label|title }} {{ event.key }}</td>
+        </tr>
+        {% for k, v in event.get_metadata_all.items|filter_event_metadata %}
+          <tr>
+            <th>{{ k|desnake|title }}</th>
+            <td>{{ v|simplify_float|desnake }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}

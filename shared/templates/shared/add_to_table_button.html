@@ -4,7 +4,8 @@
         {% if compact %}title="{{ add_to_table_text|default:"Include in table" }}"{% endif %}
         name="table-column-button"
         value="{{ key }}"
-        onclick="toggleTable(this.value)">
+        data-label="{{ label }}"
+        onclick="toggleTable(this.value, this.dataset.label)">
   {% include "shared/icon.html" with type=icon|default:"table" class="me-1" size=16 %}
   {% if not compact %}
     {{ add_to_table_text|default:"Include in table" }}

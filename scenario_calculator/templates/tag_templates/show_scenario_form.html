@@ -1,0 +1,99 @@
+{% load crispy_forms_tags %}
+{% load filters %}
+{% load scenario_filters %}
+
+<form id="filters-form"
+      class="filters-form htmx-indicator"
+      hx-post="{% url 'scenario_calculator:refine_events_form' %}"
+      hx-trigger="change from:(#id_hazard,#id_collection,#id_radius,#id_latitude,#id_longitude), change from:([name^=metadata_]) delay:0.5s, click from:(#id_search_here) delay:0.05s"
+      {% comment %}
+      hx-indicator="#filters-form"
+      hx-disabled-elt="input, button, select"
+      {% endcomment %}
+      hx-sync="this:replace"
+      hx-swap="outerHTML"
+      hx-params="not event"
+      novalidate>
+  <fieldset id="filters-fieldset" class="mb-2" aria-labelledby="filters-summary">
+    <details {% if request.htmx %}open{% endif %}>
+      <summary id="filters-summary" class="h6 p-0 mb-2">
+        Search stochastic events
+        {% include "shared/icon.html" with type="search" class="me-1" %}
+      </summary>
+      {% comment %} <ul>
+        {% for key, error in filter_form.errors.items %}
+          <li>{{ key }}: {{ error }}</li>
+        {% endfor %}
+      </ul> {% endcomment %}
+      {% crispy filter_form %}
+    </details>
+  </fieldset>
+  <fieldset id="filtered-dataset-fieldset"
+            class="mb-2"
+            aria-labelledby="filtered-dataset-summary">
+    <details {% if request.htmx %}open{% endif %}>
+      <summary id="filtered-dataset-summary" class="h6 p-0 mb-2 position-relative">
+        Search results
+        {% include "shared/icon.html" with type="calendar-range" class="me-1" %}
+        <button type="button"
+                class="btn btn-outline-none p-0 btn-sm position-absolute end-0"
+                onclick="zoomToAllEvents()">
+          {% include "shared/icon.html" with type="zoom-in" class="me-1" %}
+          Zoom to fit
+        </button>
+      </summary>
+      <div class="event-list-wrapper overflow-y-auto overflow-x-hidden">
+        {% if filter_form.fields.event.choices %}
+          <ul class="list-group">
+            {% for event_option, key in filter_form.fields.event.choices %}
+              {% with event_instance=event_option.instance %}
+                <li class="event-list-item list-group-item d-flex gap-1 align-items-start" data-id="{{ event_instance.key }}"
+                  data-longitude="{{ event_instance.location.0 }}" data-latitude="{{ event_instance.location.1 }}"
+                  data-hazard="{{ event_instance.collection.hazard.key }}"
+                  data-hazard-label="{{ event_instance.collection.hazard.label }}" {% for k, v in
+                  event_instance.get_metadata_all.items|filter_event_metadata %}data-{{ k|slugify }}="{{ v }}" {% endfor %}>
+                  <div class="col-10">
+                    <div id="pin-name-list-title-{{ event_instance.key|slugify }}">
+                      <b class="pin-label pin-label-{{ event_instance.key|slugify }}">
+                        {{ pinned|pin_label:event_instance.key }}
+                      </b>
+                    </div>
+                    <div>{{ event_instance.key|desnake }}</div>
+                    {% if event_instance.hazard and not filter_form.cleaned_data.hazard or
+                      filter_form.fields.event.choices|length == 1 %}
+                      <div>{{ event_instance.hazard.label }}</div>
+                    {% endif %}
+                    <table>
+                      <tbody>
+                        {% for k, v in event_instance.get_metadata_all.items|filter_event_metadata %}
+                          <tr>
+                            <th>{{ k|desnake|title }}</th>
+                            <td>{{ v|simplify_float|desnake }}</td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="btn-group-vertical col-2">
+                    {% include "shared/pin_button.html" with pinned=pinned key=event_instance.key pinned_keys=pinned_keys
+                    index="list" panel="list-"|add:event_instance.key|slugify pin_type="event" compact=True confirm=True only
+                    %}
+                    {% include "scenario_calculator/show_on_map_button.html" with key=event_instance.key compact=True
+                    active=event|equals:event_instance.key only %}
+                    {% include "shared/add_to_table_button.html" with key=event_instance.key label=event_instance.label compact=True icon="intersect"
+                    add_to_table_text="Combine event" only %}
+                  </div>
+                </li>
+              {% endwith %}
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No events found</p>
+        {% endif %}
+      </div>
+    </details>
+  </fieldset>
+</form>
+<script id="update-filters-script"
+        hx-swap-oob="outerHTML"
+        hx-on::after-settle="formUpdate({% if not zoom %}null,{zoomToFit:false}{% endif %})"></script>

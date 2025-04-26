@@ -72,7 +72,7 @@
       hx-ext="class-tools"
       class="h5 p-0 mb-2 text-center rounded-5"
       classes="add glow-appear, remove glow-appear:2s">{{ name }}</h2>
-  {% include "shared/action_buttons.html" with pinned=pinned key=key pinned_keys=pinned_keys panel=panel pin_type=pin_type
+  {% include "shared/action_buttons.html" with pinned=pinned key=key label=label pinned_keys=pinned_keys panel=panel pin_type=pin_type
   oob=True add_to_table=add_to_table only %}
 {% endfor %}
 {% if return_list_button and key %}

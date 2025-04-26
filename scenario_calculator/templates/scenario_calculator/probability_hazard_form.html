@@ -1,0 +1,20 @@
+{% load crispy_forms_tags %}
+{% load filters %}
+{% load scenario_filters %}
+
+<form id="probability-form-{{ panel }}"
+      class="probability-form htmx-indicator"
+      hx-post="{% url 'scenario_calculator:probability_refine' %}"
+      hx-trigger="change from:(#id_p{{ panel }}-hazard)"
+      hx-indicator="#probability-form-{{ panel }}"
+      hx-sync="this:replace"
+      hx-swap="outerHTML"
+      hx-vals='{ "panel": {{ panel }} }'
+      novalidate>
+  <fieldset>
+    <legend>Hazard {{ panel }}</legend>
+    {% crispy form %}
+  </fieldset>
+</form>
+<script id="update-probability-script" {% if request.htmx %} hx-swap-oob="outerHTML" hx-on::after-settle="formUpdate(null,{zoomToFit:false})" {% endif %}>
+</script>

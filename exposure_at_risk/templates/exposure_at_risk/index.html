@@ -34,7 +34,7 @@
         </header>
         <div class="filters-form-wrapper h-100 mh-100 d-flex flex-column overflow-y-auto px-2">
           {% include "shared/settings_form.html" with form=settings_form only %}
-          {% include "shared/regions_form.html" with countries=countries only %}
+          {% include "shared/regions_form.html" with countries=countries open=countries.0.indeterminate|not_value only %}
           {% show_exposure_form request=request pinned=pinned pinned_keys=pinned_keys column=column %}
           <input type="hidden"
                  id="column-select-hidden"

@@ -7,6 +7,7 @@ const isProduction = process.env.NODE_ENV === "production";
 const inputFiles = [
   "dashboard/js/scripts.ts",
   "exposure_at_risk/js/exposure_at_risk.ts",
+  "scenario_calculator/js/scenario_calculator.ts",
 ];
 export default {
   input: inputFiles,

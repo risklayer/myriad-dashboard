@@ -29,12 +29,18 @@ def pin(request, pin_type: PinType):
     if selected_key and selected_key == key:
       show_panel_pin_buttons.append(i)
 
+  label = None
+  for k, _name, item_label, _item in pinned:
+    if k == key:
+      label = item_label
+
   template = "shared/pin.html"
   return render(
     request,
     template,
     {
       "key": key,
+      "label": label,
       "pinned": pinned,
       "pinned_keys": pinned_keys,
       "rename": rename,

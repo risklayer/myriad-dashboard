@@ -1,0 +1,29 @@
+{% load crispy_forms_tags %}
+{% load filters %}
+{% load scenario_filters %}
+
+<form id="probability-shared-form"
+      class="htmx-indicator"
+      hx-post="{% url 'scenario_calculator:probability_result' %}"
+      hx-swap="innerHTML:#event-details"
+      hx-target="#event-details"
+      hx-indicator="#probability-shared-form"
+      hx-trigger="click from:#get-probability-button"
+      hx-include="[name^=p1-],[name^=p2-]">
+  {% crispy form %}
+  <button id="choose-point-button"
+          class="btn btn-outline-secondary w-100"
+          type="button"
+          data-bs-toggle="button"
+          aria-pressed="false"
+          onclick="choosePoint(event)">
+    {% include "shared/icon.html" with type="crosshair" class="me-1" %}
+    Choose location
+  </button>
+  <button id="get-probability-button"
+          class="btn btn-outline-primary w-100 mt-2"
+          type="submit">
+    {% include "shared/icon.html" with type="dice-3" class="me-1" %}
+    Get probability
+  </button>
+</form>

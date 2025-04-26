@@ -3,6 +3,12 @@
 @import "../@fontsource/barlow/400.css";
 @import "../@fontsource/barlow/700.css";
 
+// Because the leaflet default icon is hashed during build, we need to include it in
+// the stylesheet, and the this plugin will determine the appropriate URL based on
+// the CSS snippet it generates.
+// https://github.com/ghybs/leaflet-defaulticon-compatibility/blob/master/README.md
+@import "../leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
+
 :root {
   --bs-font-sans-serif: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif,
@@ -38,10 +44,6 @@
 }
 
 /* Main shared styles */
-
-/* body {
-	font-family: "Barlow", sans-serif;
- } */
 
 .navbar {
   color: white;

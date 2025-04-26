@@ -1,0 +1,16 @@
+{% load filters %}
+
+<li data-value="{{ key }}"
+    class="list-group-item d-flex gap-1 align-items-start {{ class }}">
+  <div class="col-10">
+    <div id="table-dataset-list-title-{{ key|slugify }}">
+      <b class="pin-label pin-label-{{ key|slugify }}">
+        {{ pin_label }}
+      </b>
+      <div>{{ key|desnake }}</div>
+    </div>
+  </div>
+  <div class="btn-group-vertical col-2">
+    {% include "scenario_calculator/show_on_map_button.html" with key=key compact=True class="btn-sm me-1 border-0" only %}
+  </div>
+</li>

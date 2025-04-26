@@ -1,0 +1,48 @@
+<div id="event-details-probability">
+  {% if results %}
+    <h2 class="h5">Probabilities</h2>
+    <h3 class="h6">Criteria</h3>
+    <table class="table table-sm">
+      <tbody>
+        <tr>
+          <th>Latitude</th>
+          <td>{{ probability_shared_form.latitude.value }}</td>
+        </tr>
+        <tr>
+          <th>Longitude</th>
+          <td>{{ probability_shared_form.longitude.value }}</td>
+        </tr>
+        <tr>
+          <th>Time window</th>
+          <td>
+            {{ probability_shared_form.time_window.value }} {{ probability_shared_form.time_window_unit.value }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <h3 class="h6">Results</h3>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Hazard</th>
+          <th>Severity</th>
+          <th>Return period</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for hazard, severity, probability, return_period, pretty in results %}
+          <tr class="event-probability-row"
+              data-hazard="{{ hazard }}"
+              data-severity="{{ severity }}"
+              data-hazard="{{ hazard }}"
+              data-probability="{{ probability }}"
+              data-return-period="{{ return_period }}">
+            <td>{{ hazard }}</td>
+            <td>{{ severity }}</td>
+            <td>{{ pretty }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>

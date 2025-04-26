@@ -1,0 +1,17 @@
+<fieldset id="probabilities-wrapper"
+          class="probabilities-wrapper mb-2"
+          aria-labelledby="probabilities-summary">
+  <details>
+    <summary class="h6 p-0 mb-2 position-relative" id="probabilities-summary">
+      Multi event probability
+      {% include "shared/icon.html" with type="dice-3" class="me-1" %}
+    </summary>
+    <div class="probabilities-form-wrapper overflow-auto mb-2">
+      {% for probability_form in probability_forms %}
+        {% include "scenario_calculator/probability_hazard_form.html" with form=probability_form panel=forloop.counter only %}
+      {% endfor %}
+      <hr />
+      {% include "scenario_calculator/probability_shared_form.html" with form=probability_shared_form only %}
+    </div>
+  </details>
+</fieldset>

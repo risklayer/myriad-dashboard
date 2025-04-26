@@ -40,6 +40,7 @@ INSTALLED_APPS = [
   "curve_explorer",
   "exposure_at_risk",
   "vulnerability_index_editor",
+  "scenario_calculator",
   "data",
 ]
 
@@ -148,6 +149,8 @@ NPM_FILE_PATTERNS = {
   "jszip": ["dist/jszip.min.js"],
   "leaflet": ["dist/leaflet.css", "dist/images/*.png"],
   "@fontsource": ["barlow/*.css", "barlow/files/barlow*.*"],
+  "georaster": ["dist/*.js"],
+  "georaster-layer-for-leaflet": ["dist/**/*.min.js"],
 }
 
 # NPM_STATIC_FILES_PREFIX = "vendor"
