@@ -174,6 +174,15 @@ h6 {
   display: none;
 }
 
+form.htmx-indicator,
+fieldset.htmx-indicator {
+  transition: opacity 0.3s ease;
+  opacity: 1;
+  &.htmx-request {
+    opacity: 0.4;
+  }
+}
+
 .glow-appear {
   animation: pulse 2s ease;
 }

@@ -13,9 +13,14 @@
           crossorigin="" />
 {% endblock head %}
 
+{% block afterbody %}
+    {{ block.super }}
+    <script src="{% static 'chart.js/dist/chart.umd.js' %}"></script>
+{% endblock afterbody %}
+
 {% block pagetitle %}
     <div class="d-flex justify-content-between">
-        <h1>Vulnerability Curve Explorer</h1>
+        <h1 class="fs-2">Vulnerability curve explorer</h1>
         <div class="float-end">
             {% include "shared/pin.html" with actions_template="curve_explorer/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="curve" list_title="Pinned curves" dropdown=True only %}
         </div>

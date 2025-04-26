@@ -15,6 +15,7 @@ python3 ./manage.py export_openapi_schema --api data.api.api_v1 --output data/sc
 # https://openapi-ts.dev/cli
 npx openapi-typescript data/schema.json -o data/types/api.ts --make-paths-enum --root-types --root-types-no-schema-prefix
 
+npm run build-styles
 npm run build-prod
 
 python3 ./manage.py collectstatic --noinput --clear

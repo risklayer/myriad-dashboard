@@ -9,7 +9,7 @@
           hx-swap="none"
           {% if oob %}hx-swap-oob="outerHTML"{% endif %}
           {% if key in pinned_keys and confirm %}hx-confirm="Remove this from your list?"{% endif %}
-          hx-disable-elt
+          hx-disabled-elt="this"
           {% if rename or key not in pinned_keys %}hx-prompt="Enter a meaningful description:"{% endif %}
           {% if rename %}hx-vals='{"rename":true}'{% endif %}
           hx-params="item_selected_0,item_selected_1,panel,key"

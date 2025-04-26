@@ -15,7 +15,7 @@ from django.views.decorators.http import require_POST
 def pin(request, pin_type: PinType):
   if not request.htmx:
     return HttpResponseForbidden()
-  if pin_type not in PinType:
+  if pin_type not in [e.value for e in PinType]:
     return HttpResponseNotFound("Unsupported pin type")
 
   key = request.POST.get("key")
@@ -55,7 +55,7 @@ def pin(request, pin_type: PinType):
 def unpin(request, pin_type: PinType):
   if not request.htmx:
     return HttpResponseForbidden()
-  if pin_type not in PinType:
+  if pin_type not in [e.value for e in PinType]:
     return HttpResponseNotFound("Unsupported pin type")
 
   key = request.POST["key"]

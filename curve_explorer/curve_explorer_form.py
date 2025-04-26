@@ -25,11 +25,7 @@ from data.models import (
   VulnerabilityCurve,
 )
 from shared.form_fields import LabelSelectionField
-
-
-def make_choices(items: set, include_blank=True, blank: str = "Please select"):
-  choices = [(x, x if x else blank) for x in sorted(items)]
-  return [(None, "")] + choices if include_blank else choices
+from shared.utils import make_choices
 
 
 class CurveExplorerFilterForm(Form):

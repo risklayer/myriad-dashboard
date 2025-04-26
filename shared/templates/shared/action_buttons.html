@@ -2,20 +2,27 @@
      class="my-2 action-buttons"
      {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   {% if key %}
-    {% include "shared/pin_button.html" with pinned=pinned key=key pinned_keys=pinned_keys index="panel" panel=panel pin_type=pin_type class="mb-2" only %}
-    {% if key in pinned_keys %}
-      {% include "shared/pin_button.html" with pinned=pinned key=key pinned_keys=pinned_keys rename=True index="panel" panel=panel pin_type=pin_type class="mb-2" only %}
-    {% else %}
-      {% include "shared/pin_button.html" with rename=True delete=True index="panel" panel=panel pin_type=pin_type class="mb-2" only %}
+    {% if show_pin|default_if_none:True %}
+      {% include "shared/pin_button.html" with pinned=pinned key=key pinned_keys=pinned_keys index="panel" panel=panel pin_type=pin_type class="mb-2" only %}
+      {% if key in pinned_keys %}
+        {% include "shared/pin_button.html" with pinned=pinned key=key pinned_keys=pinned_keys rename=True index="panel" panel=panel pin_type=pin_type class="mb-2" only %}
+      {% else %}
+        {% include "shared/pin_button.html" with rename=True delete=True index="panel" panel=panel pin_type=pin_type class="mb-2" only %}
+      {% endif %}
     {% endif %}
     {% if add_to_table %}
-      {% include "shared/add_to_table_button.html" with key=key class="mb-2" only %}
+      {% include "shared/add_to_table_button.html" with key=key class="mb-2" icon=add_to_table_icon add_to_table_text=add_to_table_text only %}
     {% endif %}
-    <button onclick="setFilters({{ panel }})"
-            class="btn btn-outline-secondary text-nowrap mb-2">
-      {% include "shared/icon.html" with type="filter" class="me-1" size=16 %}
-      Populate filters
-    </button>
+    {% if set_filters %}
+      <button onclick="setFilters({{ panel }})"
+              class="btn btn-outline-secondary text-nowrap mb-2">
+        {% include "shared/icon.html" with type="filter" class="me-1" size=16 %}
+        Populate filters
+      </button>
+    {% endif %}
+    {% if additional_button %}
+      {% include additional_button with key=key class="mb-2" compact=compact icon=additional_button_icon text=additional_button_text only %}
+    {% endif %}
   {% else %}
     <div class="placeholder bg-secondary col-2 p-3 mb-2"></div>
     <div class="placeholder bg-secondary col-3 p-3 mb-2"></div>
