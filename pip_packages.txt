@@ -1,1 +1,0 @@
-django numpy django-crispy-forms ruff djlint crispy-bootstrap5 django-htmx django-cotton django-template-partials pandas openpyxl fiona psycopg2-binary django-browser-reload django-ninja geojson-pydantic shapely geopy rasterio django-npm-finder

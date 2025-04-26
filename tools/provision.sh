@@ -6,7 +6,7 @@ npm run build-styles
 
 python3 -m venv venv
 
-venv/bin/pip install `cat pip_packages.txt`
+venv/bin/pip install `cat requirements.txt`
 
 source venv/bin/activate
 
