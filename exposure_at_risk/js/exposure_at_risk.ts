@@ -10,11 +10,10 @@ import "datatables.net-buttons/js/buttons.print";
 import "datatables.net-buttons/js/dataTables.buttons";
 import jQuery from "jquery";
 
-import type { Feature } from "geojson";
+import type { Feature, GeoJsonObject } from "geojson";
 
 import chroma from "chroma-js";
-import L, { GeoJSON as LeafletGeoJSON } from "leaflet";
-import "./leaflet_grayscale";
+import "../../shared/js/leaflet_grayscale";
 
 import "@gnatih/leaflet.legend";
 import { LayersControlEvent } from "leaflet";
@@ -25,15 +24,24 @@ import {
   ShapeFeature,
   type CountriesEnum,
 } from "../../data/types/api";
-import { baseMaps, grayscaleLayer } from "./base_map_layers";
+import { BaseMaps } from "../../shared/js/base_map_layers";
 import {
   applyFormValuesToParams,
-  applyParamsToForms,
+  applyParamsToAllForms,
   getCountriesByAreaCode,
   getParamsGrouped,
   reorderSelectArrayValues,
+  resetSelectTreeIndeterminate,
   toggleSelectArray,
-} from "./dom_tools";
+} from "../../shared/js/dom_tools";
+import {
+  createMap,
+  FormUpdateOptions,
+  handleMapButtonClick,
+  LayerNames,
+  QuantisationType,
+} from "../../shared/js/map_tools";
+import { createGeoJSONDownload, slugify } from "../../shared/js/utils";
 import {
   downloadGeoJSON,
   getAreasMap,
@@ -41,9 +49,7 @@ import {
   getShapesList,
   getValuesMap,
 } from "./exposure_at_risk_api";
-import { updateBaseLayer } from "./map_tools";
 import { TableDatum } from "./types";
-import { floatTo3Digits } from "../../shared/js/utils";
 
 declare global {
   interface Window {
@@ -58,9 +64,6 @@ declare global {
 
 // window.htmx.logAll();
 
-// eslint-disable-next-line prefer-const
-let exposure_map: L.Map;
-let shape_layer: LeafletGeoJSON | null = null;
 let values_table: DataTableApi | null = null;
 
 const options = document.getElementById("exposure_at_risk_script")!.dataset;
@@ -68,14 +71,45 @@ const INITIAL_LATITUDE = parseFloat(options.latitude ?? "0");
 const INITIAL_LONGITUDE = parseFloat(options.longitude ?? "0");
 export const INITIAL_BASELAYER =
   ((document.getElementById("id_base_layer") as HTMLInputElement)
-    .value as keyof typeof baseMaps) || "Greyscale";
+    .value as keyof typeof BaseMaps) || "Greyscale";
 
-window.formUpdate = async function formUpdate(
-  clickedElement?: HTMLSelectElement | HTMLInputElement
+const {
+  main_map,
+  LAYERS,
+  hideLegend,
+  showLegend,
+  cleanupLayer,
+  updateBaseLayer,
+  returnHome,
+  zoomTo,
+  updateMapButtonStates,
+  updateTableButtonStates,
+} = createMap({
+  initialBaselayer: INITIAL_BASELAYER,
+  latitude: INITIAL_LATITUDE,
+  longitude: INITIAL_LONGITUDE,
+  itemFieldName: "column",
+  tableSelectElementId: "table-columns",
+  tableSelectButtonClass: "table-column-button",
+  layers: {
+    [LayerNames.Region]: "Regions",
+  },
+});
+
+window.formUpdate = function formUpdate(
+  clickedElement?: HTMLSelectElement | HTMLInputElement,
+  options?: FormUpdateOptions
 ) {
+  options = handleMapButtonClick(
+    clickedElement,
+    options,
+    "filters-form",
+    "column",
+    "column"
+  );
   updateParams(clickedElement);
   updateMapButtonStates();
-  updateMapAndTable();
+  updateMapAndTable(options);
 };
 
 // Flag to indicate that current action is from a popstate so that changes
@@ -84,24 +118,14 @@ let usingHistory = false;
 
 window.addEventListener("popstate", () => {
   usingHistory = true;
-  const filtersForm = document.getElementById(
-    "filters-form"
-  ) as HTMLFormElement;
-  const settingsForm = document.getElementById(
-    "settings-form"
-  ) as HTMLFormElement;
-  const regionsForm = document.getElementById(
-    "regions-form"
-  ) as HTMLFormElement;
-  const tableDatasetsForm = document.getElementById(
-    "table-datasets-form"
-  ) as HTMLFormElement;
-  applyParamsToForms(filtersForm);
-  applyParamsToForms(settingsForm);
-  applyParamsToForms(regionsForm);
-  applyParamsToForms(tableDatasetsForm);
+  applyParamsToAllForms([
+    "filters-form",
+    "settings-form",
+    "regions-form",
+    "table-datasets-form",
+  ]);
   updateMapAndTable();
-  updateBaseLayer(settingsForm, baseLayerControl);
+  updateBaseLayer();
   usingHistory = false;
 });
 
@@ -120,23 +144,15 @@ const updateParams = (window.updateParams = function updateParams(
   const tableDatasetsForm = document.getElementById(
     "table-datasets-form"
   ) as HTMLFormElement;
-  if (
-    clickedElement?.tagName === "BUTTON" &&
-    clickedElement.name === "show-on-map-button"
-  ) {
-    const value = clickedElement.value;
-    const hiddenColumnRadio = filtersForm.querySelector(
-      "#column-select-hidden"
-    ) as HTMLInputElement;
-    hiddenColumnRadio.value = value;
-  }
   applyFormValuesToParams(
     [filtersForm, regionsForm, settingsForm, tableDatasetsForm],
     clickedElement
   );
 });
 
-async function updateMapAndTable() {
+async function updateMapAndTable({
+  zoomToFit = "auto",
+}: FormUpdateOptions = {}) {
   const paramsGrouped = getParamsGrouped();
 
   const countries = (paramsGrouped.countries as CountriesEnum[]) ?? [];
@@ -154,17 +170,17 @@ async function updateMapAndTable() {
 
   const countriesByAreaCode = getCountriesByAreaCode();
 
-  const countriesIncludingAreas = showAllCountries
-    ? []
+  const countriesIncludingAreas: Array<CountriesEnum | "ALL"> = showAllCountries
+    ? ["ALL"]
     : (uniq([
         ...countries,
         ...areas.map((code) => countriesByAreaCode[code]),
       ]) as CountriesEnum[]);
 
   if (!countries.length && !areas.length) {
-    cleanupShapeLayer();
+    cleanupLayer("region_layer");
+    hideLegend();
     returnHome();
-    exposure_map.removeControl(legend);
     return;
   }
 
@@ -217,43 +233,28 @@ async function updateMapAndTable() {
     mapColumns = uniq([mapColumns[0], ...tableColumns, ...extraColumns]);
   }
 
-  cleanupShapeLayer();
+  cleanupLayer("region_layer");
 
   // Domain is reversed so higher values are red
-  const colorScale = (paramsGrouped.colors?.[0] ??
+  const paletteName = (paramsGrouped.colors?.[0] ??
     "RdYlGn") as chroma.BrewerPaletteName;
-  const colors = chroma.scale(colorScale).domain([max, 0]);
 
-  if (values && geojson.length) {
-    const count = chroma.brewer[colorScale].length;
-    const quantiles = chroma.limits([0, max], "q", count);
-    const legendOptions = {
-      ...legend.options,
-      inactive: !(values && geojson.length),
-      legends: quantiles.map((q, i) => {
-        const color = colors(q);
-        const range = `${floatTo3Digits(q)} – ${floatTo3Digits(quantiles[i + 1] ?? max)}`;
-        return {
-          label: range,
-          type: "polygon",
-          sides: 4,
-          color,
-          fill: color,
-        };
-      }),
-    };
-    exposure_map.removeControl(legend);
-    legend.initialize(legendOptions);
-    exposure_map.addControl(legend);
-  }
+  const quantisation = (paramsGrouped.quantisation?.[0] ??
+    "logarithmic") as QuantisationType;
 
-  shape_layer = createShapeLayer(
-    geojson,
-    colors,
-    areaDefinitions,
-    columnsMap,
-    mapColumns
-  );
+  const invertColors = paramsGrouped.invert_colors?.[0] ? true : false;
+
+  const mapUnits = columnsMap[mapColumns[0] ?? ""]?.exposure?.unit ?? null;
+
+  const colors = showLegend({
+    paletteName,
+    quantisation,
+    invertColors,
+    values: geojson.map((feature) => feature.properties?.value ?? null),
+    title: mapUnits ? `Exposure (${mapUnits})` : "Exposure",
+  });
+
+  updateRegionLayer(geojson, colors, areaDefinitions, columnsMap, mapColumns);
 
   setTimeout(() => {
     displayDataTable(
@@ -264,20 +265,21 @@ async function updateMapAndTable() {
       geojson
     );
     setTimeout(
-      () => exposure_map.invalidateSize().fitBounds(shape_layer!.getBounds()),
+      () =>
+        main_map.invalidateSize().fitBounds(LAYERS.region_layer.getBounds()),
       50
     );
   });
 }
 
-function createShapeLayer(
+function updateRegionLayer(
   geojson: Feature[],
   colors: chroma.Scale<chroma.Color>,
   areaDefinitions: Record<string, Nuts3AreaSchema>,
   columnsMap: Record<string, DataTableColumnSchema>,
   columns: string[]
 ) {
-  return L.geoJSON(geojson, {
+  LAYERS.region_layer.options = {
     interactive: true,
     onEachFeature: (_, layer) => {
       layer.on({
@@ -305,8 +307,8 @@ function createShapeLayer(
       });
     },
     style: (feature) => {
-      if (!feature) {
-        return {};
+      if (feature?.properties?.value == null) {
+        return { weight: 1 };
       }
       const { value } = feature.properties;
       const color = colors(feature.properties.value);
@@ -315,12 +317,14 @@ function createShapeLayer(
       }
       return {};
     },
-  })
+  };
+
+  LAYERS.region_layer
+    .addData(geojson as unknown as GeoJsonObject)
     .bindTooltip(({ feature }) => {
       const area = areaDefinitions[feature.properties.NUTS_ID]!;
       return `${area.label}, ${area.country.label}`;
-    })
-    .addTo(exposure_map);
+    });
 }
 
 const MAX_OVERLAP_KEY = "max_overlap";
@@ -377,9 +381,10 @@ function buildMapAndTableData({
   });
 
   const isMappingSummaryColumn = SUMMARY_COLUMNS.includes(mapColumns[0]!);
-  const allPrimaryColumns = isMappingSummaryColumn
-    ? tableColumns
-    : uniq([...mapColumns, ...tableColumns]);
+  // const allPrimaryColumns = isMappingSummaryColumn
+  //   ? tableColumns
+  //   : uniq([...mapColumns, ...tableColumns]);
+  const allPrimaryColumns = uniq([...mapColumns, ...tableColumns]);
 
   for (const shape of shapes) {
     if (!shape) {
@@ -393,6 +398,7 @@ function buildMapAndTableData({
     out if they don't match the original country/area lists.
     */
     if (
+      !countries.includes("ALL") &&
       !areas.includes(code) &&
       !(
         areaDefinitions[code] &&
@@ -404,7 +410,7 @@ function buildMapAndTableData({
       continue;
     }
 
-    if (tableColumns.length && areaDefinitions[code]) {
+    if (allPrimaryColumns.length && areaDefinitions[code]) {
       const datum = {
         region: areaDefinitions[code] as Nuts3AreaSchema,
       } as TableDatum;
@@ -574,83 +580,17 @@ function displayDataTable(
   });
 }
 
-/**
- * Remove the shape layer and set to null
- */
-function cleanupShapeLayer() {
-  if (shape_layer) {
-    shape_layer.clearLayers();
-    exposure_map.removeLayer(shape_layer);
-    shape_layer = null;
-  }
-}
-
-/**
- * Pan back to the initial starting point
- */
-function returnHome() {
-  exposure_map.flyTo(new L.LatLng(INITIAL_LATITUDE, INITIAL_LONGITUDE), 4, {
-    animate: false,
-  });
-}
-
-exposure_map = L.map("map", {
-  center: [INITIAL_LATITUDE, INITIAL_LONGITUDE],
-  zoom: 4, //recommended for a global view which is not too far zoomed out
-  zoomControl: false, //deactivate zoom control at its default position
-  layers: [baseMaps[INITIAL_BASELAYER] ?? grayscaleLayer],
-});
-
 const baseLayerInput = document.getElementById(
   "id_base_layer"
 ) as HTMLInputElement;
-exposure_map.addEventListener(
-  "baselayerchange",
-  (event: LayersControlEvent) => {
-    baseLayerInput.value = event.name;
-    if (!usingHistory) {
-      updateParams();
-    }
+main_map.addEventListener("baselayerchange", (event: LayersControlEvent) => {
+  baseLayerInput.value = event.name;
+  if (!usingHistory) {
+    updateParams();
   }
-);
-
-/* Map controls */
-
-L.control
-  .zoom({
-    position: "topright",
-  })
-  .addTo(exposure_map);
-
-L.control
-  .scale({
-    position: "topleft",
-    imperial: false,
-  })
-  .addTo(exposure_map);
-
-const baseLayerControl = L.control
-  .layers(baseMaps, undefined, {
-    sortLayers: true,
-  })
-  .addTo(exposure_map);
-
-// See https://github.com/ptma/Leaflet.Legend
-// No types available
-// @ts-ignore
-const legend = new L.Control.Legend({
-  position: "bottomleft",
-  inactive: true,
-  legends: [],
 });
 
-(
-  document.querySelectorAll(
-    ".select-tree-input[indeterminate]"
-  ) as NodeListOf<HTMLInputElement>
-).forEach((element) => {
-  element.indeterminate = true;
-});
+resetSelectTreeIndeterminate();
 updateMapAndTable();
 
 const areaSidebarTemplate = template(`
@@ -750,7 +690,7 @@ window.setFilters = async function setFilters() {
 window.toggleTable = function toggleTable(key: string) {
   const id = "table-columns";
   const pinLabel = document
-    .querySelector(`.pin-label-${key}`)
+    .querySelector(`.pin-label-${slugify(key)}`)
     ?.textContent?.trim();
   const textTemplate = document
     .getElementById("table-datasets-list-item-template")!
@@ -772,48 +712,6 @@ window.sortColumn = function sortColumn(key: string, direction: "up" | "down") {
   window.formUpdate();
 };
 
-function updateTableButtonStates() {
-  const tableColumnsSelect = document.getElementById(
-    "table-columns"
-  ) as HTMLSelectElement;
-  const keys = new Set(
-    Array.from(tableColumnsSelect.options).map((option) => option.value)
-  );
-  (
-    document.querySelectorAll(
-      ".table-column-button[data-bs-toggle='button']"
-    ) as NodeListOf<HTMLButtonElement>
-  ).forEach((button: HTMLButtonElement) => {
-    if (keys.has(button.value)) {
-      button.classList.add("active");
-      button.ariaPressed = "true";
-    } else {
-      button.classList.remove("active");
-      button.ariaPressed = "false";
-    }
-  });
-}
-
-function updateMapButtonStates() {
-  const filtersForm = document.getElementById(
-    "filters-form"
-  ) as HTMLFormElement;
-  const column = filtersForm.column?.value;
-  (
-    document.querySelectorAll(
-      ".show-on-map-button"
-    ) as NodeListOf<HTMLButtonElement>
-  ).forEach((button: HTMLButtonElement) => {
-    if (button.value === column) {
-      button.classList.add("active");
-      button.ariaPressed = "true";
-    } else {
-      button.classList.remove("active");
-      button.ariaPressed = "false";
-    }
-  });
-}
-
 async function getGeoJSON() {
   const params = getParamsGrouped();
   const countries = params.countries as Array<CountriesEnum | "ALL">;
@@ -821,32 +719,8 @@ async function getGeoJSON() {
   const columns = params.table_columns;
 
   const data = await downloadGeoJSON({ countries, areas, columns });
-
   if (data) {
-    let url;
-    try {
-      const mimeType = "application/geo+json";
-      const blob = new Blob([JSON.stringify(data)], { type: mimeType });
-      const anchor = document.createElement("a");
-      const filename = "myriad_exposure.geojson";
-      url = (window.webkitURL || window.URL).createObjectURL(blob);
-
-      anchor.download = filename;
-      anchor.href = url;
-      anchor.dataset.downloadurl = [
-        mimeType,
-        anchor.download,
-        anchor.href,
-      ].join(":");
-      anchor.click();
-    } catch (err) {
-      console.error("Failed to download: ", err);
-      toast("Error creating download");
-    } finally {
-      if (url) {
-        window.URL.revokeObjectURL(url);
-      }
-    }
+    createGeoJSONDownload(data, "myriad_exposure_at_risk.geojson");
   }
 }
 

@@ -3,7 +3,7 @@ from typing import Dict, List
 from django.db.models import Q
 from django.http import HttpRequest
 from django.views.decorators.cache import cache_page
-from ninja import Router
+from ninja import Query, Router
 from ninja.decorators import decorate_view
 
 from data.api_shared import (
@@ -44,7 +44,7 @@ def columns(
   exposure: ExposureOptionsEnum = None,
   threshold: ThresholdOptionsEnum = None,
   return_period: ReturnPeriodOptionsEnum = None,
-  columns: List[str] = list(),
+  columns: List[str] = Query([]),
 ):
   """Returns a list of all data columns with their metadata"""
   columns, filter_options = filter_columns(
@@ -65,10 +65,12 @@ def columns_map(
   exposure: ExposureOptionsEnum = None,
   threshold: ThresholdOptionsEnum = None,
   return_period: ReturnPeriodOptionsEnum = None,
-  columns: List[str] = list(),
+  columns: List[str] = Query([]),
 ):
   """Returns a list of all data columns with their metadata"""
-  columns, _ = filter_columns(hazard, exposure, threshold, return_period, columns)
+  columns, _ = filter_columns(
+    hazard, exposure, threshold, return_period, columns, get_kwargs=request.GET
+  )
 
   return {c.key: c for c in columns}
 
@@ -81,7 +83,7 @@ def column_summaries(
   exposure: ExposureOptionsEnum = None,
   threshold: ThresholdOptionsEnum = None,
   return_period: ReturnPeriodOptionsEnum = None,
-  columns: List[str] = list(),
+  columns: List[str] = Query([]),
 ):
   """Returns a list of all data columns keys, labels and descriptions"""
   columns, filter_options = filter_columns(
@@ -123,9 +125,20 @@ def return_periods(request: HttpRequest):
 
 
 def filter_columns(
-  hazard: str, exposure: str, threshold: str, return_period: str, column_keys: List[str], get_kwargs
+  hazard: str,
+  exposure: str,
+  threshold: str,
+  return_period: str,
+  column_keys: List[str],
+  get_kwargs,
 ):
   filtered_columns = DataTableColumn.objects.all()
+
+  hazard_filter = None
+  exposure_filter = None
+  threshold_filter = None
+  return_period_filter = None
+  column_keys_filter = None
 
   if hazard:
     hazard_filter = Hazard.objects.objects.filter(key=hazard)
@@ -204,20 +217,22 @@ def filter_columns(
 
       filtered_columns = filtered_columns.filter(meta_or)
 
+  # TODO: if empty, return None, empty list or remove from object?
   filter_options = {
-    "hazard_options": hazard_filter.filter(datatablecolumn__in=filtered_columns)
-    .distinct()
-    .values_list("key", flat="True"),
-    "exposure_options": exposure_filter.filter(datatablecolumn__in=filtered_columns)
-    .distinct()
-    .values_list("key", flat="True"),
-    "threshold_options": threshold_filter.filter(datatablecolumn__in=filtered_columns)
-    .distinct()
-    .values_list("key", flat="True"),
-    "return_period_options": return_period_filter.filter(datatablecolumn__in=filtered_columns)
-    .distinct()
-    .values_list("key", flat="True"),
+    "hazard_options": hazard_filter,
+    "exposure_options": exposure_filter,
+    "threshold_options": threshold_filter,
+    "return_period_options": return_period_filter,
   }
+
+  for key in filter_options.keys():
+    if filter_options[key] is not None:
+      filter_options[key] = (
+        filter_options[key]
+        .filter(datatablecolumn__in=filtered_columns)
+        .distinct()
+        .values_list("key", flat="True")
+      )
 
   for metadata in DataTableColumnMetadata.objects.filter(
     Q(datatablecolumnmetadatavaluefloat__column__in=filtered_columns)

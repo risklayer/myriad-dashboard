@@ -29,9 +29,15 @@ const osmHOT = L.tileLayer(
   }
 );
 
-export const baseMaps = {
+export type BaseMapTypes =
+  | "Colour"
+  | "Greyscale"
+  | "OpenStreetMap"
+  | "OpenStreetMap.HOT";
+
+export const BaseMaps: Record<BaseMapTypes, L.TileLayer> = {
   Colour: colorLayer,
   Greyscale: grayscaleLayer,
   OpenStreetMap: osm,
   "OpenStreetMap.HOT": osmHOT,
-};
+} as const;

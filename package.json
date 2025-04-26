@@ -33,9 +33,12 @@
     "jquery-deserialize": "^2.0.0",
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
+    "leaflet-contour": "^1.0.0",
+    "leaflet.control.opacity": "^1.6.0",
+    "leaflet.heat": "^0.2.0",
     "lodash": "^4.17.21",
-    "lodash-es": "^4.17.21",
     "openapi-fetch": "^0.13.4",
+    "openapi-typescript": "^7.6.1",
     "prettier": "^3.4.2",
     "rollup": "^4.32.1",
     "sass": "^1.84.0",
@@ -53,13 +56,14 @@
     "@types/jquery": "^3.5.32",
     "@types/jquery-deserialize": "^2.0.0",
     "@types/leaflet": "^1.9.16",
+    "@types/leaflet.heat": "^0.2.4",
     "@types/lodash": "^4.17.15",
     "eslint": "^9.20.1",
-    "openapi-typescript": "^7.6.1",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.24.1"
   },
   "overrides": {
-    "txml": "^3.2.5"
+    "txml": "^3.2.5",
+    "d3-color": "^3.1.0"
   }
 }

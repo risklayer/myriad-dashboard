@@ -294,11 +294,15 @@ class Hazard(models.Model, KeyLabelSelection):
       "key": self.key,
       "label": self.label,
     }
-    unit = TableHazardUnit.objects.filter(hazard=self).first()
+    unit = self.unit
     if unit is not None:
-      ret_data["unit"] = unit.unit
+      ret_data["unit"] = unit
 
     return ret_data
+
+  @property
+  def unit(self):
+    return getattr(TableHazardUnit.objects.filter(hazard=self).first(), "unit", None)
 
 
 ## Tourism indicators
@@ -407,6 +411,21 @@ class DataTableColumn(models.Model):
       "return_period": self.return_period.to_dict() if self.return_period else None,
     }
 
+  def get_metadata_all(self) -> Dict[str, Union[float, int, str]]:
+    data = dict()
+    for metadatavalue in DataTableColumnMetadataValueFloat.objects.filter(column=self):
+      data[metadatavalue.metadata.key] = {
+        "label": metadatavalue.metadata.label,
+        "value": metadatavalue.value,
+      }
+    for metadatavalue in DataTableColumnMetadataValueString.objects.filter(column=self):
+      data[metadatavalue.metadata.key] = {
+        "label": metadatavalue.metadata.label,
+        "value": metadatavalue.value,
+      }
+
+    return data
+
   def __str__(self):
     return str(self.data_table) + " / [" + self.key + "] " + str(self.label)
 
@@ -445,6 +464,10 @@ class DataTableColumnMetadataValueString(models.Model):
   metadata = models.ForeignKey(DataTableColumnMetadata, on_delete=models.CASCADE)
   column = models.ForeignKey(DataTableColumn, on_delete=models.CASCADE)
   value = models.TextField()
+
+  @property
+  def label(self):
+    return self.value
 
 
 ## Curve Data Models
@@ -668,6 +691,14 @@ class HrscEvent(models.Model):
   footprint = models.BinaryField(null=True, blank=True)
   footprint_type = models.TextField(choices=_blob_type_choices)
 
+  @property
+  def label(self):
+    return f"{self.collection.hazard.label.title()} {self.id}"
+
+  @property
+  def key(self):
+    return str(self.id)
+
   def get_metadata_attribute(self, key: str) -> Union[float, int, str]:
     metadata = HrscEventMetadata.objects.filter(
       key=key,
@@ -707,26 +738,31 @@ class HrscEvent(models.Model):
         end_lat = all_metadata["end_latitude"]
         path_width = all_metadata["path_width"]
 
-        azimuth = calculate_azimuth((start_lon, start_lat), (end_lon, end_lat))
+        azimuth = calculate_azimuth((start_lat, start_lon), (end_lat, end_lon))
         angle1 = (azimuth + 90) % 360
         angle2 = (azimuth - 90) % 360
         point1 = geopy.distance.distance(kilometers=path_width / 2).destination(
           (start_lat, start_lon), angle1
         )
-        point1 = (point1.latitude, point1.longitude)
+        point1_xy = (point1.longitude, point1.latitude)
+
         point2 = geopy.distance.distance(kilometers=path_width / 2).destination(
           (start_lat, start_lon), angle2
         )
-        point2 = (point2.latitude, point2.longitude)
+        point2_xy = (point2.longitude, point2.latitude)
+
         point3 = geopy.distance.distance(kilometers=path_width / 2).destination(
           (end_lat, end_lon), angle2
         )
-        point3 = (point3.latitude, point3.longitude)
+        point3_xy = (point3.longitude, point3.latitude)
+
         point4 = geopy.distance.distance(kilometers=path_width / 2).destination(
           (end_lat, end_lon), angle1
         )
-        point4 = (point4.latitude, point4.longitude)
-        polygon = Polygon([point1, point2, point3, point4, point1])
+        point4_xy = (point4.longitude, point4.latitude)
+
+        # Polygon expects x, y points (i.e. long/lat), but mapping outputs as lat/long
+        polygon = Polygon([point1_xy, point2_xy, point3_xy, point4_xy, point1_xy])
         return {"type": "Feature", "properties": all_metadata, "geometry": mapping(polygon)}
       else:
         raise Exception("cannot generate footprint for " + self.collection.key)
@@ -737,10 +773,10 @@ class HrscEvent(models.Model):
           return [
             [value.location.location.x, value.location.location.y, value.value]
             for value in HrscValueCoordinateWinterstorm.objects.filter(event=self)
-            if value.location.location.x > float(bbox[0]) # bbox_min_x
-            and value.location.location.y > float(bbox[1]) # bbox_min_y
-            and value.location.location.x < float(bbox[2]) # bbox_max_x
-            and value.location.location.y < float(bbox[3]) # bbox_max_y
+            if value.location.location.x > float(bbox[0])  # bbox_min_x
+            and value.location.location.y > float(bbox[1])  # bbox_min_y
+            and value.location.location.x < float(bbox[2])  # bbox_max_x
+            and value.location.location.y < float(bbox[3])  # bbox_max_y
           ]
         else:
           return [
@@ -751,7 +787,9 @@ class HrscEvent(models.Model):
         raise Exception("cannot generate footprint for " + self.collection.key)
 
     elif self.footprint_type == "tiff_ext":
-      with open(os.path.join(settings.RASTER_DATA_ROOT, self.footprint.decode("utf-8")), "rb") as footprint_file:
+      with open(
+        os.path.join(settings.RASTER_DATA_ROOT, self.footprint.decode("utf-8")), "rb"
+      ) as footprint_file:
         return footprint_file.read()
 
     else:
@@ -816,9 +854,7 @@ class HrscEvent(models.Model):
     return instance, metadata_list
 
   @classmethod
-  def getByLocation(
-    cls, point=None, longitude=None, latitude=None, radius=1000, limit=100, event_filter=None
-  ):
+  def getByLocation(cls, point=None, longitude=None, latitude=None, radius=1000, event_filter=None):
     if longitude is not None and latitude is not None:
       point = Point(longitude, latitude, srid=settings.DEFAULT_SRID)
 
@@ -833,15 +869,15 @@ class HrscEvent(models.Model):
       "distance"
     )
 
-    if limit is not None:
-      result = result[:limit]
-
     return result
 
-  def to_dict(self, include_footprint_blob=False, footprint_bbox: Tuple[float] = None):
+  def to_dict(
+    self, include_footprint_blob=False, footprint_bbox: Tuple[float] = None, include_metadata=False
+  ):
     data = {
       "id": self.id,
       "collection_id": self.collection_id,
+      "hazard": self.collection.hazard.key,
       "location": {
         "x": self.location.x,
         "y": self.location.y,
@@ -856,6 +892,10 @@ class HrscEvent(models.Model):
       if isinstance(footprint, bytes):
         footprint = b64encode(footprint).decode(encoding="utf-8")
       data["footprint"] = footprint
+
+    if include_metadata:
+      metadata = self.get_metadata_all()
+      data["metadata"] = metadata
 
     return data
 
@@ -972,6 +1012,11 @@ class HrscHazardProbabilityRasterInstance(models.Model, RasterInstance):
 
   file_type = models.TextField(choices=_file_type_choices)
   file = models.FilePathField(path=settings.RASTER_DATA_ROOT)
+
+  # TODO remove when added to DB
+  @property
+  def label(self):
+    return str(self.severity_value)
 
 
 # class HrscHazardProbabilityRasterValue(models.Model):

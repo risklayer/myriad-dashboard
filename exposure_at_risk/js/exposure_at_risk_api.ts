@@ -102,6 +102,9 @@ export const getColumnsMap = memoize(
   async function getColumnsMap(
     columns: string[] | string
   ): Promise<Record<string, DataTableColumnSchema> | null> {
+    if (!columns?.length) {
+      return {};
+    }
     const {
       data, // only present if 2XX response
       error, // only present if 4XX or 5XX response

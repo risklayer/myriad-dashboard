@@ -1,9 +1,8 @@
-<button class="show-on-map-button btn btn-outline-secondary text-nowrap btn-sm me-1 border-0 {% if active %}active{% endif %}"
+<button class="show-on-map-button btn btn-outline-secondary text-nowrap {% if active %}active{% endif %} {% if compact %}border-0 p-1{% endif %} {{ class }}"
         type="button"
         data-bs-toggle="button"
         aria-pressed="{% if active %}true{% else %}false{% endif %}"
         {% if compact %}title="Show on map"{% endif %}
-        name="show-on-map-button"
         value="{{ key }}"
         hx-get="{% url 'exposure_at_risk:column_details' key=key %}"
         hx-target="#column-details"

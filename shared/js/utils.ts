@@ -1,4 +1,5 @@
 import { round } from "lodash";
+import { components } from "../../data/types/api";
 
 export function floatTo3Digits(value: number): string {
   // if (value > 1000000) {
@@ -32,4 +33,43 @@ export function floatTo3Digits(value: number): string {
   }
 
   return value.toExponential(2);
+}
+
+export function slugify(str: string) {
+  return str
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/[-\s]+/g, "-");
+}
+
+export function createGeoJSONDownload(
+  data: {
+    features: components["schemas"]["ShapeFeature"][];
+    type: "FeatureCollection";
+  },
+  filename: string
+) {
+  let url;
+  try {
+    const mimeType = "application/geo+json";
+    const blob = new Blob([JSON.stringify(data)], { type: mimeType });
+    const anchor = document.createElement("a");
+    url = (window.webkitURL || window.URL).createObjectURL(blob);
+
+    anchor.download = filename;
+    anchor.href = url;
+    anchor.dataset.downloadurl = [mimeType, anchor.download, anchor.href].join(
+      ":"
+    );
+    anchor.click();
+  } catch (err) {
+    console.error("Failed to download: ", err);
+    toast("Error creating download");
+  } finally {
+    if (url) {
+      window.URL.revokeObjectURL(url);
+    }
+  }
 }

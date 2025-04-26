@@ -3,8 +3,8 @@
 <li data-value="{{ key }}"
     class="list-group-item d-flex gap-1 align-items-start">
   <div class="col-10">
-    <div id="table-dataset-list-title-{{ key }}">
-      <b class="pin-label pin-label-{{ key }}">
+    <div id="table-dataset-list-title-{{ key|slugify }}">
+      <b class="pin-label pin-label-{{ key|slugify }}">
         {{ pin_label }}
       </b>
       <div>{{ key|desnake }}</div>

@@ -1,4 +1,4 @@
-<ul class="list-group select-tree">
+<ul class="list-group select-tree pb-2">
   {% for element in elements %}
     <li class="list-group-item py-0 px-2">
       {% if element.children %}
@@ -20,7 +20,7 @@
           </div>
           {% if element.children %}
           </summary>
-          {% include "exposure_at_risk/select_tree.html" with elements=element.children parent=element level=level|default:1|add:1 only %}
+          {% include "shared/select_tree.html" with elements=element.children parent=element level=level|default:1|add:1 only %}
         </details>
       {% endif %}
     </li>

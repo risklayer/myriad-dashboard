@@ -1,0 +1,42 @@
+{% load crispy_forms_tags %}
+
+<form id="settings-form"
+      class="d-inline-block"
+      aria-labelledby="settings-details-summary">
+  <details class="mb-2">
+    <summary class="h6 p-0 mb-2" id="settings-details-summary">
+      Display settings
+      {% include "shared/icon.html" with type="palette" class="me-1" %}
+    </summary>
+    {% crispy form %}
+    <fieldset>
+      <legend class="fs-6">Colours</legend>
+      <ul class="list-group">
+        {% for palette, colors in form.brewer_colors_list %}
+          <li class="list-group-item">
+            <input type="radio"
+                   class="form-check-input me-1"
+                   {% if palette == form.colors.value %}checked{% endif %}
+                   id="btn-colors-{{ palette }}"
+                   value="{{ palette }}"
+                   name="colors"
+                   autocomplete="off"
+                   onchange="formUpdate()" />
+            <label class="form-check-label stretched-link"
+                   for="btn-colors-{{ palette }}"
+                   title="{{ palette }}">
+              {% for color in colors reversed %}
+                <div style="width: 16px;
+                            height: 16px;
+                            border: 1px solid #000;
+                            display: inline-block;
+                            margin: 0;
+                            background: {{ color }}"></div>
+              {% endfor %}
+            </label>
+          </li>
+        {% endfor %}
+      </ul>
+    </fieldset>
+  </details>
+</form>

@@ -45,7 +45,7 @@ class HazardSchema(ModelSchema):
 class TableMetaExposureSchema(ModelSchema):
   class Meta:
     model = TableMetaExposure
-    fields = ["key", "label"]
+    fields = ["key", "label", "unit"]
 
 
 class TableMetaThresholdSchema(ModelSchema):
@@ -228,6 +228,8 @@ class HrscEventSchema(ModelSchema):
   location: Optional[Dict[str, float]] = None
   footprint_type: str
   footprint: Union[str, dict, None, List] = None
+  hazard: Optional[str]
+  metadata: Optional[Dict[str, Union[str, float]]]
 
   class Meta:
     model = HrscEvent

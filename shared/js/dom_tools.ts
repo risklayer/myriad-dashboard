@@ -111,6 +111,24 @@ export function getMinimalCheckedInputs(
 }
 
 /**
+ * Take values from the current URL and apply them to the provided list of forms
+ * provided as IDs.
+ * Propagates selected tree values down to all children and marks nodes as
+ * indeterminate when they contain both selected and deselected nodes.
+ * @param form the form to populate
+ */
+export function applyParamsToAllForms(formIds: string[]) {
+  for (const id in formIds) {
+    const form = document.getElementById(id) as HTMLFormElement;
+    if (!form) {
+      console.error(`Invalid form ID ${id} provided to applyParamsToAllForms`);
+      return;
+    }
+    return applyParamsToForms(form);
+  }
+}
+
+/**
  * Take values from the current URL and apply them to the provided form.
  * Propagates selected tree values down to all children and marks nodes as
  * indeterminate when they contain both selected and deselected nodes.
@@ -261,7 +279,7 @@ function getSelectArrayValues(selectArrayElement: HTMLSelectElement) {
 export function toggleSelectArray(
   selectArrayElementId: string,
   key: string,
-  listNode: Node
+  listNode?: Node
 ) {
   const selectArrayElement = document.getElementById(
     selectArrayElementId
@@ -286,6 +304,34 @@ export function toggleSelectArray(
       selectArrayListElement.prepend(listNode);
     }
   }
+}
+
+/**
+ * Take values from the provided forms (by ID) and serialize them into the URL.
+ * Compresses selected tree-select values down to only the necessary nodes, i.e.
+ * the highest nodes in the tree for which all children are selected.
+ * @param filterFormIds The IDs of forms to serialize
+ * @param clickedElement The clicked select (where relevant) from which to
+ *                       propagate selections up and down the tree.
+ */
+export function applyAllFormValuesToParams(
+  filterFormsIds: string[],
+  clickedElement:
+    | HTMLInputElement
+    | HTMLSelectElement
+    | HTMLButtonElement
+    | undefined
+) {
+  const forms = [];
+  for (const id of filterFormsIds) {
+    const form = document.getElementById(id) as HTMLFormElement;
+    if (!form) {
+      console.error(`Invalid form ID ${id} provided to applyParamsToAllForms`);
+    } else {
+      forms.push(form);
+    }
+  }
+  return applyFormValuesToParams(forms, clickedElement);
 }
 
 /**
@@ -322,10 +368,10 @@ export function applyFormValuesToParams(
     // .entries() is in all browsers, but not in web standards yet (?)
     // @ts-ignore
     for (const [name, value] of formData.entries()) {
-      if (treeInputs.has(name)) {
+      if (treeInputs.has(name) || value === "" || value == null) {
         continue;
       }
-      url.searchParams.append(name, value);
+      url.searchParams.append(name, value as string);
     }
 
     if (
@@ -370,7 +416,7 @@ export const getCountriesByAreaCode = memoize(
       "regions-form"
     ) as HTMLFormElement;
 
-    for (const input of regionsForm.areas) {
+    for (const input of regionsForm.areas ?? []) {
       const {
         value,
         dataset: { parent },
@@ -386,4 +432,23 @@ export function getParamsGrouped() {
     pairs.map(([_, v]) => v)
   );
   return paramsGrouped;
+}
+
+export function deactivateButton(button: HTMLElement) {
+  button.classList.remove("active");
+  button.ariaPressed = "false";
+}
+
+export function activateButton(button: HTMLElement) {
+  button.classList.add("active");
+  button.ariaPressed = "true";
+}
+export function resetSelectTreeIndeterminate() {
+  (
+    document.querySelectorAll(
+      ".select-tree-input[indeterminate]"
+    ) as NodeListOf<HTMLInputElement>
+  ).forEach((element) => {
+    element.indeterminate = true;
+  });
 }

@@ -16,7 +16,7 @@
   /* max-height: calc(100vh - var(--navbar-height));
   height: calc(100vh - var(--navbar-height)); */
   display: grid;
-  grid-template-columns: minmax(540px, 40vw) 1fr minmax(270px, 20vw);
+  grid-template-columns: minmax(300px, 20vw) 1fr minmax(300px, 20vw);
   grid-template-rows: 1fr min-content;
   /* grid-auto-rows: 1fr; */
   gap: 0px 0px;
@@ -59,13 +59,13 @@
 
 .left-side-bars {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   grid-template-rows: min-content 1fr;
   gap: 0px 8px;
   grid-auto-flow: row;
   grid-template-areas:
-    "left-side-bars-header left-side-bars-header"
-    "filters-form regions-form-wrapper";
+    "left-side-bars-header"
+    "filters-form";
   grid-area: left-side-bars;
 }
 
@@ -73,11 +73,11 @@
   grid-area: left-side-bars-header;
 }
 
-.regions-form-wrapper {
+/* .regions-form-wrapper {
   grid-area: regions-form-wrapper;
-}
+} */
 
-.filters-form {
+.filters-form-wrapper {
   grid-area: filters-form;
   max-height: inherit;
 }
@@ -95,10 +95,6 @@
 
 .leaflet-legend {
   background-color: var(--bs-body-bg) !important;
-}
-
-.leaflet-legend-title {
-  font-size: 1rem;
 }
 
 .leaflet-legend-item i {

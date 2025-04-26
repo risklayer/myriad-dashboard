@@ -1,0 +1,19 @@
+<form id="regions-form"
+      class="regions-form mb-2"
+      aria-labelledby="areas-summary">
+  <details {% if open|default_if_none:True %}open{% endif %}>
+    <summary class="h6 p-0 mb-2 position-relative" id="areas-summary">
+      Regions
+      {% include "shared/icon.html" with type="diagram-3" class="me-1" %}
+      <button type="button"
+              class="btn btn-outline-none p-0 btn-sm position-absolute end-0"
+              onclick="{{ onclick|default:'zoomToRegions() ' }}">
+        {% include "shared/icon.html" with type="zoom-in" class="me-1" %}
+        Zoom to fit
+      </button>
+    </summary>
+    <div class="areas-wrapper overflow-auto mb-2">
+      {% include "shared/select_tree.html" with elements=countries open=True only %}
+    </div>
+  </details>
+</form>

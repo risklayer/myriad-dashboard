@@ -29,7 +29,7 @@ router = Router(tags=["Areas"])
 @router.get("", response=List[Nuts3AreaSchema])
 @decorate_view(cache_page(CACHE_TIMEOUT))
 def areas(request: HttpRequest, bbox: str = "", countries: List[CountriesEnum] = Query([])):
-  """Returns an array of selected NUTS2 areas"""
+  """Returns an array of selected NUTS3 areas"""
   nuts3areas = filter_nuts3_areas(bbox, countries)
   return nuts3areas
 
@@ -41,7 +41,7 @@ def map(
   bbox: str = "",
   countries: List[CountriesEnum] = Query([]),
 ):
-  """Returns a map of selected NUTS2 areas"""
+  """Returns a map of selected NUTS3 areas"""
   nuts3areas = filter_nuts3_areas(bbox, countries)
 
   return {c.key: c for c in nuts3areas}
@@ -57,7 +57,7 @@ def shapes(
   nuts3areas: List[str] = Query([]),
   tourismIndicators: List[str] = Query([]),
 ):
-  """Returns a list of all NUTS2 shapes in a GeoJSON FeatureCollection, including column values if specified.
+  """Returns a list of all NUTS3 shapes in a GeoJSON FeatureCollection, including column values if specified.
   If using bbox, countries and nuts3areas will be ignored. If not using bbox, all nuts3areas are returned filtered by
   either country or nuts3areas, or both. Please note that nuts3areas and countries as filter are working together additively.
   """
