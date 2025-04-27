@@ -5,8 +5,8 @@ from django.views.decorators.cache import cache_page
 from ninja import Query, Router
 from ninja.decorators import decorate_view
 
+from dashboard.settings import API_CACHE_TIMEOUT
 from data.api_shared import (
-  CACHE_TIMEOUT,
   CountriesEnum,
 )
 from data.models import (
@@ -27,7 +27,7 @@ router = Router(tags=["Areas"])
 
 
 @router.get("", response=List[Nuts3AreaSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def areas(request: HttpRequest, bbox: str = "", countries: List[CountriesEnum] = Query([])):
   """Returns an array of selected NUTS3 areas"""
   nuts3areas = filter_nuts3_areas(bbox, countries)
@@ -35,7 +35,7 @@ def areas(request: HttpRequest, bbox: str = "", countries: List[CountriesEnum] =
 
 
 @router.get("/map", response=Dict[str, Nuts3AreaSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def map(
   request: HttpRequest,
   bbox: str = "",
@@ -48,7 +48,7 @@ def map(
 
 
 @router.get("/shapes", response=FeatureCollectionSchema)
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def shapes(
   request: HttpRequest,
   bbox: str = "",
@@ -118,7 +118,7 @@ def shapes(
 
 
 @router.get("/countries", response=List[CountrySchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def countries(request: HttpRequest):
   """Returns a list of all countries"""
   return Country.objects.all().order_by("label")

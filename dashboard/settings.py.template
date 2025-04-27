@@ -76,3 +76,8 @@ TILE_LAYER_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 
 # mapbox
 # MAPBOX_KEY = ""
+
+# set low when developing 
+# API_CACHE_TIMEOUT = 0
+# high for production
+API_CACHE_TIMEOUT = 10000

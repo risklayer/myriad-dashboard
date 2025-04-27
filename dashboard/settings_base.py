@@ -41,6 +41,7 @@ INSTALLED_APPS = [
   "exposure_at_risk",
   "vulnerability_index_editor",
   "scenario_calculator",
+  "showcase",
   "data",
 ]
 
@@ -180,3 +181,6 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 DEFAULT_SRID = 4326
 
 RASTER_DATA_ROOT = os.path.join(BASE_DIR, "data_raster")
+
+# TODO choose logical duration
+API_CACHE_TIMEOUT = 10000

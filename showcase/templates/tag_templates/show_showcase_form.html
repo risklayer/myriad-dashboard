@@ -1,0 +1,46 @@
+{% load crispy_forms_tags %}
+{% load filters %}
+
+<form id="filters-form"
+      class="filters-form"
+      hx-get="{% url 'showcase:showcase_details' %}"
+      hx-target="#column-details"
+      hx-swap="innerHTML"
+      hx-trigger="change from:(#id_hazard)"
+      hx-include="[name=column],[name=hazard]"
+      hx-swap="outerHTML">
+  <fieldset id="filters-fieldset" class="mb-2" aria-labelledby="filters-summary">
+    <h2 class="h6 p-0 mb-2">
+      Criteria
+      {% include "shared/icon.html" with type="search" class="me-1" %}
+    </h2>
+    {% crispy filter_form %}
+    <div class="column-list-wrapper overflow-y-auto overflow-x-hidden">
+      <ul class="list-group">
+        <li class="list-group-item d-flex gap-1 align-items-start p-0">
+          <div class="col-9 px-2 py-1">Footprint</div>
+          <div class="btn-group col-3">
+            {% include "showcase/show_on_map_button.html" with key="fp" compact=True
+            active=column|equals:"fp" only %}
+            {% include "shared/add_to_table_button.html" with key="fp" compact=True only %}
+          </div>
+        </li>
+        {% for code, label in filter_form.fields.column.choices %}
+          <li class="list-group-item d-flex gap-1 align-items-start p-0">
+            <div class="col-9 px-2 py-1">NACE Rev 2.1 code {{ code }}</div>
+            <div class="btn-group col-3">
+              {% comment %} {% include "shared/pin_button.html" with pinned=pinned key=column_instance.key pinned_keys=pinned_keys
+                    index="list" panel="list-"|add:column_instance.key|slugify pin_type="exposure" compact=True confirm=True
+              only %} {% endcomment %}
+              {% include "showcase/show_on_map_button.html" with key=code compact=True
+              active=column|equals:code only %}
+              {% include "shared/add_to_table_button.html" with key=code compact=True only %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </fieldset>
+</form>
+{% comment %} Would normally use e.g. hx-on::after-request, but that doesn't work on the form {% endcomment %}
+<script id="update-filters-script"></script>

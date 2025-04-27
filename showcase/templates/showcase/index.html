@@ -1,0 +1,126 @@
+{% extends "layouts/base.html" %}
+
+{% load static %}
+{% load filters %}
+{% load crispy_forms_tags %}
+{% load show_showcase_details %}
+{% load show_showcase_form %}
+
+{% block title %}
+  Multi-Hazard Scenario Showcase - {{ block.super }}
+{% endblock title %}
+
+{% block head %}
+  {{ block.super }}
+  <link rel="stylesheet"
+        href="{% static 'datatables.net-bs5/css/dataTables.bootstrap5.min.css' %}" />
+  <link rel="stylesheet"
+        href="{% static 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'leaflet/dist/leaflet.css' %}" />
+  <link rel="stylesheet"
+        href="{% static '@gnatih/leaflet.legend/src/leaflet.legend.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/showcase.css' %}" />
+{% endblock head %}
+
+{% block pagetitle %}
+{% endblock pagetitle %}
+
+{% block main %}
+  <main id="main" class="main">
+    <div class="layout-grid">
+      <div class="left-side-bars">
+        <header class="left-side-bars-header p-2 d-flex justify-content-between">
+          <h1 class="h5 fs-5">Multi-hazard scenario showcase</h1>
+        </header>
+        <div class="filters-form-wrapper h-100 mh-100 d-flex flex-column overflow-y-auto px-2">
+          <p>Combined impacts for a flood and earthquake in the Danube region</p>
+          {% include "shared/settings_form.html" with form=settings_form only %}
+          {% include "shared/regions_form.html" with countries=countries open=False only %}
+          {% show_showcase_form request=request filter_form=filter_form pinned=pinned pinned_keys=pinned_keys column=column %}
+          <input type="hidden"
+                 id="column-select-hidden"
+                 name="column"
+                 form="filters-form"
+                 onchange="formUpdate()"
+                 value="{{ column }}" />
+        </div>
+      </div>
+      <div class="map-wrapper">
+        <div id="map"></div>
+      </div>
+      <div id="table-wrapper" class="table-wrapper p-2 border-top">
+        <table id="values-table">
+        </table>
+      </div>
+      <div id="right-toolbar-wrapper"
+           class="right-toolbar-wrapper d-flex flex-column overflow-y-auto p-2">
+        <div class="p-2">
+          {% comment %} <hr class="m-0" /> {% endcomment %}
+          <div class="right-toolbar-contents">
+            <div id="area-details" class="area-details"></div>
+            <details class="mb-2" open>
+              <summary class="h6 p-0 mb-2" id="table-column-summary">
+                Dataset details
+                {% include "shared/icon.html" with type="file-richtext" class="me-1" %}
+              </summary>
+              <div id="column-details" class="event-details">
+                {% if not column %}
+                  <p>
+                    Please select one or more regions to display, then use filters to find values for the hazards and exposure types you need.
+                  </p>
+                {% endif %}
+                {% show_showcase_details hazard=hazard exposure=column %}
+              </div>
+            </details>
+            {% comment %} {% include "shared/pin.html" with actions_template="showcase/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="exposure" list_title="Pinned datasets" add_to_table=True only %} {% endcomment %}
+            <form id="table-datasets-form"
+                  class="table-datasets-form mb-2 d-none"
+                  aria-labelledby="table-datasets-summary">
+              <details>
+                <summary class="h6 p-0 mb-2" id="table-datasets-summary">
+                  Table datasets
+                  {% include "shared/icon.html" with type="table" class="me-1" %}
+                </summary>
+                <div class="table-datasets-wrapper overflow-auto mb-2">
+                  <select multiple
+                          id="table-columns"
+                          name="table_columns"
+                          class="select-array-multiple d-none">
+                    {% for column_key in table_columns %}
+                      <option value="{{ column_key }}" selected>{{ column_key }}</option>
+                    {% endfor %}
+                  </select>
+                  <ul class="list-group mb-2">
+                    {% for column_key in table_columns %}
+                      {% include "showcase/table_datasets_list_item.html" with key=column_key pin_label=pinned|pin_label:column_key only %}
+                    {% endfor %}
+                    {% include "showcase/table_datasets_list_total_item.html" with key="max_overlap" pin_label="Maximum overlapping exposure (2 hazards)" class="summary-column" only %}
+                    {% include "showcase/table_datasets_list_total_item.html" with key="max_combined" pin_label="Maximum combined exposure (2 hazards)" class="summary-column" only %}
+                  </ul>
+                </div>
+              </details>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <template id="table-datasets-list-item-template">
+      {% include "showcase/table_datasets_list_item.html" with key="COLUMNKEY" pin_label="" only %}
+    </template>
+  </main>
+{% endblock main %}
+
+{% block afterbody %}
+  {{ block.super }}
+  {% comment %}
+  [JSZip](https://stuk.github.io/jszip/) is needed for
+  [Excel export](https://datatables.net/reference/button/excelHtml5)
+  {% endcomment %}
+  <script src="{% static 'jszip/dist/jszip.min.js' %}"></script>
+  <script type="module"
+          id="showcase_script"
+          src="{% static 'js/showcase.js' %}"
+          data-latitude="{{ latitude }}"
+          data-longitude="{{ longitude }}"></script>
+  {{ displayed_countries|json_script:"displayed-countries" }}
+{% endblock afterbody %}

@@ -1,0 +1,47 @@
+{% load filters %}
+
+{% comment %} <h2 id="pin-name-title-0" class="h5 p-0 mb-2 text-center rounded-5 exposure-title pin-label pin-label-{{ pin_key|slugify }}">
+  {% if column %}{{ pinned|pin_label:column.key }}{% endif %}
+</h2> {% endcomment %}
+<input type="hidden" name="item_selected_0" value="{{ column.key }}" />
+{% if column %}
+  <div id="column-details-inner">
+    {% if not summary_column %}
+      {% include "shared/action_buttons.html" with pinned=pinned key=column.key pinned_keys=pinned_keys panel="0" pin_type="exposure" add_to_table=True set_filters=False show_pin=False only %}
+    {% endif %}
+    <table id="column-details-table" class="table table-stacked-headless">
+      <tbody>
+        <tr>
+          <th scope="row" data-name="key" data-value="{{ column.key }}">Result set</th>
+          <td>{{ column.label|fix_danube_columns }}</td>
+        </tr>
+        {% if not summary_column %}
+          <tr>
+            <th scope="row" data-name="hazard" data-value="{{ column.hazard.key }}">
+              Hazard
+            </th>
+            <td>{{ column.hazard.label }}</td>
+          </tr>
+          {% if column.exposure %}
+            <tr>
+              <th scope="row"
+                  data-name="exposure"
+                  data-value="{{ column.exposure.key }}">Exposure</th>
+              <td>{{ column.exposure.label }}</td>
+            </tr>
+          {% endif %}
+        {% endif %}
+        {% for k, v in column.get_metadata_all.items %}
+          <tr scope="row" data-name="{{ k }}" data-value="{{ v.value }}">
+            <th>{{ v.label }}</th>
+            <td>{{ v.value }}</td>
+          </tr>
+        {% endfor %}
+        <tr>
+          <th scope="row">Description</th>
+          <td>{{ column.description }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+{% endif %}

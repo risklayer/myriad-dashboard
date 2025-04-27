@@ -2,14 +2,11 @@ from enum import StrEnum
 
 from data.models import (
   Country,
-  TableMetaExposure,
   Hazard,
+  TableMetaExposure,
   TableMetaReturnPeriod,
   TableMetaThreshold,
 )
-
-
-CACHE_TIMEOUT = 1000
 
 # Dynamic "Enum" types for the purpose of displaying options in swagger
 # Need to determine if this will create issues after importing data,

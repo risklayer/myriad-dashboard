@@ -8,6 +8,7 @@ const inputFiles = [
   "dashboard/js/scripts.ts",
   "exposure_at_risk/js/exposure_at_risk.ts",
   "scenario_calculator/js/scenario_calculator.ts",
+  "showcase/js/showcase.ts",
 ];
 export default {
   input: inputFiles,

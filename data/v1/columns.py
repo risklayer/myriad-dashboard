@@ -6,8 +6,8 @@ from django.views.decorators.cache import cache_page
 from ninja import Query, Router
 from ninja.decorators import decorate_view
 
+from dashboard.settings import API_CACHE_TIMEOUT
 from data.api_shared import (
-  CACHE_TIMEOUT,
   ExposureOptionsEnum,
   HazardOptionsEnum,
   ReturnPeriodOptionsEnum,
@@ -15,29 +15,29 @@ from data.api_shared import (
 )
 from data.models import (
   DataTableColumn,
-  TableMetaExposure,
-  Hazard,
-  TableMetaReturnPeriod,
-  TableMetaThreshold,
   DataTableColumnMetadata,
   DataTableColumnMetadataValueFloat,
   DataTableColumnMetadataValueString,
+  Hazard,
+  TableMetaExposure,
+  TableMetaReturnPeriod,
+  TableMetaThreshold,
 )
 from data.schemas import (
-  DataTableColumnsWithFilterOptionsSchema,
+  DataTableColumnSchema,
   DataTableColumnSummaryWithFilterOptionsSchema,
-  TableMetaExposureSchema,
+  DataTableColumnsWithFilterOptionsSchema,
   HazardSchema,
+  TableMetaExposureSchema,
   TableMetaReturnPeriodSchema,
   TableMetaThresholdSchema,
-  DataTableColumnSchema,
 )
 
 router = Router(tags=["Columns"])
 
 
 @router.get("", response=DataTableColumnsWithFilterOptionsSchema)
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def columns(
   request: HttpRequest,
   hazard: HazardOptionsEnum = None,
@@ -58,7 +58,7 @@ def columns(
 
 
 @router.get("/map", response=Dict[str, DataTableColumnSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def columns_map(
   request: HttpRequest,
   hazard: HazardOptionsEnum = None,
@@ -76,7 +76,7 @@ def columns_map(
 
 
 @router.get("/summaries", response=DataTableColumnSummaryWithFilterOptionsSchema)
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def column_summaries(
   request: HttpRequest,
   hazard: HazardOptionsEnum = None,
@@ -97,28 +97,28 @@ def column_summaries(
 
 
 @router.get("/hazards", response=List[HazardSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def hazards(request: HttpRequest):
   """Returns a list of all hazard types"""
   return Hazard.objects.all().order_by("label")
 
 
 @router.get("/exposure_types", response=List[TableMetaExposureSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def exposure_types(request: HttpRequest):
   """Returns a list of all exposure types"""
   return TableMetaExposure.objects.all().order_by("label")
 
 
 @router.get("/thresholds", response=List[TableMetaThresholdSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def thresholds(request: HttpRequest):
   """Returns a list of all thresholds types"""
   return TableMetaThreshold.objects.all().order_by("label")
 
 
 @router.get("/return_periods", response=List[TableMetaReturnPeriodSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def return_periods(request: HttpRequest):
   """Returns a list of all return periods"""
   return TableMetaReturnPeriod.objects.all().order_by("label")

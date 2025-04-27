@@ -1,11 +1,12 @@
 from typing import Dict, List
+
 from django.http import HttpRequest
 from django.views.decorators.cache import cache_page
 from ninja import Query, Router
 from ninja.decorators import decorate_view
 
+from dashboard.settings import API_CACHE_TIMEOUT
 from data.api_shared import (
-  CACHE_TIMEOUT,
   CountriesEnum,
 )
 from data.models import DataTableColumn, DataTableColumnValue, Nuts3Area
@@ -15,7 +16,7 @@ router = Router(tags=["Values"])
 
 
 @router.get("", response=Dict[str, Dict[str, float]])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def values(
   request: HttpRequest,
   countries: list[CountriesEnum] = Query([]),

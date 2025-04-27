@@ -1,0 +1,28 @@
+{% load filters %}
+
+<li data-value="{{ key }}"
+    class="list-group-item d-flex gap-1 align-items-start">
+  <div class="col-10">
+    <div id="table-dataset-list-title-{{ key|slugify }}">
+      <b class="pin-label pin-label-{{ key|slugify }}">
+        {{ pin_label }}
+      </b>
+      <div>{{ key|desnake }}</div>
+    </div>
+  </div>
+  <div class="btn-group-vertical col-2">
+    <button class="btn btn-sm p-1"
+            type="button"
+            onclick="sortColumn('{{ key|escapejs }}', 'up')"
+            title="Move column up">
+      {% include "shared/icon.html" with type="arrow-up" class="me-1" size=16 %}
+    </button>
+    {% include "shared/add_to_table_button.html" with key=key compact=True class="btn-sm p-1" icon="trash" toggle=False only %}
+    <button class="btn btn-sm p-1"
+            type="button"
+            onclick="sortColumn('{{ key|escapejs }}', 'down')"
+            title="Move column down">
+      {% include "shared/icon.html" with type="arrow-down" class="me-1" size=16 %}
+    </button>
+  </div>
+</li>

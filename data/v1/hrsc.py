@@ -17,10 +17,9 @@ from rasterio.io import MemoryFile
 from rasterio.transform import from_origin
 from shapely import from_geojson, geometry
 
-from data.api_shared import (
-  CACHE_TIMEOUT,
+from dashboard.settings import (
+  API_CACHE_TIMEOUT,
 )
-from data.api_shared import CACHE_TIMEOUT
 from data.models import (
   HrscEvent,
   HrscEventCollection,
@@ -62,14 +61,14 @@ router = Router(tags=["HRSC"])
 
 
 @router.get("/scenarios", tags=["HRSC"], response=List[HrscScenarioSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def scenarios(request: HttpRequest):
   """Returns a list of available Scenarios"""
   return [scenario.to_dict() for scenario in HrscScenario.objects.all()]
 
 
 @router.get("/scenario/calculate_impact/{str:exposure_key}", tags=["HRSC"], response=dict)
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def calculate_impact(
   request: HttpRequest,
   exposure_key: str,
@@ -329,21 +328,21 @@ def calculate_impact(
 
 
 @router.get("/exposures", tags=["HRSC"], response=List[HrscExposureSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def exposures(request: HttpRequest):
   """Returns a list of available Exposures"""
   return [exposure.to_dict() for exposure in HrscExposure.objects.all()]
 
 
 @router.get("/collections", tags=["HRSC"], response=List[HrscEventCollectionSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def collections(request: HttpRequest):
   """Returns a list of available Collections"""
   return [collection.to_dict() for collection in HrscEventCollection.objects.all()]
 
 
 @router.get("/event/{str:id}/detail", tags=["HRSC"], response=HrscEventSchema)
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def event_by_id(request: HttpRequest, id: int, bbox: str = ""):
   """Returns the event details including footprint"""
   return HrscEvent.objects.get(id=id).to_dict(
@@ -353,14 +352,14 @@ def event_by_id(request: HttpRequest, id: int, bbox: str = ""):
 
 # removed this endpoint, not efficient enough
 # @router.get("/events/{str:collection_key}", tags=["HRSC"], response=List[HrscEventSchema])
-# @decorate_view(cache_page(CACHE_TIMEOUT))
+# @decorate_view(cache_page(API_CACHE_TIMEOUT))
 # def events_by_collection(request: HttpRequest, collection_key: str):
 #  """Returns a list of events inside this collection"""
 #  return [event.to_dict() for event in HrscEventCollection.objects.get(key=collection_key).hrscevent_set.all()]
 
 
 @router.get("/events/winterstorm/filter", tags=["HRSC"], response=List[HrscEventSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def events_by_collection_filter_ws(
   request: HttpRequest,
   longitude: float = None,
@@ -389,7 +388,7 @@ def events_by_collection_filter_ws(
 
 
 @router.get("/events/{str:collection_key}/filter", tags=["HRSC"], response=List[HrscEventSchema])
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def events_by_collection_filter(
   request: HttpRequest,
   collection_key: str,
@@ -498,14 +497,14 @@ def get_events_by_collection_filter(
   tags=["HRSC"],
   response=List[HrscHazardProbabilityRasterSchema],
 )
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def hazard_probabilities_raster_list(request: HttpRequest):
   """Return a probability value for a given hazard and severity"""
   return [r.to_dict() for r in HrscHazardProbabilityRaster.objects.all()]
 
 
 @router.get("/hazard_probabilities/raster/value/{str:hazard_key}", tags=["HRSC"], response=float)
-@decorate_view(cache_page(CACHE_TIMEOUT))
+@decorate_view(cache_page(API_CACHE_TIMEOUT))
 def hazard_probabilities_raster_value(
   request: HttpRequest,
   hazard_key: str,
