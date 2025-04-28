@@ -215,7 +215,6 @@ class FeatureCollectionSchema(Schema):
 class HrscScenarioSchema(ModelSchema):
   hazard: str
   event_collection: str
-  exposure_list: str
   mapping: Dict[str, str]
 
   class Meta:

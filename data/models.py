@@ -697,7 +697,7 @@ class HrscEvent(models.Model):
 
     return data
 
-  def get_footprint(self, bbox=Tuple[float]) -> bytes:
+  def get_footprint(self, bbox: Tuple[float] = None) -> bytes:
     if self.footprint_type == "lazy_py_geojson":
       if self.collection.key == "tornado":
         all_metadata = self.get_metadata_all()
@@ -733,21 +733,26 @@ class HrscEvent(models.Model):
 
     elif self.footprint_type == "lazy_py_coord_vals":
       if self.collection.key == "winterstorm":
-        print(repr(HrscValueCoordinateWinterstorm.objects.filter(event=self)))
-        return [
-          [value.location.location.x, value.location.location.y, value.value]
-          for value in HrscValueCoordinateWinterstorm.objects.filter(event=self)
-          # if
-          #  value.location.location.x > float(bbox[0]) # bbox_min_x
-          # and
-          #  value.location.location.y > float(bbox[1]) # bbox_min_y
-          # and
-          #  value.location.location.x < float(bbox[2]) # bbox_max_x
-          # and
-          #  value.location.location.y < float(bbox[3]) # bbox_max_y
-        ]
+        if bbox:
+          return [
+            [value.location.location.x, value.location.location.y, value.value]
+            for value in HrscValueCoordinateWinterstorm.objects.filter(event=self)
+            if value.location.location.x > float(bbox[0]) # bbox_min_x
+            and value.location.location.y > float(bbox[1]) # bbox_min_y
+            and value.location.location.x < float(bbox[2]) # bbox_max_x
+            and value.location.location.y < float(bbox[3]) # bbox_max_y
+          ]
+        else:
+          return [
+            [value.location.location.x, value.location.location.y, value.value]
+            for value in HrscValueCoordinateWinterstorm.objects.filter(event=self)
+          ]
       else:
         raise Exception("cannot generate footprint for " + self.collection.key)
+
+    elif self.footprint_type == "tiff_ext":
+      with open(os.path.join(settings.RASTER_DATA_ROOT, self.footprint.decode("utf-8")), "rb") as footprint_file:
+        return footprint_file.read()
 
     else:
       return self.footprint
@@ -992,7 +997,7 @@ class HrscScenario(models.Model, KeyLabelSelection):
       "hazard": self.hazard.key,
       "event_collection": self.event_collection.key,
       "mapping": {
-        m.exposure: m.vulnerability.key
+        m.exposure.key: m.vulnerability.key
         for m in HrscScenarioExposureVulnerabilityMapping.objects.filter(scenario=self)
       },
     }
