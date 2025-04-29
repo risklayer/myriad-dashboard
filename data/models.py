@@ -550,6 +550,22 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
 
   values_xy = models.JSONField()
 
+  def apply_curve(self, value) -> Tuple[float, bool]:
+    values_xy = [[0, 0]] + self.values_xy
+
+    for i in range(len(values_xy) - 1):  # -1 ensures, that we can interpolate to the next point
+      if value < values_xy[i][0]:
+        continue
+
+      x1 = values_xy[i][0]
+      y1 = values_xy[i][1]
+      x2 = values_xy[i + 1][0]
+      y2 = values_xy[i + 1][1]
+
+      return (y1 + ((value - x1) / (x2 - x1)) * (y2 - y1)), False
+
+    return values_xy[-1][1], True  # return maximum
+
   def to_dict(self):
     all_vals = {
       "key": self.key,
@@ -787,13 +803,19 @@ class HrscEvent(models.Model):
         raise Exception("cannot generate footprint for " + self.collection.key)
 
     elif self.footprint_type == "tiff_ext":
+      footprint = self.footprint
+      if isinstance(footprint, memoryview):
+        footprint = footprint.tobytes()
       with open(
-        os.path.join(settings.RASTER_DATA_ROOT, self.footprint.decode("utf-8")), "rb"
+        os.path.join(settings.RASTER_DATA_ROOT, footprint.decode("utf-8")), "rb"
       ) as footprint_file:
         return footprint_file.read()
 
     else:
-      return self.footprint
+      footprint = self.footprint
+      if isinstance(footprint, memoryview):
+        footprint = footprint.tobytes()
+      return footprint
 
   @classmethod
   def create_with_attributes(
@@ -964,6 +986,19 @@ class HrscExposureRaster(models.Model):
 
   file_type = models.TextField(choices=_file_type_choices)
   file = models.FilePathField(path=settings.RASTER_DATA_ROOT)
+
+  def get_window(self, bbox):
+    if self.file_type == "tiff":
+      with rasterio.open(os.path.join(settings.RASTER_DATA_ROOT, self.file)) as tiff_file:
+        window = rasterio.windows.from_bounds(
+          bbox[0], bbox[1], bbox[2], bbox[3], transform=tiff_file.transform
+        )
+        return tiff_file.read(1, window=window), rasterio.transform.AffineTransformer(
+          tiff_file.window_transform(window)
+        )
+
+    else:
+      raise Exception("unknown file_type")
 
   def to_dict(self):
     return {
