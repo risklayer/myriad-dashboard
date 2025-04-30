@@ -12,6 +12,7 @@ def get_myriad_apps():
       myriad_apps.append(
         {
           "name": app.verbose_name,
+          "nav_name": getattr(app, "nav_name", app.verbose_name),
           "description": app.description,
           "icon": app.icon,
           "url": reverse(app.label + ":" + getattr(app, "home", "index")),
