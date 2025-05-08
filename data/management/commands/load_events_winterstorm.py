@@ -21,6 +21,8 @@ from django.db import transaction
 
 from typing import Optional
 
+from data.utils import clear_cache
+
 
 class Command(BaseCommand):
   help = "Add a winterstorm data set"
@@ -168,3 +170,7 @@ class Command(BaseCommand):
         print(" bulk creating (rest)")
         HrscValueCoordinateWinterstorm.objects.bulk_create(values_to_create)
         print("  ... done")
+
+    print("Resetting cache")
+    clear_cache()
+    print("Done")

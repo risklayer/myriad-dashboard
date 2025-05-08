@@ -10,6 +10,8 @@ from django.core.management.base import BaseCommand
 
 import json
 
+from data.utils import clear_cache
+
 
 class Command(BaseCommand):
   help = "Add a data set"
@@ -39,3 +41,7 @@ class Command(BaseCommand):
             key__icontains=mapping_data["vulnerability"]
           ),
         )
+
+    print("Resetting cache")
+    clear_cache()
+    print("Done")

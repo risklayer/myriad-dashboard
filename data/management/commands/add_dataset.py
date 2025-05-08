@@ -29,6 +29,8 @@ import json
 from django.db import models
 from typing import Type, Dict
 
+from data.utils import clear_cache
+
 
 country_dict = get_country_dict_by_2alpha()
 nuts_dict = get_nuts_by_code()
@@ -297,6 +299,9 @@ class Command(BaseCommand):
               )
 
       DataTableColumnValue.objects.bulk_create(all_values)
+      print("Resetting cache")
+      clear_cache()
+      print("Done")
 
     elif format == "xlsx":
       pass

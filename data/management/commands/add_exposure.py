@@ -114,3 +114,5 @@ class Command(BaseCommand):
         file=subpath,
         file_type=raster_format,
       )
+        print("Resetting cache")
+    

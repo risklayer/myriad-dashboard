@@ -13,6 +13,8 @@ import zipfile
 import os.path
 import shutil
 
+from data.utils import clear_cache
+
 
 class Command(BaseCommand):
   help = "Load Probability from a raster file"
@@ -80,3 +82,7 @@ class Command(BaseCommand):
       file=subpath,
       file_type=format,
     )
+
+    print("Resetting cache")
+    clear_cache()
+    print("Done")

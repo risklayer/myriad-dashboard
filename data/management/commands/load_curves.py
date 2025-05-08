@@ -19,6 +19,8 @@ from django.template.defaultfilters import slugify
 import hashlib
 from math import isnan
 
+from data.utils import clear_cache
+
 country_dict_by_iso = get_country_dict_by_iso()
 
 
@@ -204,3 +206,7 @@ class Command(BaseCommand):
         curve.countries.set(country_instances)
       except Exception as e:
         print("error creating curve " + key + " " + name + " " + repr(e))
+
+    print("Resetting cache")
+    clear_cache()
+    print("Done")

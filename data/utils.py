@@ -1,4 +1,6 @@
+from django.conf import settings
 import numpy as np
+from django.core.cache import caches
 
 
 def calculate_azimuth(point1, point2):
@@ -11,3 +13,7 @@ def calculate_azimuth(point1, point2):
   ) * np.cos(np.radians(delta_lon))
   azimuth = np.degrees(np.arctan2(x, y))
   return azimuth
+
+
+def clear_cache():
+  caches[settings.CACHE_MIDDLEWARE_ALIAS].clear()

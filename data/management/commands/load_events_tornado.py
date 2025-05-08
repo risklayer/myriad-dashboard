@@ -14,6 +14,8 @@ import zipfile
 
 import csv
 
+from data.utils import clear_cache
+
 
 class Command(BaseCommand):
   help = "Add a tornado data set"
@@ -106,3 +108,7 @@ class Command(BaseCommand):
         HrscEvent.objects.bulk_create(events_to_create)
         HrscEventMetadataValueFloat.objects.bulk_create(event_metadata_to_create)
         print("  ... done")
+
+    print("Resetting cache")
+    clear_cache()
+    print("Done")

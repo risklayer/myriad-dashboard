@@ -19,6 +19,8 @@ from django.conf import settings
 
 import shutil
 
+from data.utils import clear_cache
+
 
 class Command(BaseCommand):
   help = "Earthquake data set"
@@ -189,3 +191,7 @@ class Command(BaseCommand):
         HrscEvent.objects.bulk_create(events_to_create)
         HrscEventMetadataValueFloat.objects.bulk_create(event_metadata_to_create)
         print("  ... done")
+
+    print("Resetting cache")
+    clear_cache()
+    print("Done")
