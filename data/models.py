@@ -1,28 +1,28 @@
 import json
 import math
 import numbers
+import os.path
 import re
+from base64 import b64encode
 from typing import Dict, Optional, Tuple, Union
 
+import geopy.distance
+import numpy as np
+import rasterio
+from django.conf import settings
+from django.contrib.gis.db import models as gismodels
+from django.contrib.gis.db.models.functions import Distance as DBDistance
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import Distance as MDistance
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.safestring import mark_safe
-
-from django.contrib.gis.db import models as gismodels
-from django.contrib.gis.geos import Point
-from django.contrib.gis.measure import Distance as MDistance
-from django.contrib.gis.db.models.functions import Distance as DBDistance
-from base64 import b64encode
-
-from .utils import calculate_azimuth
-
-import geopy.distance
+from rasterio.crs import CRS
+from rasterio.transform import TransformerBase
+from rasterio.warp import Resampling, reproject
 from shapely.geometry import Polygon, mapping
 
-from django.conf import settings
-
-import rasterio
-import os.path
+from .utils import calculate_azimuth
 
 _json_script_escapes = {
   ord(">"): "\\u003E",
@@ -987,15 +987,39 @@ class HrscExposureRaster(models.Model):
   file_type = models.TextField(choices=_file_type_choices)
   file = models.FilePathField(path=settings.RASTER_DATA_ROOT)
 
-  def get_window(self, bbox):
+  def get_window(
+    self,
+    bbox,
+    transform_target: TransformerBase = None,
+    resolution: Optional[Tuple[float, float]] = None,
+  ):
     if self.file_type == "tiff":
       with rasterio.open(os.path.join(settings.RASTER_DATA_ROOT, self.file)) as tiff_file:
         window = rasterio.windows.from_bounds(
           bbox[0], bbox[1], bbox[2], bbox[3], transform=tiff_file.transform
         )
-        return tiff_file.read(1, window=window), rasterio.transform.AffineTransformer(
-          tiff_file.window_transform(window)
-        )
+        raster = tiff_file.read(1, window=window)
+        transform = rasterio.transform.AffineTransformer(tiff_file.window_transform(window))
+
+        if (transform_target and not resolution) or (not transform_target and resolution):
+          raise Exception("transform_target and resolution both need to be set or not None")
+
+        if transform_target:
+          steps_y, steps_x = resolution
+          new_raster = np.empty((steps_y, steps_x), dtype=raster.dtype)
+          reproject(
+            raster,
+            destination=new_raster,
+            src_transform=tiff_file.window_transform(window),
+            src_crs=CRS.from_epsg(4326),  # WGS84
+            dst_transform=transform_target,
+            dst_crs=CRS.from_epsg(4326),  # WGS84
+            resampling=Resampling.sum,
+          )
+          raster = new_raster
+          transform = rasterio.transform.AffineTransformer(transform_target)
+
+        return raster, transform
 
     else:
       raise Exception("unknown file_type")

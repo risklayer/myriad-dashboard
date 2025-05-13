@@ -20,6 +20,7 @@ from shapely import from_geojson, geometry
 from data.api_shared import (
   CACHE_TIMEOUT,
 )
+from data.api_shared import CACHE_TIMEOUT
 from data.models import (
   HrscEvent,
   HrscEventCollection,
@@ -41,6 +42,21 @@ from data.schemas import (
   HrscHazardProbabilityRasterSchema,
   HrscScenarioSchema,
 )
+from django.conf import settings
+from django.contrib.gis.db.models.functions import Distance as DBDistance
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import Distance as MDistance
+from django.db.models import Q
+from django.http import HttpRequest
+from django.views.decorators.cache import cache_page
+from ninja import Query, Router
+from ninja.decorators import decorate_view
+from ninja.errors import HttpError
+from rasterio.crs import CRS
+from rasterio.io import MemoryFile
+from rasterio.transform import from_origin
+from rasterio.warp import Resampling, reproject
+from shapely import from_geojson, geometry
 
 router = Router(tags=["HRSC"])
 
@@ -57,14 +73,14 @@ def scenarios(request: HttpRequest):
 def calculate_impact(
   request: HttpRequest,
   exposure_key: str,
-  event_id: List[int] = Query([]),
+  event_ids: List[int] = Query([]),
   bbox: str = None,
   include_geometry: bool = True,
 ):
   """calculate the risk footprint for a given scenario and exposure, returns a geojson"""
   exposure = HrscExposure.objects.get(key=exposure_key)
 
-  exposure_raster = HrscExposureRaster.objects.get(exposure=exposure)
+  exposure_raster_dbobj = HrscExposureRaster.objects.get(exposure=exposure)
 
   event_bbox_min_x, event_bbox_min_y, event_bbox_max_x, event_bbox_max_y = bbox.split(",")
   event_bbox_min_x = float(event_bbox_min_x)
@@ -77,7 +93,7 @@ def calculate_impact(
   grid_resolution_x = 0.1
   grid_resolution_y = 0.1
 
-  for this_event_id in event_id:
+  for this_event_id in event_ids:
     event = HrscEvent.objects.get(id=this_event_id)
 
     all_events.append(event)
@@ -116,7 +132,11 @@ def calculate_impact(
   impact_data_avrg_lin = np.zeros((steps_y, steps_x))
   impact_data_avrg_sqrt = np.zeros((steps_y, steps_x))
 
-  exposure_raster, exposure_transform = exposure_raster.get_window(bbox_to_use)
+  exposure_raster, _ = exposure_raster_dbobj.get_window(
+    bbox_to_use,
+    transform_target=result_transform,
+    resolution=(steps_y, steps_x),
+  )
 
   exceeded_max_grid = np.zeros((steps_y, steps_x), dtype=bool)
 
@@ -133,47 +153,73 @@ def calculate_impact(
       raise Exception("need a footprint in order to calculate risk")
     elif event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
       with MemoryFile(event.get_footprint(bbox_to_use)) as memfile, memfile.open() as memfile_image:
-        memfile_band = memfile_image.read(1)
+        window = rasterio.windows.from_bounds(
+          event_bbox_min_x,
+          event_bbox_min_y,
+          event_bbox_max_x,
+          event_bbox_max_y,
+          transform=memfile_image.transform,
+        )
+        raster = memfile_image.read(1, window=window)
+
+        memfile_band = np.empty((steps_y, steps_x), dtype=raster.dtype)
+        reproject(
+          raster,
+          destination=memfile_band,
+          src_transform=memfile_image.window_transform(window),
+          src_crs=CRS.from_epsg(4326),  # WGS84
+          dst_transform=result_transform,
+          dst_crs=CRS.from_epsg(4326),  # WGS84
+          resampling=Resampling.average,
+        )
 
         for pos_y in range(steps_y):
           for pos_x in range(steps_x):
-            memfile_x, memfile_y = rasterio.transform.xy(result_transform, pos_y, pos_x)
-            memfile_row, memfile_col = rasterio.transform.rowcol(
-              memfile_image.transform, memfile_x, memfile_y
-            )
-            if (
-              memfile_row < 0
-              or memfile_col < 0
-              or memfile_row >= memfile_image.height
-              or memfile_col >= memfile_image.width
-            ):
-              continue
-
-            memfile_value = memfile_band[memfile_row][memfile_col]
-
-            exposure_row, exposure_col = exposure_transform.rowcol(memfile_x, memfile_y)
+            memfile_value = memfile_band[pos_y][pos_x]
 
             impact_value, exceeded_max = vulnerability_curve.apply_curve(memfile_value)
 
             if exceeded_max:
               exceeded_max_grid[pos_y][pos_x] = True
 
-            impact_value_grid[pos_y][pos_x] = (
-              exposure_raster[exposure_row][exposure_col] * impact_value
-            )
+            val = exposure_raster[pos_y][pos_x]
+            if np.isnan(val):
+              val = 0
+
+            impact_value_grid[pos_y][pos_x] += val * impact_value
 
     elif event.footprint_type == "lazy_py_geojson":
       raise Exception("footprint type not implemented")
     elif event.footprint_type == "lazy_py_coord_vals":
+      footprint_location_dict = dict()
       for location_x, location_y, value in event.get_footprint(bbox_to_use):
-        exposure_row, exposure_col = exposure_transform.rowcol(location_x, location_y)
+        exposure_row, exposure_col = result_transform.rowcol(location_x, location_y)
 
-        impact_value, exceeded_max = vulnerability_curve.apply_curve(value)
+        if (exposure_row, exposure_col) not in footprint_location_dict:
+          footprint_location_dict[(exposure_row, exposure_col)] = []
 
-        if exceeded_max:
-          exceeded_max_grid[pos_y][pos_x] = True
+        footprint_location_dict[(exposure_row, exposure_col)].append(value)
 
-        impact_value_grid[pos_y][pos_x] = exposure_raster[exposure_row][exposure_col] * impact_value
+      footprint_value_dict = dict()
+
+      for (exposure_row, exposure_col), values in footprint_location_dict:
+        footprint_value_dict[(exposure_row, exposure_col)] = sum(values) / len(values)
+
+      for pos_y in range(steps_y):
+        for pos_x in range(steps_x):
+          if (pos_x, pos_y) in footprint_value_dict:
+            impact_value, exceeded_max = vulnerability_curve.apply_curve(
+              footprint_value_dict[(pos_x, pos_y)]
+            )
+
+            if exceeded_max:
+              exceeded_max_grid[pos_y][pos_x] = True
+
+            val = exposure_raster[pos_x][pos_y]
+            if np.isnan(val):
+              val = 0
+            impact_row, impact_col = result_transform.rowcol(memfile_x, memfile_y)
+            impact_value_grid[impact_row][impact_col] += val * impact_value
 
     else:
       raise Exception("unknown footprint type")
@@ -182,7 +228,7 @@ def calculate_impact(
       for pos_x in range(steps_x):
         impact_value = impact_value_grid[pos_y][pos_x]
 
-        impact_data_min[pos_y][pos_x] = max(impact_data_max[pos_y][pos_x], impact_value)
+        impact_data_min[pos_y][pos_x] = max(impact_data_min[pos_y][pos_x], impact_value)
         impact_data_max[pos_y][pos_x] += impact_value
 
         impact_data_avrg_lin[pos_y][pos_x] += impact_value
@@ -191,8 +237,6 @@ def calculate_impact(
   # lets do the average and limit exposure to maximum
   for pos_y in range(steps_y):
     for pos_x in range(steps_x):
-      memfile_x, memfile_y = rasterio.transform.xy(result_transform, pos_y, pos_x)
-      exposure_row, exposure_col = exposure_transform.rowcol(memfile_x, memfile_y)
       impact_data_max[pos_y][pos_x] = min(
         exposure_raster[pos_y][pos_x], impact_data_max[pos_y][pos_x]
       )  # limit to max exposure
@@ -230,7 +274,6 @@ def calculate_impact(
     area_geojson_obj = from_geojson(dumps(area.geom_json))
     for pos_y in range(steps_y):
       for pos_x in range(steps_x):
-        # memfile_x, memfile_y = rasterio.transform.xy(result_transform, pos_y, pos_x)
         memfile_x, memfile_y = memfile_xy_raster[pos_y][pos_x]
         if (
           area.bbox_min_x < memfile_x
