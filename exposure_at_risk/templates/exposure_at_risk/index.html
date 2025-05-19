@@ -53,53 +53,50 @@
       </div>
       <div id="right-toolbar-wrapper"
            class="right-toolbar-wrapper d-flex flex-column overflow-y-auto p-2">
-        <div class="p-2">
-          {% comment %} <hr class="m-0" /> {% endcomment %}
-          <div class="right-toolbar-contents">
-            <div id="area-details" class="area-details"></div>
-            <details class="mb-2" open>
-              <summary class="h6 p-0 mb-2" id="table-column-summary">
-                Dataset details
-                {% include "shared/icon.html" with type="file-richtext" class="me-1" %}
+        <div class="right-toolbar-contents">
+          <div id="area-details" class="area-details"></div>
+          <details class="mb-2" open>
+            <summary class="h6 p-0 mb-2" id="table-column-summary">
+              Dataset details
+              {% include "shared/icon.html" with type="file-richtext" class="me-1" %}
+            </summary>
+            <div id="column-details" class="event-details">
+              {% if not column %}
+                <p>
+                  Please select one or more regions to display, then use filters to find values for the hazards and exposure types you need.
+                </p>
+              {% endif %}
+              {% show_column_details key=column pinned=pinned pinned_keys=pinned_keys %}
+            </div>
+          </details>
+          {% include "shared/pin.html" with actions_template="exposure_at_risk/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="exposure" list_title="Pinned datasets" add_to_table=True only %}
+          <form id="table-datasets-form"
+                class="table-datasets-form mb-2"
+                aria-labelledby="table-datasets-summary">
+            <details>
+              <summary class="h6 p-0 mb-2" id="table-datasets-summary">
+                Table datasets
+                {% include "shared/icon.html" with type="table" class="me-1" %}
               </summary>
-              <div id="column-details" class="event-details">
-                {% if not column %}
-                  <p>
-                    Please select one or more regions to display, then use filters to find values for the hazards and exposure types you need.
-                  </p>
-                {% endif %}
-                {% show_column_details key=column pinned=pinned pinned_keys=pinned_keys %}
+              <div class="table-datasets-wrapper overflow-auto mb-2">
+                <select multiple
+                        id="table-columns"
+                        name="table_columns"
+                        class="select-array-multiple d-none">
+                  {% for column_key in table_columns %}
+                    <option value="{{ column_key }}" selected>{{ column_key }}</option>
+                  {% endfor %}
+                </select>
+                <ul class="list-group mb-2">
+                  {% for column_key in table_columns %}
+                    {% include "exposure_at_risk/table_datasets_list_item.html" with key=column_key pin_label=pinned|pin_label:column_key only %}
+                  {% endfor %}
+                  {% include "exposure_at_risk/table_datasets_list_total_item.html" with key="max_overlap" pin_label="Maximum overlapping exposure (2 hazards)" class="summary-column" only %}
+                  {% include "exposure_at_risk/table_datasets_list_total_item.html" with key="max_combined" pin_label="Maximum combined exposure (2 hazards)" class="summary-column" only %}
+                </ul>
               </div>
             </details>
-            {% include "shared/pin.html" with actions_template="exposure_at_risk/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="exposure" list_title="Pinned datasets" add_to_table=True only %}
-            <form id="table-datasets-form"
-                  class="table-datasets-form mb-2"
-                  aria-labelledby="table-datasets-summary">
-              <details>
-                <summary class="h6 p-0 mb-2" id="table-datasets-summary">
-                  Table datasets
-                  {% include "shared/icon.html" with type="table" class="me-1" %}
-                </summary>
-                <div class="table-datasets-wrapper overflow-auto mb-2">
-                  <select multiple
-                          id="table-columns"
-                          name="table_columns"
-                          class="select-array-multiple d-none">
-                    {% for column_key in table_columns %}
-                      <option value="{{ column_key }}" selected>{{ column_key }}</option>
-                    {% endfor %}
-                  </select>
-                  <ul class="list-group mb-2">
-                    {% for column_key in table_columns %}
-                      {% include "exposure_at_risk/table_datasets_list_item.html" with key=column_key pin_label=pinned|pin_label:column_key only %}
-                    {% endfor %}
-                    {% include "exposure_at_risk/table_datasets_list_total_item.html" with key="max_overlap" pin_label="Maximum overlapping exposure (2 hazards)" class="summary-column" only %}
-                    {% include "exposure_at_risk/table_datasets_list_total_item.html" with key="max_combined" pin_label="Maximum combined exposure (2 hazards)" class="summary-column" only %}
-                  </ul>
-                </div>
-              </details>
-            </form>
-          </div>
+          </form>
         </div>
       </div>
     </div>

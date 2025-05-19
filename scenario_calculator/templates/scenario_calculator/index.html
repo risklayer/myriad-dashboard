@@ -44,8 +44,6 @@
                  onchange="formUpdate()"
                  value="{{ event }}" />
         </div>
-        {% comment %} <div id="regions-form-wrapper" class="regions-form-wrapper h-100 mh-100 d-flex flex-column overflow-y-auto p-2">
-        </div> {% endcomment %}
       </div>
       <div class="map-wrapper">
         <div id="map"></div>
@@ -56,54 +54,49 @@
       </div>
       <div id="right-toolbar-wrapper"
            class="right-toolbar-wrapper d-flex flex-column overflow-y-auto p-2">
-        <div class="p-2">
-          {% comment %} <hr class="m-0" /> {% endcomment %}
-          <div class="right-toolbar-contents">
-            <div id="area-details" class="area-details mb-2"></div>
-            <details class="mb-2" open>
+        <div class="right-toolbar-contents">
+          <div id="area-details" class="area-details mb-2"></div>
+          <details class="mb-2" open>
+            <summary class="h6 p-0 mb-2" id="table-events-summary">
+              Event details
+              {% include "shared/icon.html" with type="file-richtext" class="me-1" %}
+            </summary>
+            <div id="event-details" class="event-details">
+              {% if not event %}
+                <p>
+                  Please use filters to select events, and select one or more regions to display
+                </p>
+              {% endif %}
+              {% show_event_details key=event pinned=pinned pinned_keys=pinned_keys %}
+            </div>
+          </details>
+          {% include "shared/pin.html" with actions_template="scenario_calculator/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="event" list_title="Pinned events" add_to_table=True only %}
+          <form id="table-events-form"
+                class="table-events-form mb-2"
+                aria-labelledby="table-events-summary">
+            <details {% if table_events %}open{% endif %}>
               <summary class="h6 p-0 mb-2" id="table-events-summary">
-                Event details
-                {% include "shared/icon.html" with type="file-richtext" class="me-1" %}
+                Combine events
+                {% include "shared/icon.html" with type="intersect" class="me-1" %}
               </summary>
-              <div id="event-details" class="event-details">
-                {% if not event %}
-                  <p>
-                    Please use filters to select events, and select one or more regions to display
-                  </p>
-                {% endif %}
-                {% show_event_details key=event pinned=pinned pinned_keys=pinned_keys %}
+              <div class="table-events-wrapper overflow-auto mb-2">
+                <select multiple
+                        id="table-events"
+                        name="table_events"
+                        class="select-array-multiple d-none">
+                  {% for event in table_events %}
+                    <option value="{{ event.key }}" selected>{{ event.key }}</option>
+                  {% endfor %}
+                </select>
+                <ul class="list-group mb-2">
+                  {% for event in table_events %}
+                    {% include "scenario_calculator/table_events_list_item.html" with key=event.key label=event.label pin_label=pinned|pin_label:event.key only %}
+                  {% endfor %}
+                </ul>
               </div>
+              {% crispy combine_events_form %}
             </details>
-            {% include "shared/pin.html" with actions_template="scenario_calculator/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="event" list_title="Pinned events" add_to_table=True only %}
-            <form id="table-events-form"
-                  class="table-events-form mb-2"
-                  aria-labelledby="table-events-summary">
-              <details {% if table_events %}open{% endif %}>
-                <summary class="h6 p-0 mb-2" id="table-events-summary">
-                  Combine events
-                  {% include "shared/icon.html" with type="intersect" class="me-1" %}
-                </summary>
-                <div class="table-events-wrapper overflow-auto mb-2">
-                  <select multiple
-                          id="table-events"
-                          name="table_events"
-                          class="select-array-multiple d-none">
-                    {% for event in table_events %}
-                      <option value="{{ event.key }}" selected>{{ event.key }}</option>
-                    {% endfor %}
-                  </select>
-                  <ul class="list-group mb-2">
-                    {% for event in table_events %}
-                      {% include "scenario_calculator/table_events_list_item.html" with key=event.key label=event.label pin_label=pinned|pin_label:event.key only %}
-                    {% endfor %}
-                    {% comment %} {% include "scenario_calculator/table_events_list_total_item.html" with key="max_overlap" pin_label="Maximum overlapping exposure (2 hazards)" class="summary-column" only %}
-                    {% include "scenario_calculator/table_events_list_total_item.html" with key="max_combined" pin_label="Maximum combined exposure (2 hazards)" class="summary-column" only %} {% endcomment %}
-                  </ul>
-                </div>
-                {% crispy combine_events_form %}
-              </details>
-            </form>
-          </div>
+          </form>
         </div>
       </div>
     </div>
