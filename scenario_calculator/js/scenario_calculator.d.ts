@@ -12,6 +12,7 @@ declare global {
     zoomToRegions: () => void;
     zoomToEvent: () => void;
     zoomToAllEvents: () => void;
+    calculateImpact: () => void;
     setFilters: () => Promise<void>;
     toggleTable: (key: string) => void;
     sortColumn: (key: string, direction: "up" | "down") => void;

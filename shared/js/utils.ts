@@ -1,4 +1,4 @@
-import { round } from "lodash";
+import { memoize, round } from "lodash";
 import { components } from "../../data/types/api";
 
 export function floatTo3Digits(value: number): string {
@@ -30,6 +30,10 @@ export function floatTo3Digits(value: number): string {
 
   if (value === 0) {
     return "0";
+  }
+
+  if (value == null) {
+    return "-";
   }
 
   return value.toExponential(2);
@@ -73,3 +77,15 @@ export function createGeoJSONDownload(
     }
   }
 }
+
+export const memoizeUnlessNull = ((func, resolver) => {
+  const memoized = memoize(func, resolver);
+  return (...args: Parameters<typeof func>) => {
+    const result = memoized(...args);
+    if (result === null) {
+      // @ts-expect-error memoized.resolve is an undocumented method
+      memoized.cache.delete(memoized.resolve(...args));
+    }
+    return result;
+  };
+}) as typeof memoize;

@@ -229,6 +229,9 @@ class HrscEventSchema(ModelSchema):
   footprint_type: str
   footprint: Union[str, dict, None, List] = None
   hazard: Optional[str]
+  hazardLabel: Optional[str]
+  label: str
+  unit: Optional[str]
   metadata: Optional[Dict[str, Union[str, float]]]
 
   class Meta:

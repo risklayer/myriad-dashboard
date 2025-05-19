@@ -13,13 +13,17 @@ from django.http import HttpRequest
 from django.views.decorators.cache import cache_page
 from ninja import Query, Router
 from ninja.decorators import decorate_view
+from ninja.errors import HttpError
+from rasterio.crs import CRS
 from rasterio.io import MemoryFile
 from rasterio.transform import from_origin
+from rasterio.warp import Resampling, reproject
 from shapely import from_geojson, geometry
 
 from dashboard.settings import (
   API_CACHE_TIMEOUT,
 )
+from data.api_shared import CountriesEnum
 from data.models import (
   HrscEvent,
   HrscEventCollection,
@@ -41,21 +45,6 @@ from data.schemas import (
   HrscHazardProbabilityRasterSchema,
   HrscScenarioSchema,
 )
-from django.conf import settings
-from django.contrib.gis.db.models.functions import Distance as DBDistance
-from django.contrib.gis.geos import Point
-from django.contrib.gis.measure import Distance as MDistance
-from django.db.models import Q
-from django.http import HttpRequest
-from django.views.decorators.cache import cache_page
-from ninja import Query, Router
-from ninja.decorators import decorate_view
-from ninja.errors import HttpError
-from rasterio.crs import CRS
-from rasterio.io import MemoryFile
-from rasterio.transform import from_origin
-from rasterio.warp import Resampling, reproject
-from shapely import from_geojson, geometry
 
 router = Router(tags=["HRSC"])
 
@@ -73,7 +62,8 @@ def calculate_impact(
   request: HttpRequest,
   exposure_key: str,
   event_ids: List[int] = Query([]),
-  bbox: str = None,
+  countries: List[CountriesEnum] = Query([]),
+  bbox: str | None = None,
   include_geometry: bool = True,
 ):
   """calculate the risk footprint for a given scenario and exposure, returns a geojson"""
@@ -95,11 +85,21 @@ def calculate_impact(
   for this_event_id in event_ids:
     event = HrscEvent.objects.get(id=this_event_id)
 
+    if event.footprint_type == "none":
+      raise HttpError(
+        404,
+        f"Event footprint needed in order to calculate risk. The selected event {event.label} does not include a footprint.",
+      )
+
+    if event.footprint_type == "lazy_py_geojson":
+      raise HttpError(
+        404,
+        f"Event footprint needed in order to calculate risk. The selected event {event.label} has a footprint type that is not currently implemented.",
+      )
+
     all_events.append(event)
 
-    if event.footprint_type == "none":
-      raise Exception("need a footprint in order to calculate risk")
-    elif event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
+    if event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
       with MemoryFile(event.get_footprint()) as memfile:
         with memfile.open() as src:
           grid_resolution_x = min(grid_resolution_x, src.transform.a)
@@ -109,13 +109,13 @@ def calculate_impact(
           event_bbox_min_y = min(event_bbox_min_y, src.bounds.bottom)
           event_bbox_max_x = max(event_bbox_max_x, src.bounds.right)
           event_bbox_max_y = max(event_bbox_max_y, src.bounds.top)
-
-    elif event.footprint_type == "lazy_py_geojson":
-      raise Exception("footprint type not implemented")
     elif event.footprint_type == "lazy_py_coord_vals":
       pass  # skip this, will not adjust bbox
     else:
-      raise Exception("unknown footprint type")
+      raise HttpError(
+        404,
+        f"Event footprint needed in order to calculate risk. The selected event {event.label} has a footprint type that is not recognised.",
+      )
 
   bbox_to_use = event_bbox_min_x, event_bbox_min_y, event_bbox_max_x, event_bbox_max_y
 
@@ -144,13 +144,19 @@ def calculate_impact(
 
     scenario = HrscScenario.objects.get(hazard=event.collection.hazard)
 
-    vulnerability_curve = HrscScenarioExposureVulnerabilityMapping.objects.get(
+    vulnerability_mapping = HrscScenarioExposureVulnerabilityMapping.objects.filter(
       scenario=scenario, exposure=exposure
-    ).vulnerability
+    ).first()
 
-    if event.footprint_type == "none":
-      raise Exception("need a footprint in order to calculate risk")
-    elif event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
+    if not vulnerability_mapping:
+      raise HttpError(
+        404,
+        f"No vulnerability curve mapping is available for {scenario.label} hazard scenario and exposure {exposure.label}",
+      )
+
+    vulnerability_curve = vulnerability_mapping.vulnerability
+
+    if event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
       with MemoryFile(event.get_footprint(bbox_to_use)) as memfile, memfile.open() as memfile_image:
         window = rasterio.windows.from_bounds(
           event_bbox_min_x,
@@ -188,7 +194,10 @@ def calculate_impact(
             impact_value_grid[pos_y][pos_x] += val * impact_value
 
     elif event.footprint_type == "lazy_py_geojson":
-      raise Exception("footprint type not implemented")
+      raise HttpError(
+        404,
+        f"The selected event ({event.label}) has a footprint type that is not currently implemented.",
+      )
     elif event.footprint_type == "lazy_py_coord_vals":
       footprint_location_dict = dict()
       for location_x, location_y, value in event.get_footprint(bbox_to_use):
@@ -221,7 +230,7 @@ def calculate_impact(
             impact_value_grid[impact_row][impact_col] += val * impact_value
 
     else:
-      raise Exception("unknown footprint type")
+      raise HttpError(404, "The selected event has a footprint type that is not recognised.")
 
     for pos_y in range(steps_y):
       for pos_x in range(steps_x):
@@ -236,20 +245,21 @@ def calculate_impact(
   # lets do the average and limit exposure to maximum
   for pos_y in range(steps_y):
     for pos_x in range(steps_x):
+      exposure = exposure_raster[pos_y][pos_x]
+      if np.isnan(exposure):
+        exposure = 0
       impact_data_max[pos_y][pos_x] = min(
-        exposure_raster[pos_y][pos_x], impact_data_max[pos_y][pos_x]
+        exposure, impact_data_max[pos_y][pos_x]
       )  # limit to max exposure
       impact_data_avrg_lin[pos_y][pos_x] /= len(all_events)
       impact_data_avrg_sqrt[pos_y][pos_x] = math.sqrt(
         impact_data_avrg_sqrt[pos_y][pos_x] / len(all_events)
       )
 
-  nuts3area_filter = Nuts3Area.objects.filter(
-    bbox_min_x__lt=event_bbox_max_x,
-    bbox_min_y__lt=event_bbox_max_y,
-    bbox_max_x__gt=event_bbox_min_x,
-    bbox_max_y__gt=event_bbox_min_y,
-  )
+  nuts3area_filter = Nuts3Area.objects.all()
+
+  if len(countries) > 0 and "ALL" not in countries:
+    nuts3area_filter = nuts3area_filter.filter(country__country_code__in=countries)
 
   areas_dict = {
     area.key: {
@@ -262,6 +272,14 @@ def calculate_impact(
     }
     for area in nuts3area_filter
   }
+
+  # Only update countries that fit within the bbox
+  nuts3area_filter = nuts3area_filter.filter(
+    bbox_min_x__lt=event_bbox_max_x,
+    bbox_min_y__lt=event_bbox_max_y,
+    bbox_max_x__gt=event_bbox_min_x,
+    bbox_max_y__gt=event_bbox_min_y,
+  )
 
   num_areas_found = np.zeros((steps_y, steps_x), dtype="int")
   memfile_xy_raster = [
@@ -304,7 +322,7 @@ def calculate_impact(
           + ", expected 1."
         )
 
-  return {
+  result = {
     "type": "FeatureCollection",
     "name": "nuts3",
     "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
@@ -325,6 +343,7 @@ def calculate_impact(
       for area_info in areas_dict.values()
     ],
   }
+  return result
 
 
 @router.get("/exposures", tags=["HRSC"], response=List[HrscExposureSchema])
@@ -343,10 +362,12 @@ def collections(request: HttpRequest):
 
 @router.get("/event/{str:id}/detail", tags=["HRSC"], response=HrscEventSchema)
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
-def event_by_id(request: HttpRequest, id: int, bbox: str = ""):
+def event_by_id(request: HttpRequest, id: int, bbox: str | None = None):
   """Returns the event details including footprint"""
   return HrscEvent.objects.get(id=id).to_dict(
-    include_footprint_blob=True, footprint_bbox=bbox.split(","), include_metadata=True
+    include_footprint_blob=True,
+    footprint_bbox=bbox.split(",") if bbox and len(bbox) else None,
+    include_metadata=True,
   )
 
 
@@ -482,7 +503,7 @@ def get_events_by_collection_filter(
           )
           meta_or |= Q(hrsceventmetadatavaluestring__in=metadata_values)
         else:
-          raise Exception("unknown metadata type: " + metadata.type)
+          raise HttpError(500, f"The selected event has an unknown metadata type: {metadata.type}")
 
       events = events.filter(meta_or)
 

@@ -309,7 +309,7 @@ async function updateMapAndTable({
     "logarithmic") as QuantisationType;
 
   if (mapColumns[0]) {
-    const colors = showLegend({
+    const { colors } = showLegend({
       paletteName,
       quantisation,
       invertColors,

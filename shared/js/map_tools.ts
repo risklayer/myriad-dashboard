@@ -1,5 +1,5 @@
 import chroma from "chroma-js";
-import L from "leaflet";
+import L, { Layer } from "leaflet";
 import "leaflet-defaulticon-compatibility";
 
 import "leaflet-contour";
@@ -50,7 +50,7 @@ export function handleMapButtonClick(
     } else {
       hiddenSelectionField.value = value;
       activateButton(clickedElement);
-      options = { ...options, zoomToFit: mapButtonZoomType };
+      // options = { ...options, zoomToFit: mapButtonZoomType };
     }
   }
   return options;
@@ -261,14 +261,38 @@ export function createMap({
       Object.keys(layers)
     );
 
+  const LEGENDS: Partial<Record<LayerNames, any>> =
+    // {
+    //   region_layer: LeafletGeoJSON;
+    //   heat_layer: LeafletLayer;
+    //   filtered_items_layer: L.FeatureGroup<FilteredEventData>;
+    //   event_footprint_layer: LeafletGeoJSON;
+    //   search_location_layer: L.FeatureGroup;
+    //   geo_raster: L.GridLayer | null;
+    // }
+    pick(
+      {
+        region_layer: null,
+        heat_layer: null,
+        filtered_items_layer: null,
+        event_footprint_layer: null,
+        search_location_layer: null,
+        geo_raster: null,
+      },
+      Object.keys(layers)
+    );
+
   const baseLayerControl = L.control
     .layers(
       BaseMaps,
       Object.entries(layers).reduce(
-        (acc, [name, title]) => ({
-          ...acc,
-          [title]: LAYERS[name as LayerNames],
-        }),
+        (acc, [name, title]) =>
+          LAYERS[name as LayerNames]
+            ? {
+                ...acc,
+                [title]: LAYERS[name as LayerNames],
+              }
+            : acc,
         {}
       ),
       {
@@ -278,32 +302,49 @@ export function createMap({
     )
     .addTo(main_map);
 
-  if (LayerNames.Heat in layers) {
-    L.control
-      .opacity(
-        {
-          [layers[LayerNames.Heat] as string]: LAYERS.heat_layer,
-          // "Event outlines": LAYERS.event_footprint_layer,
-          // "Filtered events": LAYERS.filtered_items_layer,
-          // "Search area": LAYERS.search_location_layer,
-        },
-        {
-          position: "topleft",
-          label: "",
-          // collapsed: true,
-        }
-      )
-      .addTo(main_map);
-  }
+  // if (LayerNames.Heat in layers) {
+  // const opacityControl = L.control
+  //   .opacity(
+  //     Object.entries(layers).reduce(
+  //       (acc, [name, title]) =>
+  //         LAYERS[name as LayerNames]
+  //           ? {
+  //               ...acc,
+  //               [title]: LAYERS[name as LayerNames],
+  //             }
+  //           : acc,
+  //       {}
+  //     ),
+  //     {
+  //       position: "topleft",
+  //       label: "Opacity",
+  //       // collapsed: true,
+  //     }
+  //   )
+  //   .addTo(main_map);
+  // }
 
   // See https://github.com/ptma/Leaflet.Legend
   // No types available
   // @ts-ignore
-  const legend = new L.Control.Legend({
+  const mainLegend = new L.Control.Legend({
     position: "bottomleft",
     inactive: true,
     legends: [],
   });
+
+  // @ts-ignore
+  // const rightLegend = new L.Control.Legend({
+  //   position: "bottomright",
+  //   inactive: true,
+  //   legends: [],
+  // });
+
+  // const topLegend = new L.Control.Legend({
+  //   position: "topright",
+  //   inactive: true,
+  //   legends: [],
+  // });
 
   /**
    * Background option is stored in URL state.
@@ -336,23 +377,51 @@ export function createMap({
     }
   }
 
-  function hideLegend() {
-    main_map!.removeControl(legend);
+  function hideLegend(layer?: LayerNames) {
+    if (layer) {
+      if (LEGENDS[layer]) {
+        main_map!.removeControl(LEGENDS[layer]);
+      }
+    }
+    main_map!.removeControl(mainLegend);
   }
 
   function showLegend({
+    layer,
+    position = "bottomleft",
     paletteName,
     quantisation = "logarithmic",
     values = [],
     invertColors = false,
     title = null,
   }: {
+    layer?: LayerNames;
+    position?: "bottomleft" | "bottomright" | "topleft" | "topright";
     paletteName: chroma.BrewerPaletteName;
     invertColors: boolean;
     quantisation?: QuantisationType;
     values: number[];
     title?: string | null;
-  }): chroma.Scale {
+    layers?: L.Layer[];
+  }): {
+    values: number[];
+    limits: number[];
+    max: number;
+    colors: chroma.Scale<chroma.Color>;
+  } {
+    const legend = layer
+      ? (LEGENDS[layer] ??
+        new L.Control.Legend({
+          position: "bottomleft",
+          inactive: true,
+          legends: [],
+        }))
+      : mainLegend;
+
+    if (layer) {
+      LEGENDS[layer] = legend;
+    }
+
     main_map.removeControl(legend);
     let max;
     let limits;
@@ -367,6 +436,7 @@ export function createMap({
       const legendOptions = {
         ...legend.options,
         title,
+        position,
         legends: limits
           .map((q, i) => {
             if (i === limits.length - 1) {
@@ -387,16 +457,17 @@ export function createMap({
       legend.initialize(legendOptions);
       main_map.addControl(legend);
     }
-    return colors;
+    return { colors, max, limits, values };
   }
 
   /**
    * Remove contents from a layer
    */
-  function cleanupLayer(key: keyof typeof LAYERS) {
+  function cleanupLayer(key: LayerNames) {
     if (LAYERS[key]) {
       if (key === LayerNames.GeoRaster) {
         if (LAYERS[key]) {
+          baseLayerControl.removeLayer(LAYERS[LayerNames.GeoRaster]!);
           LAYERS[key].removeFrom(main_map);
           // @ts-ignore
           LAYERS[key] = null;
@@ -404,6 +475,9 @@ export function createMap({
       } else {
         LAYERS[key]!.clearLayers();
       }
+    }
+    if (LEGENDS[key]) {
+      hideLegend(key);
     }
   }
 
@@ -413,11 +487,15 @@ export function createMap({
       paletteName,
       invertColors,
       quantisation,
+      legendTitle,
+      layerTitle,
     }: {
       tiffString: string;
       paletteName: chroma.BrewerPaletteName;
       invertColors: boolean;
       quantisation: QuantisationType;
+      legendTitle: string;
+      layerTitle: string;
     },
     geoRasterOptions = {}
   ) {
@@ -444,37 +522,31 @@ export function createMap({
       .map((v) => Array.from(v))
       .flat();
 
-    const { colors } = calculateColors({
+    const { colors, max } = showLegend({
+      layer: LayerNames.GeoRaster,
+      position: "bottomright",
       values,
       paletteName,
       invertColors,
       quantisation,
+      title: legendTitle,
     });
 
+    const colorCutoff = max / 160;
+
     /*
-    GeoRasterLayer is an extension of GridLayer,
-    which means can use GridLayer options like opacity.
-
-    Just make sure to include the georaster option!
-
-    Optionally set the pixelValuesToColorFn function option to customize
-    how values for a pixel are translated to a color.
-
     https://leafletjs.com/reference.html#gridlayer
     */
     LAYERS[LayerNames.GeoRaster] = new window.GeoRasterLayer({
       georaster,
       opacity: 0.7,
-      pixelValuesToColorFn: colors,
+      pixelValuesToColorFn: (val: number) =>
+        val > colorCutoff ? colors(val) : null,
+      pane: "overlayPane",
       ...geoRasterOptions,
-      // pixelValuesToColorFn: (values) =>
-      //   values[0] === 42 ? "#ffffff" : "#000000",
-      resolution: 64, // optional parameter for adjusting display resolution
     }).addTo(main_map);
-    zoomTo(LAYERS[LayerNames.GeoRaster]!, {
-      padding: [10, 10],
-      maxZoom: 11,
-    });
+
+    baseLayerControl.addOverlay(LAYERS[LayerNames.GeoRaster]!, layerTitle);
   }
 
   /**
@@ -556,6 +628,32 @@ export function createMap({
     });
   };
 
+  main_map.on("overlayadd", function (eventLayer) {
+    for (const key of Object.keys(layers)) {
+      if (
+        eventLayer.layer === LAYERS[key as LayerNames] &&
+        LEGENDS[key as LayerNames]
+      ) {
+        if (LEGENDS[key as LayerNames].options.legends.length) {
+          main_map.addControl(LEGENDS[key as LayerNames]);
+        }
+        break;
+      }
+    }
+  });
+
+  main_map.on("overlayremove", function (eventLayer) {
+    for (const key of Object.keys(layers)) {
+      if (
+        eventLayer.layer === LAYERS[key as LayerNames] &&
+        LEGENDS[key as LayerNames]
+      ) {
+        main_map.removeControl(LEGENDS[key as LayerNames]);
+        break;
+      }
+    }
+  });
+
   return {
     main_map,
     LAYERS,
@@ -595,7 +693,7 @@ export function calculateColors({
     quantisation as "e" | "q" | "l" | "k",
     count
   );
-  let colors = colorScale.domain(limits);
+  const colors = colorScale.domain(limits);
   return { max, limits, colors, values };
 }
 

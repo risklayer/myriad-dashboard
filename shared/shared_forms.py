@@ -35,7 +35,7 @@ class MapSettingsForm(Form):
     initial=("logarithmic", "Logarithmic"),
     widget=Select(
       {
-        "onchange": "formUpdate()",
+        "onchange": "formUpdate(undefined, {zoomToFit: false})",
       }
     ),
   )
@@ -54,7 +54,7 @@ class MapSettingsForm(Form):
     required=False,
     widget=CheckboxInput(
       {
-        "onchange": "formUpdate()",
+        "onchange": "formUpdate(undefined, {zoomToFit: false})",
       }
     ),
   )

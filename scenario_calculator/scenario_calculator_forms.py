@@ -22,6 +22,7 @@ from data.models import (
   HrscEvent,
   HrscEventCollection,
   HrscEventMetadata,
+  HrscExposure,
   HrscHazardProbabilityRaster,
   HrscHazardProbabilityRasterInstance,
 )
@@ -180,12 +181,12 @@ class ScenarioCalculatorHazardFilterForm(Form):
     sentence_case=True,
     empty_label=None,
     queryset=HrscEventMetadata.objects.none(),
-    to_field_name="label",
+    to_field_name="key",
     required=False,
     blank=False,
     widget=Select(
       {
-        "onchange": "formUpdate()",
+        "onchange": "formUpdate(undefined, {zoomToFit: false})",
       }
     ),
   )
@@ -409,3 +410,44 @@ class ScenarioCalculatorHazardFilterForm(Form):
         )
 
     return only_one_collection, meta_field_names
+
+
+color_choices = [
+  ("impact_data_avrg_lin", "Impact average linear"),
+  ("impact_data_avrg_sqrt", "Impact average square root"),
+  ("impact_data_max", "Impact max"),
+  ("impact_data_min", "Impact min"),
+]
+
+
+class ScenarioCalculatorCombineEventsForm(Form):
+  exposure = LabelSelectionField(
+    sentence_case=True,
+    queryset=HrscExposure.objects.all().order_by("key"),
+    empty_label="",
+    to_field_name="key",
+    required=False,
+    initial=HrscExposure.objects.order_by("key").first().key,
+  )
+
+  color_results_by = ChoiceField(
+    choices=color_choices,
+    required=False,
+    initial=("impact_data_avrg_lin", "Impact average linear"),
+  )
+
+  def __init__(self, *args, **kwargs):
+    super(ScenarioCalculatorCombineEventsForm, self).__init__(*args, **kwargs)
+
+    self.helper = FormHelper()
+    self.helper.form_tag = False
+    self.helper.disable_csrf = True
+    self.helper.label_class = "col-12"
+    self.helper.field_class = "col-12 pb-0"
+    self.helper.layout = Layout(
+      "exposure",
+      "color_results_by",
+      StrictButton(
+        "Calculate", css_class="btn btn-primary w-100 mb-3", onclick="calculateImpact()"
+      ),
+    )

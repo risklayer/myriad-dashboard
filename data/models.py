@@ -744,15 +744,17 @@ class HrscEvent(models.Model):
 
     return data
 
-  def get_footprint(self, bbox: Tuple[float] = None) -> bytes:
+  def get_footprint(self, bbox: Tuple[float] | None = None) -> bytes:
+    if bbox is not None and (len(bbox) == 0 or bbox[0] == ""):
+      raise Exception("Invalid bbox provided")
     if self.footprint_type == "lazy_py_geojson":
       if self.collection.key == "tornado":
         all_metadata = self.get_metadata_all()
-        start_lon = all_metadata["start_longitude"]
-        start_lat = all_metadata["start_latitude"]
-        end_lon = all_metadata["end_longitude"]
-        end_lat = all_metadata["end_latitude"]
-        path_width = all_metadata["path_width"]
+        start_lon = float(all_metadata["start_longitude"])
+        start_lat = float(all_metadata["start_latitude"])
+        end_lon = float(all_metadata["end_longitude"])
+        end_lat = float(all_metadata["end_latitude"])
+        path_width = float(all_metadata["path_width"])
 
         azimuth = calculate_azimuth((start_lat, start_lon), (end_lat, end_lon))
         angle1 = (azimuth + 90) % 360
@@ -781,7 +783,7 @@ class HrscEvent(models.Model):
         polygon = Polygon([point1_xy, point2_xy, point3_xy, point4_xy, point1_xy])
         return {"type": "Feature", "properties": all_metadata, "geometry": mapping(polygon)}
       else:
-        raise Exception("cannot generate footprint for " + self.collection.key)
+        raise Exception("Cannot generate footprint for " + self.collection.key)
 
     elif self.footprint_type == "lazy_py_coord_vals":
       if self.collection.key == "winterstorm":
@@ -800,14 +802,15 @@ class HrscEvent(models.Model):
             for value in HrscValueCoordinateWinterstorm.objects.filter(event=self)
           ]
       else:
-        raise Exception("cannot generate footprint for " + self.collection.key)
+        raise Exception("Cannot generate footprint for " + self.collection.key)
 
     elif self.footprint_type == "tiff_ext":
       footprint = self.footprint
       if isinstance(footprint, memoryview):
         footprint = footprint.tobytes()
       with open(
-        os.path.join(settings.RASTER_DATA_ROOT, footprint.decode("utf-8")), "rb"
+        os.path.join(settings.RASTER_DATA_ROOT, footprint.decode("utf-8")),
+        "rb",
       ) as footprint_file:
         return footprint_file.read()
 
@@ -894,12 +897,18 @@ class HrscEvent(models.Model):
     return result
 
   def to_dict(
-    self, include_footprint_blob=False, footprint_bbox: Tuple[float] = None, include_metadata=False
+    self,
+    include_footprint_blob=False,
+    footprint_bbox: Tuple[float] | None = None,
+    include_metadata=False,
   ):
     data = {
       "id": self.id,
       "collection_id": self.collection_id,
       "hazard": self.collection.hazard.key,
+      "hazardLabel": self.collection.hazard.label,
+      "label": self.label,
+      "unit": self.collection.hazard.unit,
       "location": {
         "x": self.location.x,
         "y": self.location.y,

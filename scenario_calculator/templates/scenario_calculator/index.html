@@ -100,6 +100,7 @@
                     {% include "scenario_calculator/table_events_list_total_item.html" with key="max_combined" pin_label="Maximum combined exposure (2 hazards)" class="summary-column" only %} {% endcomment %}
                   </ul>
                 </div>
+                {% crispy combine_events_form %}
               </details>
             </form>
           </div>

@@ -10,6 +10,7 @@ from scenario_calculator.config import (
   DEFAULT_RADIUS,
 )
 from scenario_calculator.scenario_calculator_forms import (
+  ScenarioCalculatorCombineEventsForm,
   ScenarioCalculatorHazardFilterForm,
   ScenarioCalculatorProbabilityForm,
   ScenarioCalculatorProbabilitySharedForm,
@@ -63,6 +64,12 @@ def index(request):
     },
   )
 
+  combine_events_form = (
+    ScenarioCalculatorCombineEventsForm(request.GET)
+    if request.GET.get("exposure")
+    else ScenarioCalculatorCombineEventsForm()
+  )
+
   countries_root = regions_form.create_countries_hierarchy()
 
   return render(
@@ -82,6 +89,7 @@ def index(request):
       "settings_form": settings_form,
       "probability_forms": probability_forms,
       "probability_shared_form": probability_shared_form,
+      "combine_events_form": combine_events_form,
     },
   )
 

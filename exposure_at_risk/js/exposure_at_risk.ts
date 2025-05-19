@@ -246,7 +246,7 @@ async function updateMapAndTable({
 
   const mapUnits = columnsMap[mapColumns[0] ?? ""]?.exposure?.unit ?? null;
 
-  const colors = showLegend({
+  const { colors } = showLegend({
     paletteName,
     quantisation,
     invertColors,

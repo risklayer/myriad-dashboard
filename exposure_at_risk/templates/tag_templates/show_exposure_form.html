@@ -8,7 +8,7 @@
       hx-swap="outerHTML"
       hx-indicator="#filters-form">
   <fieldset id="filters-fieldset" class="mb-2" aria-labelledby="filters-summary">
-    <details {% if request.htmx or filter_form.hazard.value %}open{% endif %}>
+    <details open>
       <summary id="filters-summary" class="h6 p-0 mb-2">
         Search hazard exposure
         {% include "shared/icon.html" with type="search" class="me-1" %}

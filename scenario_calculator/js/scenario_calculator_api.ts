@@ -12,12 +12,13 @@ import {
   type Nuts3AreaSchema,
   type paths,
 } from "../../data/types/api";
+import { memoizeUnlessNull } from "../../shared/js/utils";
 
 // import "../../dashboard/js/scripts.d";
 
 export const client = createClient<paths>();
 
-export const getShapesList = memoize(
+export const getShapesList = memoizeUnlessNull(
   async function getShapesList(
     countries: CountriesEnum | CountriesEnum[]
   ): Promise<ShapeFeature[] | null> {
@@ -47,7 +48,7 @@ export const getShapesList = memoize(
   (countries: string | string[]) => sortBy([countries].flat(), identity).join()
 );
 
-export const getEventDetail = memoize(
+export const getEventDetail = memoizeUnlessNull(
   async function getEventDetail(
     ids: number | number[]
   ): Promise<HrscEventSchema[]> {
@@ -73,7 +74,7 @@ export const getEventDetail = memoize(
   },
   (ids: number | number[]) => sortBy([ids].flat(), identity).join()
 );
-export const getAreasMap = memoize(
+export const getAreasMap = memoizeUnlessNull(
   async function getAreasMap(
     countries: CountriesEnum | CountriesEnum[],
     bbox?: string
@@ -100,31 +101,6 @@ export const getAreasMap = memoize(
   },
   (countries: string | string[], bbox?: string) =>
     [sortBy([countries].flat(), identity), bbox].flat().join()
-);
-export const getValuesMap = memoize(
-  async function getValuesMap(
-    countries: CountriesEnum[],
-    columns: string[] | string
-  ): Promise<Record<string, Record<string, number>> | null> {
-    const {
-      data, // only present if 2XX response
-      error, // only present if 4XX or 5XX response
-    } = await client.GET(ApiPaths.data_v1_values_values, {
-      params: {
-        query: { countries, columns: [columns].flat() },
-      },
-    });
-    if (error) {
-      window.toast("Sorry, there was a problem retrieving the data.");
-      console.error(error);
-      return null;
-    }
-    return data;
-  },
-  (countries: string[], columns: string[] | string) =>
-    [sortBy([countries].flat(), identity), sortBy([columns].flat(), identity)]
-      .flat()
-      .join()
 );
 
 export async function downloadGeoJSON({
@@ -155,3 +131,49 @@ export async function downloadGeoJSON({
   }
   return data;
 }
+
+export const getCombinedImpact = memoizeUnlessNull(
+  async function getCombinedImpact(
+    eventIds: number[],
+    bbox: string,
+    countries: CountriesEnum | CountriesEnum[],
+    exposure_key: string
+  ): Promise<FeatureCollectionSchema | null> {
+    const {
+      data, // only present if 2XX response
+      error, // only present if 4XX or 5XX response
+    } = await client.GET(
+      "/data/api/v1/hrsc/scenario/calculate_impact/{exposure_key}",
+      {
+        params: {
+          query: {
+            event_ids: eventIds,
+            include_geometry: false,
+            bbox,
+            countries: countries as CountriesEnum[],
+          },
+          path: {
+            exposure_key,
+          },
+        },
+      }
+    );
+    if (error) {
+      window.toast(
+        `Sorry, there was a problem retrieving the data: ${error?.detail ?? ""}`
+      );
+      console.error(error);
+      return null;
+    }
+    return data;
+  },
+  (
+    event_id: number[],
+    bbox: string,
+    countries: CountriesEnum | CountriesEnum[],
+    exposure_key: string
+  ) =>
+    [sortBy([event_id].flat(), identity), countries, bbox, exposure_key]
+      .flat()
+      .join()
+);

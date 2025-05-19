@@ -19,8 +19,8 @@ router = Router(tags=["Values"])
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def values(
   request: HttpRequest,
-  countries: list[CountriesEnum] = Query([]),
-  columns: list[str] = Query([]),
+  countries: List[CountriesEnum] = Query([]),
+  columns: List[str] = Query([]),
   bbox: str = None,
 ):
   """Returns a tree of filtered values, grouped by column key and area key"""
