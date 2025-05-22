@@ -72,5 +72,8 @@
     "d3-color": "^3.1.0",
     "micromatch": "^4.0.8",
     "chokidar": "^3.6.0"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.41.0"
   }
 }
