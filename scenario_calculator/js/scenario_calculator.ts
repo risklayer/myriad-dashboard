@@ -361,9 +361,17 @@ async function updateProbabilitiesAndStochastics({
   });
 }
 
-window.calculateImpact = async function calculateImpact() {
+window.calculateImpact = async function calculateImpact(event: MouseEvent) {
+  const button = event.target as HTMLButtonElement;
+  button.classList.add("load-request");
+  button.disabled = true;
   updateParams();
-  updateCombinedImpact();
+  try {
+    await updateCombinedImpact();
+  } finally {
+    button.classList.remove("load-request");
+    button.disabled = false;
+  }
 };
 
 let lastResults: FeatureCollectionSchema | null = null;

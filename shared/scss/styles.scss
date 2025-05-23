@@ -168,21 +168,26 @@ h6 {
   height: 3rem;
 }
 
-.btn:not(.htmx-request) > .spinner-border {
+.btn:not(.htmx-request, .load-request) > .spinner-border {
   display: none;
 }
 
-.btn.htmx-request > svg {
+.btn.htmx-request > svg,
+.btn.load-request > svg {
   display: none;
 }
 
-form.htmx-indicator,
-fieldset.htmx-indicator,
-#modal-body.htmx-indicator {
-  transition: opacity 0.3s ease;
-  opacity: 1;
-  &.htmx-request {
-    opacity: 0.4;
+form,
+fieldset,
+#modal-body {
+  &.htmx-indicator,
+  &.load-indicator {
+    transition: opacity 0.3s ease;
+    opacity: 1;
+    &.htmx-request,
+    &.load-request {
+      opacity: 0.4;
+    }
   }
 }
 

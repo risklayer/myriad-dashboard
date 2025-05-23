@@ -72,7 +72,7 @@
           </details>
           {% include "shared/pin.html" with actions_template="scenario_calculator/pin_actions.html" pinned=pinned pinned_keys=pinned_keys pin_type="event" list_title="Pinned events" add_to_table=True only %}
           <form id="table-events-form"
-                class="table-events-form mb-2"
+                class="table-events-form mb-2 load-indicator"
                 aria-labelledby="table-events-summary">
             <details {% if table_events %}open{% endif %}>
               <summary class="h6 p-0 mb-2" id="table-events-summary">
@@ -95,6 +95,13 @@
                 </ul>
               </div>
               {% crispy combine_events_form %}
+              <button type="button"
+                      class="btn btn-primary w-100 mb-3 load-indicator"
+                      onclick="calculateImpact(event)">
+                Calculate
+                <span class="spinner-border spinner-border-sm me-1"></span>
+                {% include "shared/icon.html" with type="intersect" class="me-1" size=16 %}
+              </button>
             </details>
           </form>
         </div>

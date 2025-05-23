@@ -450,7 +450,4 @@ class ScenarioCalculatorCombineEventsForm(Form):
     self.helper.layout = Layout(
       "exposure",
       "color_results_by",
-      StrictButton(
-        "Calculate", css_class="btn btn-primary w-100 mb-3", onclick="calculateImpact()"
-      ),
     )

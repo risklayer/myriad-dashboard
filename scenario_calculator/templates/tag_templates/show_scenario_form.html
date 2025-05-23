@@ -3,7 +3,7 @@
 {% load scenario_filters %}
 
 <form id="filters-form"
-      class="filters-form htmx-indicator"
+      class="filters-form"
       hx-post="{% url 'scenario_calculator:refine_events_form' %}"
       hx-trigger="change from:(#id_hazard,#id_collection,#id_radius,#id_latitude,#id_longitude), change from:([name^=metadata_]) delay:0.5s, click from:(#id_search_here) delay:0.05s"
       {% comment %}

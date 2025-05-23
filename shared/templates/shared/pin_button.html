@@ -19,7 +19,7 @@
           {% if compact %}title="{% if rename %}Rename{% elif key in pinned_keys %}Unpin{% else %}Pin{% endif %}
           "
           {% endif %}>
-    <span class="htmx-indicator spinner-border spinner-border-sm me-1"></span>
+    <span class="spinner-border spinner-border-sm me-1"></span>
     {% if rename %}
       {% include "shared/icon.html" with type="pencil" class="me-1" size=16 %}
     {% elif key in pinned_keys %}
