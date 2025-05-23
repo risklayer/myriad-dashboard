@@ -58,7 +58,7 @@ class ExposureAtRiskFilterForm(Form):
   )
   exposure = LabelSelectionField(
     sentence_case=True,
-    queryset=TableMetaExposure.objects.all().order_by("key"),
+    queryset=TableMetaExposure.objects.all().order_by("label"),
     empty_label="",
     to_field_name="key",
     required=False,

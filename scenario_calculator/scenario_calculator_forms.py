@@ -423,7 +423,7 @@ color_choices = [
 class ScenarioCalculatorCombineEventsForm(Form):
   exposure = LabelSelectionField(
     sentence_case=True,
-    queryset=HrscExposure.objects.all().order_by("key"),
+    queryset=HrscExposure.objects.all().order_by("label"),
     empty_label="",
     to_field_name="key",
     required=False,
