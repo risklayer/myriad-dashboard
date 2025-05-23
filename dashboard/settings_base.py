@@ -138,6 +138,7 @@ STATICFILES_FINDERS = [
 ]
 
 NPM_FILE_PATTERNS = {
+  "@fontsource": ["barlow/*.css", "barlow/files/barlow*.*"],
   "@gnatih/leaflet.legend": ["src/leaflet.legend.css"],
   "@popperjs": ["core/dist/umd/popper.min.js"],
   "bootstrap-icons": ["bootstrap-icons.svg"],
@@ -145,13 +146,13 @@ NPM_FILE_PATTERNS = {
   "chart.js": ["dist/chart.umd.js"],
   "datatables.net-bs5": ["css/dataTables.bootstrap5.min.css"],
   "datatables.net-buttons-bs5": ["css/buttons.bootstrap5.min.css"],
+  "georaster-layer-for-leaflet": ["dist/**/*.min.js"],
+  "georaster": ["dist/*.js"],
   "htmx-ext-class-tools": ["class-tools.js"],
   "htmx.org": ["dist/htmx.min.js"],
   "jszip": ["dist/jszip.min.js"],
+  "leaflet-defaulticon-compatibility": ["leaflet-defaulticon-compatibility/dist/**/*.*"],
   "leaflet": ["dist/leaflet.css", "dist/images/*.png"],
-  "@fontsource": ["barlow/*.css", "barlow/files/barlow*.*"],
-  "georaster": ["dist/*.js"],
-  "georaster-layer-for-leaflet": ["dist/**/*.min.js"],
 }
 
 # NPM_STATIC_FILES_PREFIX = "vendor"
