@@ -40,15 +40,15 @@
                       </b>
                     </div>
                     {% if column_instance.hazard and not filter_form.cleaned_data.hazard or
-                      filter_form.fields.column_instance.choices|length == 1 %}
+                      filter_form.fields.column.choices|length == 1 %}
                       <div>{{ column_instance.hazard.label }}</div>
                     {% endif %}
                     {% if column_instance.exposure and not filter_form.cleaned_data.exposure or
-                      filter_form.fields.column_instance.choices|length == 1 %}
+                      filter_form.fields.column.choices|length == 1 %}
                       <div class="small">{{ column_instance.exposure.label|title }}</div>
                     {% endif %}
                     {% if column_instance.return_period and not filter_form.cleaned_data.return_period or
-                      filter_form.fields.column_instance.choices|length == 1 %}
+                      filter_form.fields.column.choices|length == 1 %}
                       <div class="small">{{ column_instance.return_period.label }}</div>
                     {% endif %}
                     {% if column_instance.threshold and not filter_form.cleaned_data.threshold or
@@ -56,7 +56,7 @@
                       <div class="small">
                         {{ column_instance.threshold.label }}
                         {% if column_instance.hazard.unit %}
-                          ({{ column_instance.hazard.unit }})
+                          {{ column_instance.hazard.unit }}
                         {% endif %}
                       </div>
                     {% endif %}

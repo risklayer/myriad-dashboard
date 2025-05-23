@@ -42,7 +42,7 @@
                  name="column"
                  form="filters-form"
                  onchange="formUpdate()"
-                 value="{{ column }}" />
+                 value="{{ column|default_if_none:'' }}" />
         </div>
       </div>
       <div class="map-wrapper">

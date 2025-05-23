@@ -224,27 +224,22 @@ class ExposureAtRiskFilterForm(Form):
     column_filter = {}
 
     for child in children:
+      if hazard:
+        self.fields[child].queryset = (
+          self.fields[child].queryset.filter(datatablecolumn__hazard=hazard).distinct()
+        )
+
       val = self.cleaned_data.get(child)
-      child_filter = {}
-
-      if val is not None:
-        column_filter[child] = val
-
-      for sibling in children:
-        if child != sibling and self.cleaned_data.get(sibling) is not None:
-          child_filter[sibling] = self.cleaned_data.get(sibling)
-
-      self.fields[child].queryset = (
-        self.fields[child]
-        .queryset.filter(datatablecolumn__in=self.fields["column"].queryset.filter(**child_filter))
-        .distinct()
-      )
 
       count = self.fields[child].queryset.count()
-      if count == 0:
+      if count == 0 or not hazard:
         self.fields[child].widget = self.fields[child].hidden_widget()
-      elif count > 1:
+      elif count > 0:
         meta_field_names.append(child)
+        if val is not None and val.id in self.fields[child].queryset.values_list("id", flat=True):
+          column_filter[child] = val
+        else:
+          self.cleaned_data[child] = None
 
     if len(column_filter.keys()):
       self.fields["column"].queryset = self.fields["column"].queryset.filter(**column_filter)
