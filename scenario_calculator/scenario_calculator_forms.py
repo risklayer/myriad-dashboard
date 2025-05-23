@@ -180,7 +180,7 @@ class ScenarioCalculatorHazardFilterForm(Form):
   color_by = LabelSelectionField(
     sentence_case=True,
     empty_label=None,
-    queryset=HrscEventMetadata.objects.none(),
+    queryset=HrscEventMetadata.objects.all(),
     to_field_name="key",
     required=False,
     blank=False,
@@ -387,6 +387,8 @@ class ScenarioCalculatorHazardFilterForm(Form):
     #   if value is not None and value != "":
     #     filters[field] = value
 
+    if "color_by" in self.errors:
+      del self.errors["color_by"]
     if self.errors:
       self.fields["event"].queryset = HrscEvent.objects.none()
     elif collection:
