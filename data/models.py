@@ -17,6 +17,7 @@ from django.contrib.gis.measure import Distance as MDistance
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.safestring import mark_safe
+from math import isnan
 from rasterio.crs import CRS
 from rasterio.transform import TransformerBase
 from rasterio.warp import Resampling, reproject
@@ -1027,6 +1028,11 @@ class HrscExposureRaster(models.Model):
           )
           raster = new_raster
           transform = rasterio.transform.AffineTransformer(transform_target)
+
+        for pos_y in range(steps_y):
+          for pos_x in range(steps_x):
+            if isnan(raster[pos_y][pos_x]):
+              raster[pos_y][pos_x] = 0
 
         return raster, transform
 

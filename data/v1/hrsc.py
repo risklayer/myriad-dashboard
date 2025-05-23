@@ -4,25 +4,7 @@ from typing import List
 
 import numpy as np
 import rasterio
-from django.conf import settings
-from django.contrib.gis.db.models.functions import Distance as DBDistance
-from django.contrib.gis.geos import Point
-from django.contrib.gis.measure import Distance as MDistance
-from django.db.models import Q
-from django.http import HttpRequest
-from django.views.decorators.cache import cache_page
-from ninja import Query, Router
-from ninja.decorators import decorate_view
-from ninja.errors import HttpError
-from rasterio.crs import CRS
-from rasterio.io import MemoryFile
-from rasterio.transform import from_origin
-from rasterio.warp import Resampling, reproject
-from shapely import from_geojson, geometry
-
-from dashboard.settings import (
-  API_CACHE_TIMEOUT,
-)
+from dashboard.settings import API_CACHE_TIMEOUT
 from data.api_shared import CountriesEnum
 from data.models import (
   HrscEvent,
@@ -45,8 +27,29 @@ from data.schemas import (
   HrscHazardProbabilityRasterSchema,
   HrscScenarioSchema,
 )
+from django.conf import settings
+from django.contrib.gis.db.models.functions import Distance as DBDistance
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import Distance as MDistance
+from django.db.models import Q
+from django.http import HttpRequest
+from django.views.decorators.cache import cache_page
+from ninja import Query, Router
+from ninja.decorators import decorate_view
+from ninja.errors import HttpError
+from rasterio.crs import CRS
+from rasterio.io import MemoryFile
+from rasterio.transform import from_origin
+from rasterio.warp import Resampling, reproject
+from shapely import from_geojson, geometry
 
 router = Router(tags=["HRSC"])
+
+
+def error_handler(code, message):
+  if settings.DEBUG:
+    raise Exception(message)
+  raise HttpError(code, message)
 
 
 @router.get("/scenarios", tags=["HRSC"], response=List[HrscScenarioSchema])
@@ -86,13 +89,13 @@ def calculate_impact(
     event = HrscEvent.objects.get(id=this_event_id)
 
     if event.footprint_type == "none":
-      raise HttpError(
+      error_handler(
         404,
         f"Event footprint needed in order to calculate risk. The selected event {event.label} does not include a footprint.",
       )
 
     if event.footprint_type == "lazy_py_geojson":
-      raise HttpError(
+      error_handler(
         404,
         f"Event footprint needed in order to calculate risk. The selected event {event.label} has a footprint type that is not currently implemented.",
       )
@@ -112,7 +115,7 @@ def calculate_impact(
     elif event.footprint_type == "lazy_py_coord_vals":
       pass  # skip this, will not adjust bbox
     else:
-      raise HttpError(
+      error_handler(
         404,
         f"Event footprint needed in order to calculate risk. The selected event {event.label} has a footprint type that is not recognised.",
       )
@@ -128,8 +131,6 @@ def calculate_impact(
 
   impact_data_min = np.zeros((steps_y, steps_x))
   impact_data_max = np.zeros((steps_y, steps_x))
-  impact_data_avrg_lin = np.zeros((steps_y, steps_x))
-  impact_data_avrg_sqrt = np.zeros((steps_y, steps_x))
 
   exposure_raster, _ = exposure_raster_dbobj.get_window(
     bbox_to_use,
@@ -149,7 +150,7 @@ def calculate_impact(
     ).first()
 
     if not vulnerability_mapping:
-      raise HttpError(
+      error_handler(
         404,
         f"No vulnerability curve mapping is available for {scenario.label} hazard scenario and exposure {exposure.label}",
       )
@@ -158,20 +159,13 @@ def calculate_impact(
 
     if event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
       with MemoryFile(event.get_footprint(bbox_to_use)) as memfile, memfile.open() as memfile_image:
-        window = rasterio.windows.from_bounds(
-          event_bbox_min_x,
-          event_bbox_min_y,
-          event_bbox_max_x,
-          event_bbox_max_y,
-          transform=memfile_image.transform,
-        )
-        raster = memfile_image.read(1, window=window)
+        raster = memfile_image.read(1)
 
         memfile_band = np.empty((steps_y, steps_x), dtype=raster.dtype)
         reproject(
           raster,
           destination=memfile_band,
-          src_transform=memfile_image.window_transform(window),
+          src_transform=memfile_image.transform,
           src_crs=CRS.from_epsg(4326),  # WGS84
           dst_transform=result_transform,
           dst_crs=CRS.from_epsg(4326),  # WGS84
@@ -194,7 +188,7 @@ def calculate_impact(
             impact_value_grid[pos_y][pos_x] += val * impact_value
 
     elif event.footprint_type == "lazy_py_geojson":
-      raise HttpError(
+      error_handler(
         404,
         f"The selected event ({event.label}) has a footprint type that is not currently implemented.",
       )
@@ -230,7 +224,7 @@ def calculate_impact(
             impact_value_grid[impact_row][impact_col] += val * impact_value
 
     else:
-      raise HttpError(404, "The selected event has a footprint type that is not recognised.")
+      error_handler(404, "The selected event has a footprint type that is not recognised.")
 
     for pos_y in range(steps_y):
       for pos_x in range(steps_x):
@@ -239,10 +233,7 @@ def calculate_impact(
         impact_data_min[pos_y][pos_x] = max(impact_data_min[pos_y][pos_x], impact_value)
         impact_data_max[pos_y][pos_x] += impact_value
 
-        impact_data_avrg_lin[pos_y][pos_x] += impact_value
-        impact_data_avrg_sqrt[pos_y][pos_x] += impact_value * impact_value
-
-  # lets do the average and limit exposure to maximum
+  # lets limit exposure to maximum
   for pos_y in range(steps_y):
     for pos_x in range(steps_x):
       exposure = exposure_raster[pos_y][pos_x]
@@ -251,27 +242,11 @@ def calculate_impact(
       impact_data_max[pos_y][pos_x] = min(
         exposure, impact_data_max[pos_y][pos_x]
       )  # limit to max exposure
-      impact_data_avrg_lin[pos_y][pos_x] /= len(all_events)
-      impact_data_avrg_sqrt[pos_y][pos_x] = math.sqrt(
-        impact_data_avrg_sqrt[pos_y][pos_x] / len(all_events)
-      )
 
   nuts3area_filter = Nuts3Area.objects.all()
 
   if len(countries) > 0 and "ALL" not in countries:
     nuts3area_filter = nuts3area_filter.filter(country__country_code__in=countries)
-
-  areas_dict = {
-    area.key: {
-      "instance": area,
-      "impact_data_min": 0,
-      "impact_data_max": 0,
-      "impact_data_avrg_lin": 0,
-      "impact_data_avrg_sqrt": 0,
-      "exceeded_curve_max": False,
-    }
-    for area in nuts3area_filter
-  }
 
   # Only update countries that fit within the bbox
   nuts3area_filter = nuts3area_filter.filter(
@@ -280,6 +255,17 @@ def calculate_impact(
     bbox_max_x__gt=event_bbox_min_x,
     bbox_max_y__gt=event_bbox_min_y,
   )
+
+  areas_dict = {
+    area.key: {
+      "instance": area,
+      "impact_data_min": 0,
+      "impact_data_max": 0,
+      "impact_data_total": 0,
+      "exceeded_curve_max": False,
+    }
+    for area in nuts3area_filter
+  }
 
   num_areas_found = np.zeros((steps_y, steps_x), dtype="int")
   memfile_xy_raster = [
@@ -303,24 +289,19 @@ def calculate_impact(
             num_areas_found[pos_y][pos_x] += 1
             areas_dict[area.key]["impact_data_min"] += impact_data_min[pos_y][pos_x]
             areas_dict[area.key]["impact_data_max"] += impact_data_max[pos_y][pos_x]
-            areas_dict[area.key]["impact_data_avrg_lin"] += impact_data_avrg_lin[pos_y][pos_x]
-            areas_dict[area.key]["impact_data_avrg_sqrt"] += impact_data_avrg_sqrt[pos_y][pos_x]
             areas_dict[area.key]["exceeded_curve_max"] = (
               True if exceeded_max_grid[pos_y][pos_x] else False
             )
+            areas_dict[area.key]["impact_data_total"] += float(exposure_raster[pos_y][pos_x])
 
-  for pos_y in range(steps_y):
-    for pos_x in range(steps_x):
-      if num_areas_found[pos_y][pos_x] != 1:
-        print(
-          "Warning, found "
-          + str(num_areas_found[pos_y][pos_x])
-          + " matching areas for "
-          + str(memfile_x)
-          + ","
-          + str(memfile_y)
-          + ", expected 1."
-        )
+  if settings.DEBUG:
+    matched = 0
+    for pos_y in range(steps_y):
+      for pos_x in range(steps_x):
+        if num_areas_found[pos_y][pos_x] == 1:
+          matched += 1
+
+    print("match ratio: " + str(matched / (steps_y * steps_x)))
 
   result = {
     "type": "FeatureCollection",
@@ -334,9 +315,14 @@ def calculate_impact(
           "country_id": area_info["instance"].country.country_code,
           "impact_data_min": area_info["impact_data_min"],
           "impact_data_max": area_info["impact_data_max"],
-          "impact_data_avrg_lin": area_info["impact_data_avrg_lin"],
-          "impact_data_avrg_sqrt": area_info["impact_data_avrg_sqrt"],
           "exceeded_curve_max": area_info["exceeded_curve_max"],
+          "impact_data_total": area_info["impact_data_total"],
+          "impact_data_min_relative": area_info["impact_data_min"] / area_info["impact_data_total"]
+          if area_info["impact_data_total"]
+          else 0,
+          "impact_data_max_relative": area_info["impact_data_max"] / area_info["impact_data_total"]
+          if area_info["impact_data_total"]
+          else 0,
         },
         "geometry": area_info["instance"].geom_json if include_geometry else None,
       }
