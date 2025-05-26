@@ -7,6 +7,7 @@ app_name = "dashboard"
 
 urlpatterns = [
   path("", views.index, name="home"),
+  path("glossary", views.glossary, name="glossary"),
   path("admin/", admin.site.urls),
   path("data/", include("data.api")),
   path("shared/", include("shared.urls")),

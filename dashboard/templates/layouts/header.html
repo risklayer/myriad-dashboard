@@ -34,7 +34,20 @@
           </a>
         </li>
         {% dashboard_header_apps %}
-        <li class="nav-item dropdown ms-xl-auto ms-xxxl-0">
+        <li class="nav-item ms-xl-auto ms-xxxl-0">
+          <button class="btn btn-link nav-link py-2 px-0 px-xl-2 d-flex align-items-center"
+                  hx-get="{% url "glossary" %}"
+                  hx-target="#modal-body"
+                  hx-swap="innerHTML"
+                  aria-pressed="false"
+                  data-bs-toggle="modal"
+                  data-bs-target="#main-modal"
+                  title="Glossary">
+            <span class="d-xl-none d-xxxl-block">Glossary</span>
+            {% include "shared/icon.html" with type="info-circle" class="my-1 d-none d-xl-block d-xxxl-none" %}
+          </button>
+        </li>
+        <li class="nav-item">
           <button class="btn btn-link nav-link py-2 px-0 px-xl-2 d-flex align-items-center"
                   hx-get="{% static "js/oss-licenses.html" %}"
                   hx-target="#modal-body"

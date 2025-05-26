@@ -5,7 +5,7 @@
   <p>This software includes a variety of open source software packages, which are listed below:</p>
   <% data.items.map(item=> { %>
     <h3><%- item.name %></h3>
-    <table class="table">
+    <table class="table w-100">
       <tbody>
         <tr>
           <th>Version</th>
@@ -23,7 +23,7 @@
             </tr>
             <tr>
               <th>URL</th>
-              <td><%- item.author.url %></td>
+              <td class="text-break"><%- item.author.url %></td>
             </tr>
             <% } %>
               <% if (typeof item.repository) { %>
@@ -35,7 +35,7 @@
                   <% if (typeof item.source) { %>
                     <tr>
                       <th>Source</th>
-                      <td><a href="<%- item.source %>" target="_blank"><%- item.source %></a></td>
+                      <td class="text-break"><a href="<%- item.source %>" target="_blank"><%- item.source %></a></td>
                     </tr>
                     <% } %>
                       <tr>
