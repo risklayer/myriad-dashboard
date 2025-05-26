@@ -1,14 +1,46 @@
 {% extends "layouts/base.html" %}
 
+{% load static %}
 {% load dashboard %}
 
 {% block head %}
   {{ block.super }}
+  <style>
+      body {
+          min-height: 100vh;
+          display: grid;
+          grid-template-rows: min-content min-content auto;
+          align-items: end;
+      }
+  </style>
 {% endblock head %}
 
 {% block pagetitle %}
   <h1>MYRIAD-EU Multi-Risk Toolkit</h1>
 {% endblock pagetitle %}
+
+{% block main %}
+  {{ block.super }}
+  <footer class="bg-dark py-5 mt-3">
+    <div class="container text-light text-center">
+      <p class="fs-5 mb-3">
+        Created with ❤️ by the team at <a href="https://www.risklayer.com" target="_blank" class="text-white">Risklayer</a> for <a href="https://www.myriadproject.eu" class="text-white">MYRIAD-EU</a>
+      </p>
+      <small class="text-white-50">
+        Use and share freely.
+        See <a href="#"
+    class="text-white-50"
+    hx-get="{% static "js/oss-licenses.html" %}"
+    hx-target="#modal-body"
+    hx-swap="innerHTML"
+    aria-pressed="false"
+    data-bs-toggle="modal"
+    data-bs-target="#main-modal"
+    title="Open Source Software Licenses">open source licensing information</a>
+      regarding redistribution or modification.</small>
+    </div>
+  </footer>
+{% endblock main %}
 
 {% block mainbody %}
   {% dashboard_home_apps %}
