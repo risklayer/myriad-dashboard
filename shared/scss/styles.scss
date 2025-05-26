@@ -177,7 +177,8 @@ h6 {
 }
 
 form.htmx-indicator,
-fieldset.htmx-indicator {
+fieldset.htmx-indicator,
+#modal-body.htmx-indicator {
   transition: opacity 0.3s ease;
   opacity: 1;
   &.htmx-request {

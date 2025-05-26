@@ -182,3 +182,4 @@ imports.sh
 
 data_raster/
 /*.gpkg
+dashboard/py-oss-licenses.json

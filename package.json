@@ -62,6 +62,8 @@
     "@types/leaflet.heat": "^0.2.4",
     "@types/lodash": "^4.17.15",
     "eslint": "^9.20.1",
+    "rollup-license-plugin": "^3.0.2",
+    "tslib": "^2.8.1",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.24.1"
   },

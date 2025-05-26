@@ -35,6 +35,19 @@
         </li>
         {% dashboard_header_apps %}
         <li class="nav-item dropdown ms-xl-auto">
+          <button class="btn btn-link nav-link py-2 px-0 px-xl-2 d-flex align-items-center"
+                  hx-get="{% static "js/oss-licenses.html" %}"
+                  hx-target="#modal-body"
+                  hx-swap="innerHTML"
+                  aria-pressed="false"
+                  data-bs-toggle="modal"
+                  data-bs-target="#main-modal"
+                  title="Open Source Software Licenses">
+            <span class="d-xl-none d-xxxl-block">OSS Licenses</span>
+            {% include "shared/icon.html" with type="file-earmark-code" class="my-1 d-none d-xl-block d-xxxl-none" %}
+          </button>
+        </li>
+        <li class="nav-item dropdown ms-xxxl-auto">
           <button class="btn btn-link nav-link py-2 px-0 px-xl-2 dropdown-toggle d-flex align-items-center"
                   id="bd-theme"
                   type="button"
@@ -43,7 +56,7 @@
                   data-bs-display="static"
                   aria-label="Toggle theme (auto)">
             {% include "shared/icon.html" with type="circle-half" class="my-1 theme-icon-active" %}
-            <span class="d-lg-none ms-2" id="bd-theme-text">Toggle theme</span>
+            <span class="d-xl-none ms-2" id="bd-theme-text">Toggle theme</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end"
               aria-labelledby="bd-theme-text">
@@ -83,3 +96,22 @@
     </div>
   </div>
 </nav>
+<div id="main-modal" class="modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 id="modal-title" class="modal-title"></h1>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <div class="modal-body htmx-indicator" id="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
