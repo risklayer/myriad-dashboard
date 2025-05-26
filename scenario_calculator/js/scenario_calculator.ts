@@ -13,7 +13,7 @@ import jQuery from "jquery";
 import type { Feature } from "geojson";
 
 import chroma from "chroma-js";
-import L from "leaflet";
+import L, { FeatureGroup } from "leaflet";
 import "../../shared/js/leaflet_grayscale";
 
 import "@gnatih/leaflet.legend";
@@ -30,6 +30,7 @@ import {
   without,
 } from "lodash";
 import {
+  components,
   DataTableColumnSchema,
   FeatureCollectionSchema,
   HrscEventSchema,
@@ -920,7 +921,7 @@ function displayDataTable(
           },
           {
             text: "GeoJSON",
-            action: getGeoJSON,
+            action: () => getGeoJSON(geojson),
           },
         ],
       } as DataTableFeature,
@@ -1056,17 +1057,12 @@ window.sortColumn = function sortColumn(key: string, direction: "up" | "down") {
   window.formUpdate();
 };
 
-async function getGeoJSON() {
-  const params = getParamsGrouped();
-  const countries = params.countries as Array<CountriesEnum | "ALL">;
-  const areas = params.areas;
-  const columns = params.table_events;
-
-  const data = await downloadGeoJSON({ countries, areas, columns });
-
-  if (data) {
-    createGeoJSONDownload(data);
-  }
+async function getGeoJSON(features: components["schemas"]["ShapeFeature"][]) {
+  const data = {
+    type: "FeatureCollection",
+    features,
+  };
+  createGeoJSONDownload(data, "combined_scenario");
 }
 
 window.searchHere = function searchHere() {
