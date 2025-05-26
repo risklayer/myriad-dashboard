@@ -426,8 +426,7 @@ class ScenarioCalculatorCombineEventsForm(Form):
     queryset=HrscExposure.objects.all().order_by("label"),
     empty_label="",
     to_field_name="key",
-    required=False,
-    initial=HrscExposure.objects.order_by("key").first().key,
+    required=True,
   )
 
   color_results_by = ChoiceField(
@@ -438,6 +437,8 @@ class ScenarioCalculatorCombineEventsForm(Form):
 
   def __init__(self, *args, **kwargs):
     super(ScenarioCalculatorCombineEventsForm, self).__init__(*args, **kwargs)
+
+    self.fields["exposure"].initial = HrscExposure.objects.order_by("key").first()
 
     self.helper = FormHelper()
     self.helper.form_tag = False
