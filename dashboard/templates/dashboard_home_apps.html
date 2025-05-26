@@ -2,7 +2,7 @@
   {% for app in myriad_apps %}
     <li>
       <a href="{{ app.url }}"
-         class="feature col card shadow btn d-flex align-items-center justify-content-center">
+         class="feature col card shadow btn d-flex align-items-center justify-content-center h-100">
         <div class="icon-link icon-link-hover text-bg-primary bg-gradient fs-2 m-4 p-3 aspect-1x1 rounded">
           {% include "shared/icon.html" with type=app.icon class="ratio-1x1" size=128 %}
         </div>
