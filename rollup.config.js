@@ -22,6 +22,18 @@ export default {
     sourcemap: true,
   },
   plugins: [
+    {
+      name: "jst",
+      async transform(src, id) {
+        if (id.endsWith(".jst")) {
+          const code = _.template(src, {
+            variable: "data",
+            sourceURL: id,
+          }).source;
+          return `import { escape } from "lodash";\nconst _ = { escape };\nexport default ${code}`;
+        }
+      },
+    },
     commonjs(),
     resolve(),
     typescript({

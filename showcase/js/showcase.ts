@@ -17,7 +17,7 @@ import "../../shared/js/leaflet_grayscale";
 
 import "@gnatih/leaflet.legend";
 import { LayersControlEvent } from "leaflet";
-import { sortBy, template, uniq, without } from "lodash";
+import { sortBy, uniq, without } from "lodash";
 import {
   DataTableColumnSchema,
   Nuts3AreaSchema,
@@ -40,6 +40,7 @@ import {
   LayerNames,
   QuantisationType,
 } from "../../shared/js/map_tools";
+import { createGeoJSONDownload } from "../../shared/js/utils";
 import {
   downloadGeoJSON,
   getAreasMap,
@@ -48,7 +49,6 @@ import {
   getValuesMap,
 } from "./showcase_api";
 import { TableDatum } from "./types";
-import { createGeoJSONDownload } from "../../shared/js/utils";
 
 declare global {
   interface Window {
@@ -211,7 +211,7 @@ async function updateMapAndTable({
     col === "fp" ? "" : col
   );
 
-  let columns = Array.from(
+  const columns = Array.from(
     (paramsGrouped.column ?? ["fp"]) as string | string[]
   ).filter(Boolean);
 
@@ -347,7 +347,10 @@ function updateRegionLayer(
     interactive: true,
     onEachFeature: (_, layer) => {
       layer.on({
-        click: (event) => {
+        click: async (event) => {
+          const areaSidebarTemplate = (
+            await import("./area_sidebar_template.jst")
+          ).default;
           const { feature } = event.target;
           const area = areaDefinitions[feature.properties.NUTS_ID]!;
           const country = area.country;
@@ -424,7 +427,7 @@ function buildMapAndTableData({
   const data: Array<TableDatum> = [];
   let min: number = 0;
   let max: number = 0;
-  let extraColumns: string[] = [];
+  const extraColumns: string[] = [];
 
   // if (tableColumns.length === 2) {
   //   const [column1, column2] = tableColumns.map((key) => columnsMap[key]) as [
@@ -564,7 +567,9 @@ function displayDataTable(
     row: number
     // _col: number
   ) =>
-    cell.addEventListener("click", () => {
+    cell.addEventListener("click", async () => {
+      const areaSidebarTemplate = (await import("./area_sidebar_template.jst"))
+        .default;
       const area = rowData.region!;
       const country = area.country;
       const contents = areaSidebarTemplate({
@@ -657,50 +662,6 @@ main_map.addEventListener("baselayerchange", (event: LayersControlEvent) => {
 
 resetSelectTreeIndeterminate();
 updateMapAndTable();
-
-const areaSidebarTemplate = template(`
-  <div class="p-3">
-    <div class="d-flex justify-content-between">
-      <h2 class="h4 mb-2 pb-0"><%- area.label %>, <%- area.country.label %></h2>
-      <button class="btn btn-clear small p-0" onclick="closeAreaPanel()" aria-label="Close panel">
-        <svg width="24"
-            height="24"
-            fill="currentColor"
-            class="">
-          <use xlink:href="/static/bootstrap-icons/bootstrap-icons.svg#x-lg" />
-        </svg>
-      </button>
-    </div>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Dataset</th>
-          <% if (showThreshold) { %>
-            <th>Threshold</th>
-          <% } %>
-          <% if (showReturnPeriod) { %>
-            <th>Return Period</th>
-          <% } %>
-          <th>Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% columns.filter(col => col in columnsMap).map(col => { %>
-          <tr>
-            <th><%- columnsMap[col].label.replace(/_/g, " ") ?? "—" %></th>
-            <% if (showThreshold) { %>
-              <th><%- columnsMap[col].threshold?.label ?? "—" %></th>
-            <% } %>
-            <% if (showReturnPeriod) { %>
-              <th><%- columnsMap[col].return_period?.label ?? "—" %></th>
-            <% } %>
-            <td><%- properties.columns[col] %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-`);
 
 window.closeAreaPanel = function closeAreaPanel() {
   [

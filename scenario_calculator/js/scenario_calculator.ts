@@ -19,16 +19,8 @@ import "../../shared/js/leaflet_grayscale";
 import "@gnatih/leaflet.legend";
 
 import { LayersControlEvent } from "leaflet";
-import {
-  groupBy,
-  keyBy,
-  map,
-  mapValues,
-  pick,
-  template,
-  uniq,
-  without,
-} from "lodash";
+import { keyBy, mapValues, pick, uniq } from "lodash";
+import { toast } from "../../dashboard/js/scripts";
 import {
   components,
   DataTableColumnSchema,
@@ -50,7 +42,6 @@ import {
   toggleSelectArray,
 } from "../../shared/js/dom_tools";
 import {
-  calculateColors,
   createMap,
   FilteredEventData,
   footprintToCartesian,
@@ -66,6 +57,7 @@ import {
   slugify,
 } from "../../shared/js/utils";
 import { GeometryObject } from "../../static/@types/geojson";
+import { Dictionary } from "../../static/@types/lodash";
 import {
   downloadGeoJSON,
   getAreasMap,
@@ -74,8 +66,6 @@ import {
   getShapesList,
 } from "./scenario_calculator_api";
 import { TableDatum } from "./types";
-import { toast } from "../../dashboard/js/scripts";
-import { Dictionary } from "../../static/@types/lodash";
 
 declare global {
   interface Window {}
@@ -626,7 +616,10 @@ function updateRegionLayer(
     interactive: true,
     onEachFeature: (_, layer) => {
       layer.on({
-        click: (event) => {
+        click: async (event) => {
+          const areaSidebarTemplate = (
+            await import("./area_sidebar_template.jst")
+          ).default;
           const { feature } = event.target;
           const area = areaDefinitions[feature.properties.NUTS_ID]!;
           const country = area.country;
@@ -858,7 +851,9 @@ function displayDataTable(
     row: number
     // _col: number
   ) =>
-    cell.addEventListener("click", () => {
+    cell.addEventListener("click", async () => {
+      const areaSidebarTemplate = (await import("./area_sidebar_template.jst"))
+        .default;
       const area = rowData.region!;
       const country = area.country;
       const contents = areaSidebarTemplate({
@@ -947,38 +942,6 @@ main_map.addEventListener("baselayerchange", (event: LayersControlEvent) => {
 
 resetSelectTreeIndeterminate();
 updateProbabilitiesAndStochastics();
-
-const areaSidebarTemplate = template(`
-  <div class="p-3">
-    <div class="d-flex justify-content-between">
-      <h2 class="h4 mb-2 pb-0"><%- area.label %>, <%- area.country.label %></h2>
-      <button class="btn btn-clear small p-0" onclick="closeAreaPanel()" aria-label="Close panel">
-        <svg width="24"
-            height="24"
-            fill="currentColor"
-            class="">
-          <use xlink:href="/static/bootstrap-icons/bootstrap-icons.svg#x-lg" />
-        </svg>
-      </button>
-    </div>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Result</th>
-          <th>Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% columns.map(col => { %>
-          <tr>
-            <th><%- columnsMap[col] %></th>
-            <td><%- formatValue(properties[col]) %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-`);
 
 window.closeAreaPanel = function closeAreaPanel() {
   [

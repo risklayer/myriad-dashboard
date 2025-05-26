@@ -1,0 +1,37 @@
+<div class="d-flex justify-content-between">
+  <h2 class="h4 mb-2 pb-0"><%- data.area.label %>, <%- data.area.country.label %></h2>
+  <button class="btn btn-clear small p-0" onclick="closeAreaPanel()" aria-label="Close panel">
+    <svg width="24" height="24" fill="currentColor" class="">
+      <use xlink:href="/static/bootstrap-icons/bootstrap-icons.svg#x-lg" />
+    </svg>
+  </button>
+</div>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Dataset</th>
+      <% if (data.showThreshold) { %>
+        <th>Threshold</th>
+        <% } %>
+          <% if (data.showReturnPeriod) { %>
+            <th>Return Period</th>
+            <% } %>
+              <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% data.columns.filter(col=> col in data.columnsMap).map(col => { %>
+      <tr>
+        <th><%- data.columnsMap[col].label.replace(/_/g, " " ) ?? "—" %></th>
+        <% if (data.showThreshold) { %>
+          <th><%- data.columnsMap[col].threshold?.label ?? "—" %></th>
+          <% } %>
+            <% if (data.showReturnPeriod) { %>
+              <th><%- data.columnsMap[col].return_period?.label ?? "—" %></th>
+              <% } %>
+                <td><%- data.properties.columns[col] %></td>
+      </tr>
+      <% }) %>
+  </tbody>
+</table>
+</div>
