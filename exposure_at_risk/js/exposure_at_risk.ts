@@ -41,11 +41,7 @@ import {
   LayerNames,
   QuantisationType,
 } from "../../shared/js/map_tools";
-import {
-  createCiteButton,
-  createGeoJSONDownload,
-  slugify,
-} from "../../shared/js/utils";
+import { createGeoJSONDownload, slugify } from "../../shared/js/utils";
 import {
   downloadGeoJSON,
   getAreasMap,
@@ -563,7 +559,6 @@ function displayDataTable(
       topStart: "search",
       topEnd: {
         buttons: [
-          createCiteButton("/static/exposure_at_risk/cite.html"),
           "copy",
           {
             extend: "excel",
