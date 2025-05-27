@@ -120,6 +120,9 @@ def calculate_impact(
         f"Event footprint needed in order to calculate risk. The selected event {event.label} has a footprint type that is not recognised.",
       )
 
+  event_bbox_min_x = math.floor(event_bbox_min_x / grid_resolution_x) * grid_resolution_x
+  event_bbox_max_y = math.ceil(event_bbox_max_y / grid_resolution_y) * grid_resolution_y
+
   bbox_to_use = event_bbox_min_x, event_bbox_min_y, event_bbox_max_x, event_bbox_max_y
 
   result_transform = from_origin(
