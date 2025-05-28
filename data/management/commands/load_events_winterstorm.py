@@ -1,27 +1,22 @@
+import csv
+import os
+import zipfile
+from tempfile import TemporaryDirectory
+from typing import List, Optional
+
 from data.models import (
+  GridLocation,
   Hazard,
   HrscEvent,
   HrscEventCollection,
-  HrscValueCoordinateWinterstorm,
   HrscEventMetadata,
   HrscEventMetadataValueString,
-  GridLocation,
+  HrscValueCoordinateWinterstorm,
 )
-from django.core.management.base import BaseCommand
-
-from tempfile import TemporaryDirectory
-
-import os
-import zipfile
-
-import csv
-from django.contrib.gis.geos import Point
-
-from django.db import transaction
-
-from typing import Optional
-
 from data.utils import clear_cache
+from django.contrib.gis.geos import Point
+from django.core.management.base import BaseCommand
+from django.db import transaction
 
 
 class Command(BaseCommand):
@@ -47,12 +42,30 @@ class Command(BaseCommand):
       dest="zip_filename",
       help="If the file to load is inside an archive, then spcify the archive path with this argument and --filename as the path of the file inside the archive",
     )
+    parser.add_argument(
+      "--reference",
+      type=str,
+      nargs="*",
+      action="append",
+      help="A string to be saved as a reference, citation. Can be supplied multiple times.",
+    )
 
-  def handle(self, *args, filename: str, zip_filename: str, sparse: Optional[float], **options):
+  def handle(
+    self,
+    *args,
+    filename: str,
+    zip_filename: str,
+    sparse: Optional[float],
+    reference: List[str],
+    **options,
+  ):
     hazard = Hazard.get_or_create_by_label(label="Winter storm", slug_key="winterstorm")
 
     collection = HrscEventCollection.get_or_create_by_label(
-      slug_key="winterstorm", label="Collection of winter storms", hazard=hazard
+      slug_key="winterstorm",
+      label="Collection of winter storms",
+      hazard=hazard,
+      references=reference,
     )
 
     label_meta = HrscEventMetadata.get_or_create_by_label(

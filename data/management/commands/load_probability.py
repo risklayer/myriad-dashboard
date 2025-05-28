@@ -1,19 +1,13 @@
-from data.models import (
-  Hazard,
-  HrscHazardProbabilityRaster,
-  HrscHazardProbabilityRasterInstance,
-)
-from django.core.management.base import BaseCommand
-
-from django.conf import settings
-
 import os
-import zipfile
-
 import os.path
 import shutil
+import zipfile
+from typing import List
 
+from data.models import Hazard, HrscHazardProbabilityRaster, HrscHazardProbabilityRasterInstance
 from data.utils import clear_cache
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
@@ -36,6 +30,13 @@ class Command(BaseCommand):
     parser.add_argument("--format", type=str, required=True, choices=["tiff"])
     parser.add_argument("--hazard", type=str, required=True, help="<key>:<label>")
     parser.add_argument("--severity", type=str, required=True, help="<value>:<unit>")
+    parser.add_argument(
+      "--reference",
+      type=str,
+      nargs="*",
+      action="append",
+      help="A string to be saved as a reference, citation. Can be supplied multiple times.",
+    )
 
   def handle(
     self,
@@ -45,6 +46,7 @@ class Command(BaseCommand):
     format: str,
     hazard: str,
     severity: str,
+    reference: List[str],
     **options,
   ):
     hazard_key, hazard_label = hazard.split(":")
@@ -52,7 +54,8 @@ class Command(BaseCommand):
 
     hazard = Hazard.get_or_create_by_label(hazard_label, hazard_key)
     raster, _ = HrscHazardProbabilityRaster.objects.get_or_create(
-      hazard=hazard, defaults={"severity_unit": severity_unit}
+      hazard=hazard,
+      defaults={"severity_unit": severity_unit, "references": reference},
     )
 
     # remove old one

@@ -2,6 +2,7 @@ import os
 import shutil
 import sqlite3
 import zipfile
+from typing import List
 
 from data.data_region.country_list import (
   get_country_dict_by_2alpha,
@@ -11,7 +12,6 @@ from data.data_region.country_list import (
 from data.import_utils import initialize_nuts3_regions
 from data.models import HrscExposure, HrscExposureColumnValue, HrscExposureRaster
 from data.utils import clear_cache
-
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -35,6 +35,14 @@ class Command(BaseCommand):
     parser.add_argument("--nuts3-format", dest="nuts3_format", type=str, choices=["gpkg-sqlite"])
     parser.add_argument("--nuts3-gpkg-identifier", dest="nuts3_gpkg_identifier", type=str)
 
+    parser.add_argument(
+      "--reference",
+      type=str,
+      nargs="*",
+      action="append",
+      help="A string to be saved as a reference, citation. Can be supplied multiple times.",
+    )
+
   def handle(
     self,
     *args,
@@ -46,9 +54,10 @@ class Command(BaseCommand):
     nuts3_filename: str = None,
     nuts3_format: str = None,
     nuts3_gpkg_identifier: str = None,
+    reference: List[str],
     **options,
   ):
-    exposure = HrscExposure.get_or_create_by_label(label=label, slug_key=key)
+    exposure = HrscExposure.get_or_create_by_label(label=label, slug_key=key, references=reference)
 
     if nuts3_filename:
       if nuts3_format == "gpkg-sqlite":

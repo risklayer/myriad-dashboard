@@ -1,25 +1,20 @@
+import csv
+import os
+import shutil
+import zipfile
+from tempfile import TemporaryDirectory
+from typing import List
+
 from data.models import (
   Hazard,
   HrscEvent,
   HrscEventCollection,
-  HrscEventMetadataValueFloat,
   HrscEventMetadata,
+  HrscEventMetadataValueFloat,
 )
-from django.core.management.base import BaseCommand
-
-
-from tempfile import TemporaryDirectory
-
-import os
-import zipfile
-
-import csv
-
-from django.conf import settings
-
-import shutil
-
 from data.utils import clear_cache
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
@@ -54,6 +49,13 @@ class Command(BaseCommand):
       dest="footprint_num_offset",
       help="Offset to correctly guess the footprint filename",
     )
+    parser.add_argument(
+      "--reference",
+      type=str,
+      nargs="*",
+      action="append",
+      help="A string to be saved as a reference, citation. Can be supplied multiple times.",
+    )
 
   def handle(
     self,
@@ -62,12 +64,13 @@ class Command(BaseCommand):
     zip_filename: str,
     relative_path: str,
     footprint_num_offset: int,
+    reference: List[str],
     **options,
   ):
     hazard = Hazard.get_or_create_by_label(label="Earthquakes", slug_key="earthquake")
 
     collection = HrscEventCollection.get_or_create_by_label(
-      slug_key="earthquake", label="Collection of Earthquakes", hazard=hazard
+      slug_key="earthquake", label="Collection of Earthquakes", hazard=hazard, references=reference
     )
 
     HrscEventMetadata.get_or_create_by_label(

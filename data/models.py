@@ -684,12 +684,15 @@ class HrscEventCollection(models.Model, KeyLabelSelection):
 
   hazard = models.ForeignKey(Hazard, on_delete=models.CASCADE)
 
+  references = models.JSONField(null=True, blank=True)
+
   def to_dict(self):
     return {
       "id": self.id,
       "key": self.key,
       "label": self.label,
       "hazard": self.hazard.to_dict(),
+      "references": self.references,
     }
 
 
@@ -978,6 +981,8 @@ class HrscExposure(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True)
   label = models.TextField()
 
+  references = models.JSONField(null=True, blank=True)
+
   def to_dict(self):
     raster = HrscExposureRaster.objects.filter(exposure=self).first()
     return {
@@ -986,6 +991,7 @@ class HrscExposure(models.Model, KeyLabelSelection):
       "label": self.label,
       "raster": raster.to_dict() if raster else None,
       "nuts3_column": HrscExposureColumnValue.objects.filter(exposure=self).exists(),
+      "references": self.references,
     }
 
 
@@ -1060,6 +1066,8 @@ class HrscHazardProbabilityRaster(models.Model):
 
   severity_unit = models.TextField()
 
+  references = models.JSONField(null=True, blank=True)
+
   def to_dict(self):
     return {
       "id": self.id,
@@ -1069,6 +1077,7 @@ class HrscHazardProbabilityRaster(models.Model):
         i.severity_value
         for i in HrscHazardProbabilityRasterInstance.objects.filter(probability_raster=self)
       ],
+      "references": self.references,
     }
 
   def get_probability_value(self, severity_value: float, longitude: float, latitude: float):
