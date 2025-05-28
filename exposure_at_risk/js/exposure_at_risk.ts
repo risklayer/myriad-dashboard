@@ -19,6 +19,7 @@ import "@gnatih/leaflet.legend";
 import { LayersControlEvent } from "leaflet";
 import { uniq, without } from "lodash";
 import {
+  components,
   DataTableColumnSchema,
   Nuts3AreaSchema,
   ShapeFeature,
@@ -50,6 +51,7 @@ import {
   getValuesMap,
 } from "./exposure_at_risk_api";
 import { TableDatum } from "./types";
+import { createDataTableReferencesButton } from "../../shared/js/table_utils";
 
 declare global {
   interface Window {
@@ -573,6 +575,9 @@ function displayDataTable(
             text: "GeoJSON",
             action: getGeoJSON,
           },
+          createDataTableReferencesButton(
+            columns.map((col) => columnsMap[col]?.references ?? []).flat()
+          ),
         ],
       } as DataTableFeature,
       bottomStart: "info",

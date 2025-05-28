@@ -47,12 +47,12 @@ def columns(
   columns: List[str] = Query([]),
 ):
   """Returns a list of all data columns with their metadata"""
-  columns, filter_options = filter_columns(
+  columns_objs, filter_options = filter_columns(
     hazard, exposure, threshold, return_period, columns, get_kwargs=request.GET
   )
 
   return {
-    "columns": columns,
+    "columns": columns_objs,
     "filter_options": filter_options,
   }
 

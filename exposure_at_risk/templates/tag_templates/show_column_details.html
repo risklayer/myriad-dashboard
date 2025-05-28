@@ -63,6 +63,18 @@
           <th scope="row">Description</th>
           <td>{{ column.description }}</td>
         </tr>
+        {% if column.references|length %}
+          <tr>
+            <th scope="row"
+                data-name="return_period"
+                data-value="{{ column.references|join:"; " }}">References</th>
+            <td>
+              <ul>
+                {% for reference in column.references %}<li>{{ reference }}</li>{% endfor %}
+              </ul>
+            </td>
+          </tr>
+        {% endif %}
       </tbody>
     </table>
   </div>

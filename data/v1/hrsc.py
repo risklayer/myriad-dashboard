@@ -1,7 +1,8 @@
 import math
 from json import dumps
-from typing import List
+from typing import List, NoReturn
 
+from django.shortcuts import get_object_or_404
 import numpy as np
 import rasterio
 from dashboard.settings import API_CACHE_TIMEOUT
@@ -46,7 +47,7 @@ from shapely import from_geojson, geometry
 router = Router(tags=["HRSC"])
 
 
-def error_handler(code, message):
+def error_handler(code, message) -> NoReturn:
   if settings.DEBUG:
     raise Exception(message)
   raise HttpError(code, message)
@@ -196,7 +197,6 @@ def calculate_impact(
   bbox_min_y = math.floor(bbox_min_y / grid_resolution_y) * grid_resolution_y
   bbox_max_y = math.ceil(bbox_max_y / grid_resolution_y) * grid_resolution_y
 
-  # if not len(countries):
   nuts3area_filter = nuts3area_filter_bboxed
 
   bbox_to_use = bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y
@@ -217,6 +217,8 @@ def calculate_impact(
 
   exceeded_max_grid = np.zeros((steps_y, steps_x), dtype=bool)
 
+  all_vulnerability_curves = list()
+
   for event in all_events:
     impact_value_grid = np.zeros((steps_y, steps_x), dtype=np.float32)
 
@@ -226,13 +228,15 @@ def calculate_impact(
       scenario=scenario, exposure=exposure
     ).first()
 
-    if not vulnerability_mapping:
-      error_handler(
+    if vulnerability_mapping is None:
+      return error_handler(
         404,
         f"No vulnerability curve mapping is available for {scenario.label} hazard scenario and exposure {exposure.label}",
       )
 
     vulnerability_curve = vulnerability_mapping.vulnerability
+
+    all_vulnerability_curves.append(vulnerability_curve)
 
     if event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
       with MemoryFile(event.get_footprint(bbox_to_use)) as memfile, memfile.open() as memfile_image:
@@ -313,11 +317,11 @@ def calculate_impact(
   # lets limit exposure to maximum
   for pos_y in range(steps_y):
     for pos_x in range(steps_x):
-      exposure = exposure_raster[pos_y][pos_x]
-      if np.isnan(exposure):
-        exposure = 0
+      exposure_value = exposure_raster[pos_y][pos_x]
+      if np.isnan(exposure_value):
+        exposure_value = 0
       impact_data_max[pos_y][pos_x] = min(
-        exposure, impact_data_max[pos_y][pos_x]
+        exposure_value, impact_data_max[pos_y][pos_x]
       )  # limit to max exposure
 
   areas_dict = {
@@ -367,6 +371,18 @@ def calculate_impact(
 
     print("match ratio: " + str(matched / (steps_y * steps_x)))
 
+  references = sorted(
+    list(
+      set(
+        [
+          *exposure.references,
+          # *[reference for curve in all_vulnerability_curves for reference in curve.references],
+          *[reference for event in all_events for reference in event.references],
+        ]
+      )
+    )
+  )
+
   result = {
     "type": "FeatureCollection",
     "name": "nuts3",
@@ -387,6 +403,7 @@ def calculate_impact(
           "impact_data_max_relative": area_info["impact_data_max"] / area_info["exposure_total"]
           if area_info["exposure_total"]
           else 0,
+          "references": references,
         },
         "geometry": area_info["instance"].geom_json if include_geometry else None,
       }
@@ -414,7 +431,7 @@ def collections(request: HttpRequest):
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def event_by_id(request: HttpRequest, id: int, bbox: str | None = None):
   """Returns the event details including footprint"""
-  return HrscEvent.objects.get(id=id).to_dict(
+  return get_object_or_404(HrscEvent, id=id).to_dict(
     include_footprint_blob=True,
     footprint_bbox=bbox.split(",") if bbox and len(bbox) else None,
     include_metadata=True,
@@ -455,7 +472,7 @@ def events_by_collection_filter_ws(
     limit,
   )
 
-  return [event.to_dict() for event in events]
+  return [event.to_dict(include_metadata=True) for event in events]
 
 
 @router.get("/events/{str:collection_key}/filter", tags=["HRSC"], response=List[HrscEventSchema])
@@ -483,7 +500,7 @@ def events_by_collection_filter(
     collection_key, longitude, latitude, radius, limit, filters
   )
 
-  return [event.to_dict() for event in events]
+  return [event.to_dict(include_metadata=True) for event in events]
 
 
 def get_events_by_collection_filter(

@@ -39,7 +39,7 @@ class Command(BaseCommand):
       "--reference",
       type=str,
       nargs="*",
-      action="append",
+      action="extend",
       help="A string to be saved as a reference, citation. Can be supplied multiple times.",
     )
 
@@ -57,7 +57,13 @@ class Command(BaseCommand):
     reference: List[str],
     **options,
   ):
-    exposure = HrscExposure.get_or_create_by_label(label=label, slug_key=key, references=reference)
+    exposure, created = HrscExposure.get_or_create_by_label(
+      label=label, slug_key=key, references=reference, created_info=True
+    )
+
+    if not created and len(reference) and reference != exposure.references:
+      exposure.references = reference
+      exposure.save()
 
     if nuts3_filename:
       if nuts3_format == "gpkg-sqlite":

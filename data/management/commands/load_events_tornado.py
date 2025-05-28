@@ -36,14 +36,20 @@ class Command(BaseCommand):
       "--reference",
       type=str,
       nargs="*",
-      action="append",
+      action="extend",
       help="A string to be saved as a reference, citation. Can be supplied multiple times.",
     )
 
   def handle(
     self, *args, filename: str, zip_filename: str, reference: List[str], **options
   ):  # , skip_existing: bool
-    hazard = Hazard.get_or_create_by_label(label="Tornados", slug_key="tornado")
+    hazard, created = Hazard.get_or_create_by_label(
+      label="Tornados", slug_key="tornado", created_info=True
+    )
+
+    if not created and len(reference) and reference != hazard.references:
+      hazard.references = reference
+      hazard.save()
 
     collection = HrscEventCollection.get_or_create_by_label(
       slug_key="tornado", label="Collection of Tornados", hazard=hazard, references=reference

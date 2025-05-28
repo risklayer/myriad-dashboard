@@ -555,6 +555,8 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
 
   values_xy = models.JSONField()
 
+  # references = []
+
   def apply_curve(self, value) -> Tuple[float, bool]:
     values_xy = [[0, 0]] + self.values_xy
 
@@ -587,6 +589,7 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
       "myriad_sectors_applicable": [s.key for s in self.myriad_sectors_applicable.all()],
       "countries": [c.country_code for c in self.countries.all()],
       "values_xy": self.values_xy,
+      # "references": self.references,
     } | self.metadata
     return all_vals
 
@@ -597,7 +600,7 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
     allowed_keys = list(
       filter(
         lambda k: not (k.startswith("_") or k in hidden_fields),
-        [*self.__dict__.keys(), *self.metadata.keys()],
+        [*self.__dict__.keys(), *self.metadata.keys(), "references"],
       )
     )
     details = {}
@@ -1051,6 +1054,7 @@ class HrscExposureRaster(models.Model):
     return {
       "file_type": self.file_type,
       "file": str(self.file),
+      "references": self.exposure.references,
     }
 
 

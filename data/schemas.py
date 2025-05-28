@@ -10,6 +10,7 @@ from data.models import (
   Hazard,
   HrscEvent,
   HrscEventCollection,
+  HrscExposureRaster,
   HrscScenario,
   KeyLabelSelection,
   Nuts3Area,
@@ -65,6 +66,7 @@ class DataTableColumnSchema(ModelSchema):
   hazard: Optional[HazardSchema] = None
   exposure: Optional[TableMetaExposureSchema] = None
   threshold: Optional[TableMetaThresholdSchema] = None
+  references: Optional[List[str]] = []
 
   class Meta:
     model = DataTableColumn
@@ -77,7 +79,7 @@ class DataTableColumnSchema(ModelSchema):
 
 class DataTableColumnsWithFilterOptionsSchema(Schema):
   columns: List[DataTableColumnSchema]
-  filter_options: Dict[str, List[Union[str, float]]]
+  filter_options: Dict[str, Union[List[Union[str, float]], None]]
 
 
 class DataTableColumnSummarySchema(ModelSchema):
@@ -92,7 +94,7 @@ class DataTableColumnSummarySchema(ModelSchema):
 
 class DataTableColumnSummaryWithFilterOptionsSchema(Schema):
   columns: List[DataTableColumnSummarySchema]
-  filter_options: Dict[str, List[Union[str, float]]]
+  filter_options: Dict[str, List[Union[str, float]] | None]
 
 
 # class DataTableColumnValueSchema(ModelSchema):
@@ -199,12 +201,13 @@ class ShapeFeature(Schema):
   geometry: MultiPolygon
   # TODO: this outputs the correct types in TS and in the results, but doesn't
   # reflect the ShapeProperties fields in Swagger
-  properties: Union[Dict[str, str | float], ShapeProperties]
+  properties: Union[Dict[str, str | float | List[str]], ShapeProperties]
 
 
 class AreaValuesSchema(Schema):
   NUTS_ID: str
-  country_id: str
+  country_code: str
+  columns: Dict[str, float] = {}
 
 
 class FeatureCollectionSchema(Schema):
@@ -231,8 +234,9 @@ class HrscEventSchema(ModelSchema):
   hazard: Optional[str]
   hazardLabel: Optional[str]
   label: str
-  unit: Optional[str]
-  metadata: Optional[Dict[str, Union[str, float]]]
+  unit: Optional[str] = None
+  metadata: Optional[Dict[str, Union[str, float]]] = None
+  # references: Optional[List[str]] = []
 
   class Meta:
     model = HrscEvent
@@ -265,18 +269,26 @@ class HrscHazardProbabilityRasterSchema(ModelSchema):
   severity_unit: str
   hazard: HazardSchema
   severities: List[float]
+  references: Optional[List[str]] = []
 
   class Meta:
     model = HrscHazardProbabilityRaster
     fields = ["severity_unit"]
 
 
+class HrscExposureRasterSchema(ModelSchema):
+  class Meta:
+    model = HrscExposureRaster
+    fields = ["file_type", "file"]
+
+
 class HrscExposureSchema(ModelSchema):
   id: int
   key: str
   label: str
-  raster: Dict[str, Union[str, float]]
+  raster: HrscExposureRasterSchema
   nuts3_column: bool
+  references: Optional[List[str]] = []
 
   class Meta:
     model = HrscExposure

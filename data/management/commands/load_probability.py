@@ -34,7 +34,7 @@ class Command(BaseCommand):
       "--reference",
       type=str,
       nargs="*",
-      action="append",
+      action="extend",
       help="A string to be saved as a reference, citation. Can be supplied multiple times.",
     )
 
@@ -52,11 +52,19 @@ class Command(BaseCommand):
     hazard_key, hazard_label = hazard.split(":")
     severity_value, severity_unit = severity.split(":")
 
-    hazard = Hazard.get_or_create_by_label(hazard_label, hazard_key)
-    raster, _ = HrscHazardProbabilityRaster.objects.get_or_create(
-      hazard=hazard,
-      defaults={"severity_unit": severity_unit, "references": reference},
+    hazard_obj = Hazard.get_or_create_by_label(hazard_label, hazard_key)
+
+    raster, created = HrscHazardProbabilityRaster.objects.get_or_create(
+      hazard=hazard_obj,
+      defaults={
+        "severity_unit": severity_unit,
+        "references": reference,
+      },
     )
+
+    if not created and len(reference) and reference != raster.references:
+      raster.references = reference
+      raster.save()
 
     # remove old one
     HrscHazardProbabilityRasterInstance.objects.filter(

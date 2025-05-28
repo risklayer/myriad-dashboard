@@ -170,6 +170,7 @@ def probability_result(request):
   )
 
   results = list()
+  references = list()
   if probability_shared_form.is_valid():
     latitude = probability_shared_form.cleaned_data.get("latitude")
     longitude = probability_shared_form.cleaned_data.get("longitude")
@@ -206,6 +207,8 @@ def probability_result(request):
             float_to_3_digits(return_period) + " years",
           )
         )
+        if severity.probability_raster.references and len(severity.probability_raster.references):
+          references = [*references, *severity.probability_raster.references]
 
   if len(results) == 2:
     combination = results[0][2] * results[1][2]
@@ -226,5 +229,6 @@ def probability_result(request):
     {
       "results": results,
       "probability_shared_form": probability_shared_form,
+      "references": references,
     },
   )

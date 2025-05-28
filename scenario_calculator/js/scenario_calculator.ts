@@ -51,6 +51,7 @@ import {
   LayerNames,
   QuantisationType,
 } from "../../shared/js/map_tools";
+import { createDataTableReferencesButton } from "../../shared/js/table_utils";
 import {
   createGeoJSONDownload,
   floatTo3Digits,
@@ -853,10 +854,11 @@ function buildResultsMapAndTableData({
     //   : {};
 
     if (tableColumns.length && areaDefinitions[code]) {
-      const regionValues: Record<string, number> = pick(
-        valuesByKey[code]?.properties,
-        tableColumns
-      );
+      const properties = valuesByKey[code]?.properties;
+      const regionValues = pick(properties, [...tableColumns]) as Record<
+        string,
+        number
+      >;
       // if (!Object.keys(regionValues).length) {
       //   regionValues = ZeroColumnValues;
       // }
@@ -871,6 +873,9 @@ function buildResultsMapAndTableData({
           ...shape.properties,
           // value: primaryValue,
           columns: regionValues,
+          ...(properties && "references" in properties
+            ? { references: properties.references }
+            : {}),
         },
       };
       geojson.push(geo);
@@ -966,6 +971,10 @@ function displayDataTable(
   }
   const title = `Multi-hazard scenarios for ${countries.join(", ")} (${columns})`;
 
+  const references = uniq(
+    geojson.map((geo) => geo.properties?.references ?? []).flat()
+  );
+
   values_table = new DataTable("#values-table", {
     layout: {
       topStart: "search",
@@ -985,6 +994,7 @@ function displayDataTable(
             text: "GeoJSON",
             action: () => getGeoJSON(geojson),
           },
+          createDataTableReferencesButton(references),
         ],
       } as DataTableFeature,
       bottomStart: "info",

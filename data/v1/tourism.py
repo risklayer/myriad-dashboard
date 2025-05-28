@@ -15,10 +15,10 @@ from data.schemas import (
   TourismIndicatorSchema,
 )
 
-router = Router(tags=["TOURISM"])
+router = Router(tags=["Tourism"])
 
 
-@router.get("/indicators", tags=["TOURISM"], response=List[TourismIndicatorSchema])
+@router.get("/indicators", tags=["Tourism"], response=List[TourismIndicatorSchema])
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def indicators(request: HttpRequest):
   """Returns a list of available Scenarios"""

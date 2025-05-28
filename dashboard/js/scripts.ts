@@ -1,6 +1,7 @@
 declare global {
   interface Window {
     toast: (message: string) => void;
+    copyListToClipboard: (list: HTMLUListElement) => void;
   }
 }
 
@@ -22,4 +23,16 @@ export function toast(message: string) {
   });
 }
 
+export function copyListToClipboard(list: HTMLUListElement) {
+  navigator.clipboard.write([
+    new ClipboardItem({
+      "text/html": list.outerHTML,
+      "text/plain": Array.from(list.children)
+        .map((item) => item.textContent!.trim())
+        .join("\n"),
+    }),
+  ]);
+}
+
 window.toast = toast;
+window.copyListToClipboard = copyListToClipboard;

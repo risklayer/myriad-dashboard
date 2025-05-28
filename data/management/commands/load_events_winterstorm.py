@@ -46,7 +46,7 @@ class Command(BaseCommand):
       "--reference",
       type=str,
       nargs="*",
-      action="append",
+      action="extend",
       help="A string to be saved as a reference, citation. Can be supplied multiple times.",
     )
 
@@ -59,7 +59,13 @@ class Command(BaseCommand):
     reference: List[str],
     **options,
   ):
-    hazard = Hazard.get_or_create_by_label(label="Winter storm", slug_key="winterstorm")
+    hazard, created = Hazard.get_or_create_by_label(
+      label="Winter storm", slug_key="winterstorm", created_info=True
+    )
+
+    if not created and len(reference) and reference != hazard.references:
+      hazard.references = reference
+      hazard.save()
 
     collection = HrscEventCollection.get_or_create_by_label(
       slug_key="winterstorm",

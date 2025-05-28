@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 from django.http import HttpRequest
+from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import cache_page
 from ninja import Query, Router
 from ninja.decorators import decorate_view
@@ -56,10 +57,10 @@ def values(
   return result
 
 
-@router.get("/area", response=AreaValuesSchema | Dict[str, float])
+@router.get("/area", response=AreaValuesSchema)
 def area(request: HttpRequest, nuts3_key: str, columns: List[str] = Query([])):
   """Returns nuts3 area with all or selected values"""
-  area = Nuts3Area.objects.get(key=nuts3_key)
+  area = get_object_or_404(Nuts3Area, key=nuts3_key)
 
   column_filter = (
     DataTableColumn.objects.filter(key__in=columns)
@@ -71,5 +72,6 @@ def area(request: HttpRequest, nuts3_key: str, columns: List[str] = Query([])):
 
   return {
     "NUTS_ID": area.key,
-    "country_id": area.country_id,
-  } | {v.data_table_column.key: v.value for v in values}
+    "country_code": area.country.country_code,
+    "columns": {v.data_table_column.key: v.value for v in values},
+  }

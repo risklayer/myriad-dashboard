@@ -1,5 +1,6 @@
 import { memoize, round } from "lodash";
 import { components } from "../../data/types/api";
+import type { Api as DataTableApi } from "datatables.net-bs5";
 
 export function floatTo3Digits(value: number): string {
   // if (value > 1000000) {
@@ -89,3 +90,19 @@ export const memoizeUnlessNull = ((func, resolver) => {
     return result;
   };
 }) as typeof memoize;
+
+export function createCiteButton(url: string) {
+  return {
+    text: "Cite",
+    titleAttr: "See citation information for this data",
+    attr: {
+      "hx-get": url,
+      "hx-target": "#modal-body",
+      "hx-swap": "innerHTML",
+      "data-bs-toggle": "modal",
+      "data-bs-target": "#main-modal",
+    },
+    init: (dt: DataTableApi<any>, node: JQuery, config: any) =>
+      window.htmx.process(node[0]),
+  };
+}

@@ -44,5 +44,18 @@
         {% endfor %}
       </tbody>
     </table>
+    {% if references|length %}
+      <h4 class="h6">References</h4>
+      <ul class="ps-3 mb-1">
+        {% for reference in references %}<li>{{ reference }}</li>{% endfor %}
+      </ul>
+      <button type="button"
+              class="btn btn-sm mb-3"
+              onclick="copyListToClipboard(this.previousElementSibling)"
+              title="Copy to clipboard">
+        {% include "shared/icon.html" with type="copy" class="me-1" %}
+        Copy to clipboard
+      </button>
+    {% endif %}
   {% endif %}
 </div>

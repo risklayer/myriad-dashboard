@@ -9,8 +9,19 @@
           <td>
             {% if name == "Weblink_Study" %}
               <a href="{{ detail.value }}" target="_blank">{{ detail.display }}</a>
-            {% elif name == "Reference" and details.Weblink %}
-              <a href="{{ details.Weblink }}" target="_blank">{{ detail.display }}</a>
+            {% elif name == "Reference" and detail.Weblink %}
+              <a href="{{ detail.Weblink }}" target="_blank">{{ detail.display }}</a>
+            {% elif name == "references" and detail.value|length %}
+              <ul class="ps-3 mb-1">
+                {% for reference in detail.value %}<li>{{ reference }}</li>{% endfor %}
+              </ul>
+              <button type="button"
+                      class="btn btn-sm"
+                      onclick="copyListToClipboard(this.previousElementSibling)"
+                      title="Copy to clipboard">
+                {% include "shared/icon.html" with type="copy" class="me-1" %}
+                Copy to clipboard
+              </button>
             {% else %}
               {{ detail.display|linebreaks }}
             {% endif %}
