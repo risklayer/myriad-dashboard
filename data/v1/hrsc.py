@@ -74,16 +74,24 @@ def calculate_impact(
 
   exposure_raster_dbobj = HrscExposureRaster.objects.get(exposure=exposure)
 
-  event_bbox_min_x, event_bbox_min_y, event_bbox_max_x, event_bbox_max_y = bbox.split(",")
-  event_bbox_min_x = float(event_bbox_min_x)
-  event_bbox_min_y = float(event_bbox_min_y)
-  event_bbox_max_x = float(event_bbox_max_x)
-  event_bbox_max_y = float(event_bbox_max_y)
+  bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = bbox.split(",")
+  bbox_min_x = float(bbox_min_x)
+  bbox_min_y = float(bbox_min_y)
+  bbox_max_x = float(bbox_max_x)
+  bbox_max_y = float(bbox_max_y)
+
+  event_bbox_min_x = None
+  event_bbox_min_y = None
+  event_bbox_max_x = None
+  event_bbox_max_y = None
 
   all_events: List[HrscEvent] = list()
 
   grid_resolution_x = 0.1
   grid_resolution_y = 0.1
+
+  use_event_bbox = True
+  found_event_bbox = False
 
   for this_event_id in event_ids:
     event = HrscEvent.objects.get(id=this_event_id)
@@ -108,11 +116,25 @@ def calculate_impact(
           grid_resolution_x = min(grid_resolution_x, src.transform.a)
           grid_resolution_y = min(grid_resolution_y, -src.transform.e)
 
-          event_bbox_min_x = min(event_bbox_min_x, src.bounds.left)
-          event_bbox_min_y = min(event_bbox_min_y, src.bounds.bottom)
-          event_bbox_max_x = max(event_bbox_max_x, src.bounds.right)
-          event_bbox_max_y = max(event_bbox_max_y, src.bounds.top)
+          event_bbox_min_x = (
+            src.bounds.left if event_bbox_min_x is None else min(event_bbox_min_x, src.bounds.left)
+          )
+          event_bbox_min_y = (
+            src.bounds.bottom
+            if event_bbox_min_y is None
+            else min(event_bbox_min_y, src.bounds.bottom)
+          )
+          event_bbox_max_x = (
+            src.bounds.right
+            if event_bbox_max_x is None
+            else max(event_bbox_max_x, src.bounds.right)
+          )
+          event_bbox_max_y = (
+            src.bounds.top if event_bbox_max_y is None else max(event_bbox_max_y, src.bounds.top)
+          )
+          found_event_bbox = True
     elif event.footprint_type == "lazy_py_coord_vals":
+      use_event_bbox = False
       pass  # skip this, will not adjust bbox
     else:
       error_handler(
@@ -120,17 +142,69 @@ def calculate_impact(
         f"Event footprint needed in order to calculate risk. The selected event {event.label} has a footprint type that is not recognised.",
       )
 
-  event_bbox_min_x = math.floor(event_bbox_min_x / grid_resolution_x) * grid_resolution_x
-  event_bbox_max_y = math.ceil(event_bbox_max_y / grid_resolution_y) * grid_resolution_y
+  if use_event_bbox and found_event_bbox:
+    bbox_min_x = event_bbox_min_x
+    bbox_max_x = event_bbox_max_x
+    bbox_min_y = event_bbox_min_y
+    bbox_max_y = event_bbox_max_y
 
-  bbox_to_use = event_bbox_min_x, event_bbox_min_y, event_bbox_max_x, event_bbox_max_y
+  nuts3area_filter = Nuts3Area.objects.all()
 
-  result_transform = from_origin(
-    event_bbox_min_x, event_bbox_max_y, grid_resolution_x, grid_resolution_y
+  if len(countries) > 0 and "ALL" not in countries:
+    nuts3area_filter = nuts3area_filter.filter(country__country_code__in=countries)
+
+  nuts3area_filter_bboxed = nuts3area_filter.filter(
+    bbox_min_x__lt=bbox_max_x,
+    bbox_min_y__lt=bbox_max_y,
+    bbox_max_x__gt=bbox_min_x,
+    bbox_max_y__gt=bbox_min_y,
   )
 
-  steps_y = math.ceil((event_bbox_max_y - event_bbox_min_y) / grid_resolution_y)
-  steps_x = math.ceil((event_bbox_max_x - event_bbox_min_x) / grid_resolution_x)
+  area_bbox_min_x = None
+  area_bbox_max_x = None
+  area_bbox_min_y = None
+  area_bbox_max_y = None
+
+  # Find the bounding box of all selected areas
+  areas_found = False
+  for area in nuts3area_filter_bboxed:
+    areas_found = True
+    area_bbox_min_x = (
+      area.bbox_min_x if area_bbox_min_x is None else min(area_bbox_min_x, area.bbox_min_x)
+    )
+    area_bbox_min_y = (
+      area.bbox_min_y if area_bbox_min_y is None else min(area_bbox_min_y, area.bbox_min_y)
+    )
+    area_bbox_max_x = (
+      area.bbox_max_x if area_bbox_max_x is None else max(area_bbox_max_x, area.bbox_max_x)
+    )
+    area_bbox_max_y = (
+      area.bbox_max_y if area_bbox_max_y is None else max(area_bbox_max_y, area.bbox_max_y)
+    )
+
+  if areas_found:
+    # Expand bbox to include all areas overlapping the events/provided bbox
+    bbox_min_x = area_bbox_min_x  # type: ignore
+    bbox_min_y = area_bbox_min_y  # type: ignore
+    bbox_max_x = area_bbox_max_x  # type: ignore
+    bbox_max_y = area_bbox_max_y  # type: ignore
+
+  # Expand bbox slightly to a uniform grid based on the resolution
+  # This is done to make results for each area deterministic
+  bbox_min_x = math.floor(bbox_min_x / grid_resolution_x) * grid_resolution_x
+  bbox_max_x = math.ceil(bbox_max_x / grid_resolution_x) * grid_resolution_x
+  bbox_min_y = math.floor(bbox_min_y / grid_resolution_y) * grid_resolution_y
+  bbox_max_y = math.ceil(bbox_max_y / grid_resolution_y) * grid_resolution_y
+
+  # if not len(countries):
+  nuts3area_filter = nuts3area_filter_bboxed
+
+  bbox_to_use = bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y
+
+  result_transform = from_origin(bbox_min_x, bbox_max_y, grid_resolution_x, grid_resolution_y)
+
+  steps_y = math.ceil((bbox_max_y - bbox_min_y) / grid_resolution_y)
+  steps_x = math.ceil((bbox_max_x - bbox_min_x) / grid_resolution_x)
 
   impact_data_min = np.zeros((steps_y, steps_x))
   impact_data_max = np.zeros((steps_y, steps_x))
@@ -245,19 +319,6 @@ def calculate_impact(
       impact_data_max[pos_y][pos_x] = min(
         exposure, impact_data_max[pos_y][pos_x]
       )  # limit to max exposure
-
-  nuts3area_filter = Nuts3Area.objects.all()
-
-  if len(countries) > 0 and "ALL" not in countries:
-    nuts3area_filter = nuts3area_filter.filter(country__country_code__in=countries)
-
-  # Only update countries that fit within the bbox
-  nuts3area_filter = nuts3area_filter.filter(
-    bbox_min_x__lt=event_bbox_max_x,
-    bbox_min_y__lt=event_bbox_max_y,
-    bbox_max_x__gt=event_bbox_min_x,
-    bbox_max_y__gt=event_bbox_min_y,
-  )
 
   areas_dict = {
     area.key: {
@@ -529,11 +590,11 @@ def hazard_probabilities_raster_value(
 
 
 def get_events_by_collection_filter_ws(
-  longitude: float = None,
-  latitude: float = None,
+  longitude: float,
+  latitude: float,
   radius: float = 1000,
-  value__min: float = None,
-  value__max: float = None,
+  value__min: float | None = None,
+  value__max: float | None = None,
   limit: int = 100,
 ):
   """

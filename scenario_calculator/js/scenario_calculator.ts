@@ -550,7 +550,7 @@ async function updateCombinedImpact({
     values: geojson.map(
       (feature) => feature.properties?.columns?.[colorResultsBy!] ?? null
     ),
-    title: `Combined impact (TODO UNITS)`,
+    title: RESULT_COLUMN_TITLES[colorResultsBy],
   });
 
   updateRegionLayer(
