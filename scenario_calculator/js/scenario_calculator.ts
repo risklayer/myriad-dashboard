@@ -13,13 +13,13 @@ import jQuery from "jquery";
 import type { Feature } from "geojson";
 
 import chroma from "chroma-js";
-import L, { FeatureGroup } from "leaflet";
+import L from "leaflet";
 import "../../shared/js/leaflet_grayscale";
 
 import "@gnatih/leaflet.legend";
 
 import { LayersControlEvent } from "leaflet";
-import { keyBy, mapValues, pick, uniq } from "lodash";
+import { ceil, floor, keyBy, mapValues, pick, uniq } from "lodash";
 import { toast } from "../../dashboard/js/scripts";
 import {
   components,
@@ -59,7 +59,6 @@ import {
 import { GeometryObject } from "../../static/@types/geojson";
 import { Dictionary } from "../../static/@types/lodash";
 import {
-  downloadGeoJSON,
   getAreasMap,
   getCombinedImpact,
   getEventDetail,
@@ -146,6 +145,53 @@ const filter_circle = L.circle([INITIAL_LATITUDE, INITIAL_LONGITUDE], {
   fillOpacity: 0.1,
 }).addTo(LAYERS.search_location_layer);
 
+function createBBoxGeometry(
+  latitude: number,
+  longitude: number,
+  radius: number
+): L.LatLngExpression[] {
+  const bounds = createCalculationBounds(latitude, longitude, radius);
+  return [
+    bounds.getNorthWest(),
+    bounds.getSouthWest(),
+    bounds.getSouthEast(),
+    bounds.getNorthEast(),
+  ];
+}
+
+function createCalculationBounds(
+  latitude: number,
+  longitude: number,
+  radius: number
+): L.LatLngBounds {
+  return L.latLngBounds(
+    [ceil(latitude + radius, 1), floor(longitude - radius, 1)],
+    [floor(latitude - radius, 1), ceil(longitude + radius, 1)]
+  );
+}
+
+function getCalculationBBoxString() {
+  const center = main_map.getCenter();
+  const latitude = center.lat;
+  const longitude = center.lng;
+  const bounds = createCalculationBounds(latitude, longitude, calculateRadius);
+  return bounds.toBBoxString();
+}
+
+const calculateRadius = 2; // degrees
+
+const calculateBbox = L.polygon(
+  createBBoxGeometry(INITIAL_LATITUDE, INITIAL_LONGITUDE, calculateRadius),
+  {
+    weight: 1,
+    color: "#ffffff",
+    fillColor: "transparent",
+    dashArray: [5, 5],
+    opacity: 0.8,
+    // fillOpacity: 0.1,
+  }
+).addTo(main_map);
+
 const crosshair = L.marker(
   [INITIAL_PROBABILITY_LATITUDE, INITIAL_PROBABILITY_LONGITUDE],
   {
@@ -174,6 +220,15 @@ function stopChoosingPoint() {
   const button = document.getElementById("choose-point-button")!;
   deactivateButton(button);
 }
+
+main_map.addEventListener("move", () => {
+  const center = main_map.getCenter();
+  const latitude = center.lat;
+  const longitude = center.lng;
+  calculateBbox.setLatLngs(
+    createBBoxGeometry(latitude, longitude, calculateRadius)
+  );
+});
 
 main_map.addEventListener("click", (event: L.LeafletMouseEvent) => {
   if (choosingPoint) {
@@ -432,7 +487,7 @@ async function updateCombinedImpact({
     return;
   }
 
-  const bbox = main_map.getBounds().toBBoxString();
+  const bbox = getCalculationBBoxString();
 
   // Download the shapes, areas, values for the selected countries, in parallel
   const [shapes, areaDefinitions, values, events] =
