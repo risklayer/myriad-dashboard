@@ -141,7 +141,7 @@ def filter_columns(
   column_keys_filter = None
 
   if hazard:
-    hazard_filter = Hazard.objects.objects.filter(key=hazard)
+    hazard_filter = Hazard.objects.filter(key=hazard)
     filtered_columns = filtered_columns.filter(Q(hazard__in=hazard_filter) | Q(hazard=None))
 
   if exposure:
