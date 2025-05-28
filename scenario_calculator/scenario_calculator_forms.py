@@ -415,10 +415,9 @@ class ScenarioCalculatorHazardFilterForm(Form):
 
 
 color_choices = [
-  ("impact_data_avrg_lin", "Impact average linear"),
-  ("impact_data_avrg_sqrt", "Impact average square root"),
-  ("impact_data_max", "Impact max"),
-  ("impact_data_min", "Impact min"),
+  ("impact_data_total", "Total impact"),
+  ("impact_data_max", "Max impact"),
+  ("impact_data_min", "Min impact"),
 ]
 
 
@@ -431,11 +430,7 @@ class ScenarioCalculatorCombineEventsForm(Form):
     required=True,
   )
 
-  color_results_by = ChoiceField(
-    choices=color_choices,
-    required=False,
-    initial=("impact_data_avrg_lin", "Impact average linear"),
-  )
+  color_results_by = ChoiceField(choices=color_choices, required=False, initial=color_choices[0])
 
   def __init__(self, *args, **kwargs):
     super(ScenarioCalculatorCombineEventsForm, self).__init__(*args, **kwargs)

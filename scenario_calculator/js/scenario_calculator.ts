@@ -600,15 +600,13 @@ function updateEventFootprintLayer(
 }
 
 const RESULT_COLUMNS = [
-  "impact_data_avrg_lin",
-  "impact_data_avrg_sqrt",
+  "impact_data_total",
   "impact_data_max",
   "impact_data_min",
 ];
 
 const RESULT_COLUMN_TITLES: Record<(typeof RESULT_COLUMNS)[number], string> = {
-  impact_data_avrg_lin: "Average impact (linear)",
-  impact_data_avrg_sqrt: "Average impact (square root)",
+  impact_data_total: "Total impact",
   impact_data_max: "Max impact",
   impact_data_min: "Min impact",
 } as const;
