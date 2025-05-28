@@ -264,7 +264,7 @@ def calculate_impact(
       "instance": area,
       "impact_data_min": 0,
       "impact_data_max": 0,
-      "impact_data_total": 0,
+      "exposure_total": 0,
       "exceeded_curve_max": False,
     }
     for area in nuts3area_filter
@@ -295,7 +295,7 @@ def calculate_impact(
             areas_dict[area.key]["exceeded_curve_max"] = (
               True if exceeded_max_grid[pos_y][pos_x] else False
             )
-            areas_dict[area.key]["impact_data_total"] += float(exposure_raster[pos_y][pos_x])
+            areas_dict[area.key]["exposure_total"] += float(exposure_raster[pos_y][pos_x])
 
   if settings.DEBUG:
     matched = 0
@@ -319,12 +319,12 @@ def calculate_impact(
           "impact_data_min": area_info["impact_data_min"],
           "impact_data_max": area_info["impact_data_max"],
           "exceeded_curve_max": area_info["exceeded_curve_max"],
-          "impact_data_total": area_info["impact_data_total"],
-          "impact_data_min_relative": area_info["impact_data_min"] / area_info["impact_data_total"]
-          if area_info["impact_data_total"]
+          "exposure_total": area_info["exposure_total"],
+          "impact_data_min_relative": area_info["impact_data_min"] / area_info["exposure_total"]
+          if area_info["exposure_total"]
           else 0,
-          "impact_data_max_relative": area_info["impact_data_max"] / area_info["impact_data_total"]
-          if area_info["impact_data_total"]
+          "impact_data_max_relative": area_info["impact_data_max"] / area_info["exposure_total"]
+          if area_info["exposure_total"]
           else 0,
         },
         "geometry": area_info["instance"].geom_json if include_geometry else None,

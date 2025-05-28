@@ -415,9 +415,11 @@ class ScenarioCalculatorHazardFilterForm(Form):
 
 
 color_choices = [
-  ("impact_data_total", "Total impact"),
   ("impact_data_max", "Max impact"),
   ("impact_data_min", "Min impact"),
+  ("impact_data_max_relative", "Max impact (relative)"),
+  ("impact_data_min_relative", "Min impact (relative)"),
+  ("exposure_total", "Total exposure"),
 ]
 
 

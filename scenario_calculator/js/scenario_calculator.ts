@@ -600,15 +600,19 @@ function updateEventFootprintLayer(
 }
 
 const RESULT_COLUMNS = [
-  "impact_data_total",
   "impact_data_max",
   "impact_data_min",
+  "impact_data_max_relative",
+  "impact_data_min_relative",
+  "exposure_total",
 ];
 
 const RESULT_COLUMN_TITLES: Record<(typeof RESULT_COLUMNS)[number], string> = {
-  impact_data_total: "Total impact",
   impact_data_max: "Max impact",
   impact_data_min: "Min impact",
+  impact_data_max_relative: "Max impact (relative)",
+  impact_data_min_relative: "Min impact (relative)",
+  exposure_total: "Total exposure",
 } as const;
 
 function updateRegionLayer(
