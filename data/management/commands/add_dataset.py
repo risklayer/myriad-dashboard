@@ -238,6 +238,13 @@ class Command(BaseCommand):
             if "exposure" in column_metadata:
               exposure = meta_dict_exposure[column_metadata["exposure"]]
 
+            references = list()
+            if "hazard_data_attribution" in column_metadata:
+              references.append("Hazard data: " + column_metadata["hazard_data_attribution"])
+
+            if "exposure_data_attribution" in column_metadata:
+              references.append("Exposure data: " + column_metadata["exposure_data_attribution"])
+
             column, created = DataTableColumn.objects.get_or_create(
               data_table=metadata,
               key=column_key,
@@ -248,6 +255,7 @@ class Command(BaseCommand):
                 "exposure": exposure,
                 "threshold": threshold,
                 "return_period": return_period,
+                "references": references,
               },
             )
             if not created:

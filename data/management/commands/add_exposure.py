@@ -10,6 +10,8 @@ from data.data_region.country_list import (
 )
 from data.import_utils import initialize_nuts3_regions
 from data.models import HrscExposure, HrscExposureColumnValue, HrscExposureRaster
+from data.utils import clear_cache
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -27,7 +29,6 @@ class Command(BaseCommand):
 
     parser.add_argument("--raster-filename", dest="raster_filename", type=str)
     parser.add_argument("--raster-zip-filename", dest="raster_zip_filename", type=str)
-    parser.add_argument("--raster-cell-size", dest="raster_cell_size", type=float)
     parser.add_argument("--raster-format", dest="raster_format", type=str, choices=["tiff"])
 
     parser.add_argument("--nuts3-filename", dest="nuts3_filename", type=str)
@@ -41,7 +42,6 @@ class Command(BaseCommand):
     label: str,
     raster_filename: str = None,
     raster_zip_filename: str = None,
-    raster_cell_size: str = None,
     raster_format: str = None,
     nuts3_filename: str = None,
     nuts3_format: str = None,
@@ -110,9 +110,9 @@ class Command(BaseCommand):
 
       HrscExposureRaster.objects.create(
         exposure=exposure,
-        cell_size=raster_cell_size,
         file=subpath,
         file_type=raster_format,
       )
-        print("Resetting cache")
-    
+
+      print("Resetting cache")
+      clear_cache()

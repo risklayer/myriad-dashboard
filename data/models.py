@@ -388,6 +388,8 @@ class DataTableColumn(models.Model):
     TableMetaReturnPeriod, on_delete=models.CASCADE, null=True, blank=True
   )
 
+  references = models.JSONField(null=True, blank=True)
+
   def to_dict(self, flat=True):
     if flat:
       return {
@@ -399,6 +401,7 @@ class DataTableColumn(models.Model):
         "exposure": self.exposure_id,
         "threshold": self.threshold_id,
         "return_period": self.return_period_id,
+        "references": self.references,
       }
 
     return {
@@ -410,6 +413,7 @@ class DataTableColumn(models.Model):
       "exposure": self.exposure.to_dict(),
       "threshold": self.threshold.to_dict() if self.threshold else None,
       "return_period": self.return_period.to_dict() if self.return_period else None,
+      "references": self.references,
     }
 
   def get_metadata_all(self) -> Dict[str, Union[float, int, str]]:
@@ -988,8 +992,6 @@ class HrscExposure(models.Model, KeyLabelSelection):
 class HrscExposureRaster(models.Model):
   exposure = models.ForeignKey(HrscExposure, on_delete=models.CASCADE)
 
-  cell_size = models.FloatField()
-
   _file_type_choices = [
     ("tiff", "TIFF File"),
   ]
@@ -1041,7 +1043,6 @@ class HrscExposureRaster(models.Model):
 
   def to_dict(self):
     return {
-      "cell_size": self.cell_size,
       "file_type": self.file_type,
       "file": str(self.file),
     }
