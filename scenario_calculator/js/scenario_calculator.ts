@@ -866,8 +866,10 @@ function displayDataTable(
         area,
         country,
         eventsMap,
+        columnsMap: RESULT_COLUMN_TITLES,
         columns,
         properties: geojson[row]!.properties.columns,
+        formatValue: floatTo3Digits,
       });
       const areaDetails = document.getElementById("area-details")!;
       areaDetails.innerHTML = contents;
