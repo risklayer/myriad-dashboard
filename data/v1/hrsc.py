@@ -276,7 +276,7 @@ def calculate_impact(
     elif event.footprint_type == "lazy_py_coord_vals":
       footprint_location_dict = dict()
       for location_x, location_y, value in event.get_footprint(bbox_to_use):
-        exposure_row, exposure_col = result_transform.rowcol(location_x, location_y)
+        exposure_row, exposure_col = rasterio.transform.rowcol(result_transform, location_x, location_y)
 
         if (exposure_row, exposure_col) not in footprint_location_dict:
           footprint_location_dict[(exposure_row, exposure_col)] = []
@@ -285,8 +285,8 @@ def calculate_impact(
 
       footprint_value_dict = dict()
 
-      for (exposure_row, exposure_col), values in footprint_location_dict:
-        footprint_value_dict[(exposure_row, exposure_col)] = sum(values) / len(values)
+      for coord, values in footprint_location_dict.items():
+        footprint_value_dict[coord] = sum(values) / len(values)
 
       for pos_y in range(steps_y):
         for pos_x in range(steps_x):
@@ -301,8 +301,7 @@ def calculate_impact(
             val = exposure_raster[pos_x][pos_y]
             if np.isnan(val):
               val = 0
-            impact_row, impact_col = result_transform.rowcol(memfile_x, memfile_y)
-            impact_value_grid[impact_row][impact_col] += val * impact_value
+            impact_value_grid[pos_y][pos_x] += val * impact_value
 
     else:
       error_handler(404, "The selected event has a footprint type that is not recognised.")

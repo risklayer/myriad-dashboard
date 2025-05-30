@@ -569,6 +569,9 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
       x2 = values_xy[i + 1][0]
       y2 = values_xy[i + 1][1]
 
+      if x2==x1:
+        continue # e.g. if there are 2 zeros for x at the beginning
+
       return (y1 + ((value - x1) / (x2 - x1)) * (y2 - y1)), False
 
     return values_xy[-1][1], True  # return maximum
