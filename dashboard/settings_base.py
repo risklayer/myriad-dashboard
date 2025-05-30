@@ -42,6 +42,7 @@ INSTALLED_APPS = [
   "vulnerability_index_editor",
   "scenario_calculator",
   "showcase",
+  "mrr_observatory",
   "data",
 ]
 
@@ -55,7 +56,7 @@ MIDDLEWARE = [
   "django.middleware.clickjacking.XFrameOptionsMiddleware",
   "django_htmx.middleware.HtmxMiddleware",
   "django.middleware.gzip.GZipMiddleware",
-  "django_browser_reload.middleware.BrowserReloadMiddleware",
+  # "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
 
 ROOT_URLCONF = "dashboard.urls"

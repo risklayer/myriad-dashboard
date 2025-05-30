@@ -6,5 +6,5 @@ class ScenarioCalculatorConfig(AppConfig):
   verbose_name = "Multi-Hazard Scenario Calculator and DSS"
   nav_name = "Scenario calculator/DSS"
   description = "A tool for calculating the probability, or combined impact, of two hazard events in NUTS3 regions of Europe"
-  icon = "calendar-range"
+  icon = "intersect"
   myriad = True

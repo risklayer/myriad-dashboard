@@ -1,0 +1,31 @@
+{% extends "layouts/base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Multi-risk and resiliency observatory - {{ block.super }}
+{% endblock title %}
+
+{% block head %}
+  {{ block.super }}
+{% endblock head %}
+
+{% block pagetitle %}
+  <div class="container d-flex justify-content-between">
+    <h1 class="mb-4">Multi-risk and resiliency observatory</h1>
+    <div class="float-end"></div>
+  </div>
+{% endblock pagetitle %}
+
+{% block mainbody %}
+  {% comment %} <div class="row g-3"> {% endcomment %}
+  <div class="container">
+    <p>
+      Data for the observatory is currently being processed. Please check back soon!
+    </p>
+    <img src="{% static 'img/tourism_nights_spent.png' %}"
+         title="A sample map showing 'Tourism Nights Spent' across Europe"
+         class="w-100" />
+  </div>
+  {% comment %} </div> {% endcomment %}
+{% endblock mainbody %}
