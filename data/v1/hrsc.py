@@ -375,9 +375,9 @@ def calculate_impact(
     list(
       set(
         [
-          *exposure.references,
+          *(exposure.references or list()),
           # *[reference for curve in all_vulnerability_curves for reference in curve.references],
-          *[reference for event in all_events for reference in event.references],
+          # *[reference for event in all_events for reference in (event.references or list())],
         ]
       )
     )

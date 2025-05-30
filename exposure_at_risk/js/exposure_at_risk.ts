@@ -51,7 +51,7 @@ import {
   getValuesMap,
 } from "./exposure_at_risk_api";
 import { TableDatum } from "./types";
-import { createDataTableReferencesButton } from "../../shared/js/table_utils";
+import { createDataTableReferencesButtonArray } from "../../shared/js/table_utils";
 
 declare global {
   interface Window {
@@ -575,7 +575,7 @@ function displayDataTable(
             text: "GeoJSON",
             action: getGeoJSON,
           },
-          createDataTableReferencesButton(
+          ...createDataTableReferencesButtonArray(
             columns.map((col) => columnsMap[col]?.references ?? []).flat()
           ),
         ],

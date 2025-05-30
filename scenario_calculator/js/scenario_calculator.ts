@@ -51,7 +51,7 @@ import {
   LayerNames,
   QuantisationType,
 } from "../../shared/js/map_tools";
-import { createDataTableReferencesButton } from "../../shared/js/table_utils";
+import { createDataTableReferencesButtonArray } from "../../shared/js/table_utils";
 import {
   createGeoJSONDownload,
   floatTo3Digits,
@@ -994,7 +994,7 @@ function displayDataTable(
             text: "GeoJSON",
             action: () => getGeoJSON(geojson),
           },
-          createDataTableReferencesButton(references),
+          ...createDataTableReferencesButtonArray(references),
         ],
       } as DataTableFeature,
       bottomStart: "info",
