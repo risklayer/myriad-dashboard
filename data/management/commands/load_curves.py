@@ -41,17 +41,17 @@ class Command(BaseCommand):
     for index, row in data.iterrows():
       name = row["Name"]
       hazard = row["Hazard"]
-      quality = row["Quality"]
-      con_description_1 = row["Con_Description_1"]
-      con_description_2 = row["Con_Description_2"]
-      con_description_3 = row["Con_Description_3"]
-      occ_description_1 = row["Occ_Description_1"]
-      occ_description_2 = row["Occ_Description_2"]
-      occ_description_3 = row["Occ_Description_3"]
+      quality = row.get("Quality", "")
+      con_description_1 = row.get("Con_Description_1", "")
+      con_description_2 = row.get("Con_Description_2", "")
+      con_description_3 = row.get("Con_Description_3", "")
+      occ_description_1 = row.get("Occ_Description_1", "")
+      occ_description_2 = row.get("Occ_Description_2", "")
+      occ_description_3 = row.get("Occ_Description_3", "")
       coverage = row["Coverage"]
       myriad_sectors_list = [c.strip() for c in row["MYRIAD_Sectors_Applicable"].split(";")]
       country_list = (
-        [c.strip() for c in row["Country"].split(",")] if isinstance(row["Country"], str) else []
+        [c.strip() for c in row.get("Country", "").split(",")] if isinstance(row.get("Country", ""), str) else []
       )
       x_values = row["IM_vals"]
       y_values = row["Y_vals"]
@@ -73,19 +73,19 @@ class Command(BaseCommand):
       metadata = dict(row)
       metadata.pop("Name")
       metadata.pop("Hazard")
-      metadata.pop("Quality")
-      metadata.pop("Con_Description_1")
-      metadata.pop("Con_Description_2")
-      metadata.pop("Con_Description_3")
-      metadata.pop("Occ_Description_1")
-      metadata.pop("Occ_Description_2")
-      metadata.pop("Occ_Description_3")
+      metadata.pop("Quality", "")
+      metadata.pop("Con_Description_1", "")
+      metadata.pop("Con_Description_2", "")
+      metadata.pop("Con_Description_3", "")
+      metadata.pop("Occ_Description_1", "")
+      metadata.pop("Occ_Description_2", "")
+      metadata.pop("Occ_Description_3", "")
       metadata.pop("Coverage")
       metadata.pop("MYRIAD_Sectors_Applicable")
-      metadata.pop("Country")
+      metadata.pop("Country", "")
       metadata.pop("IM_vals")
-      metadata.pop("Y_vals")
-      metadata.pop("Y_Vals")
+      metadata.pop("Y_vals", "")
+      metadata.pop("Y_Vals", "")
 
       items = metadata.items()
       metadata = {k: str(v) for k, v in items if isinstance(v, str) or not isnan(v)}
