@@ -14,6 +14,7 @@ from data.models import (
   DataTableColumnMetadata,
   DataTableColumnMetadataValueString,
   DataTableColumnMetadataValueFloat,
+  TableMetaExposureGroup,
 )
 from django.core.management.base import BaseCommand
 from data.data_region.country_list import (
@@ -61,6 +62,13 @@ class Command(BaseCommand):
           if cls == Hazard:
             unit = data.pop("unit", None)
             instance_cls = cls.get_or_create_by_label(label=data["label"], slug_key=key)
+          elif cls == TableMetaExposure:
+            group = data.pop("group", None)
+            if group:
+              group = TableMetaExposureGroup.get_or_create_by_label(label=group)
+            instance_cls = cls.get_or_create_by_label(
+              label=data["label"], slug_key=key, group=group
+            )
           else:
             instance_cls = cls.get_or_create_by_label(
               label=data["label"], slug_key=key, unit=data.get("unit", None)
@@ -108,7 +116,7 @@ class Command(BaseCommand):
 
         column_metadata_dict[key] = meta
 
-    regexp_str = "^[a-zA-Z_\-][0-9a-zA-Z_\-]*$"
+    regexp_str = "^[a-zA-Z_-][0-9a-zA-Z_-]*$"
     table_name_check = re.compile(regexp_str)
     if format == "gpkg-sqlite":
       all_values = list()

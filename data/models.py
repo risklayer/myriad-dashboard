@@ -352,16 +352,25 @@ class DataTableMetadata(models.Model):
     return "[" + self.key + "]"
 
 
+class TableMetaExposureGroup(models.Model, KeyLabelSelection):
+  key = models.TextField(unique=True)
+  label = models.TextField()
+
+
 class TableMetaExposure(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True)
   label = models.TextField()
   unit = models.TextField(null=True, blank=True)
+  group = models.ForeignKey(
+    TableMetaExposureGroup, on_delete=models.SET_NULL, default=None, blank=True, null=True
+  )
 
   def to_dict(self):
     return {
       "key": self.key,
       "label": self.label,
       "unit": self.unit,
+      "group": self.group.label if self.group else None,
     }
 
 
@@ -569,8 +578,8 @@ class VulnerabilityCurve(models.Model, KeyLabelSelection):
       x2 = values_xy[i + 1][0]
       y2 = values_xy[i + 1][1]
 
-      if x2==x1:
-        continue # e.g. if there are 2 zeros for x at the beginning
+      if x2 == x1:
+        continue  # e.g. if there are 2 zeros for x at the beginning
 
       return (y1 + ((value - x1) / (x2 - x1)) * (y2 - y1)), False
 
