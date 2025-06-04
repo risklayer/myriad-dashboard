@@ -1,4 +1,4 @@
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
@@ -101,6 +101,10 @@ def show_curve(request):
   pinned = append_pinned_items(pinned, PinType.CURVE)
 
   curve = VulnerabilityCurve.objects.filter(key=request.POST.get("row", None)).first()
+
+  if not curve:
+    return HttpResponseNotFound("No curve found matching that id")
+
   pin_label = curve.label
 
   panel = int(request.POST.get("panel") or 1)

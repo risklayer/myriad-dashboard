@@ -1,3 +1,4 @@
+from typing import Tuple
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import (
   Layout,
@@ -98,7 +99,7 @@ class CurveExplorerFilterForm(Form):
     required=False,
   )
 
-  def __init__(self, *args, panel: int, **kwargs):
+  def __init__(self, *args, panel: int | None, **kwargs):
     auto_id = "id_panel_" + str(panel) + "_%s"
     super(CurveExplorerFilterForm, self).__init__(*args, auto_id=auto_id, **kwargs)
     for field in self:
@@ -127,7 +128,7 @@ class CurveExplorerFilterForm(Form):
 class CurveExplorerRowForm(Form):
   row = ChoiceField(
     required=False,
-    choices=(),
+    choices=[],
     label="Choose a curve",
   )
 
@@ -155,7 +156,7 @@ class CurveExplorerRowForm(Form):
     self.update_row_options(possible_values, empty_message)
 
   def update_row_options(
-    self, choices: list[str], empty_message="Please select a filter to choose a curve"
+    self, choices: list[Tuple[str, str]], empty_message="Please select a filter to choose a curve"
   ):
     if len(choices):
       self.fields["row"].choices = choices

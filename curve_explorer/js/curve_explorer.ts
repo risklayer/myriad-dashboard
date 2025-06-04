@@ -1,7 +1,37 @@
-let vuln_charts = new Map();
-let vuln_datasets = new Map();
+import {
+  CategoryScale,
+  Chart,
+  LinearScale,
+  ScatterController,
+  PointElement,
+  LineElement,
+} from "chart.js";
 
-function displayCurveChart(panel, force) {
+declare global {
+  interface Window {
+    displayCurveChart: (panel: number, force: boolean) => void;
+    copyFilters: (panel: number) => void;
+    copyToClipboard: (selector: string) => void;
+    setFilters: (panel: number) => Promise<void>;
+    downloadFile: (selector: string) => Promise<void>;
+  }
+}
+
+Chart.register(
+  CategoryScale,
+  LinearScale,
+  ScatterController,
+  PointElement,
+  LineElement
+);
+
+const vuln_charts = new Map();
+const vuln_datasets = new Map();
+
+window.displayCurveChart = function displayCurveChart(
+  panel: number,
+  force: boolean
+) {
   const curves = [0, 1].map(getCurveObject);
   const [curve1, curve2] = curves;
   const [chart1, chart2, combined_chart] = [0, 1, 2].map((i) =>
@@ -13,7 +43,9 @@ function displayCurveChart(panel, force) {
     if (!id) {
       return;
     }
-    const row_selector = document.querySelector(`#id_panel_${i}_row`);
+    const row_selector = document.querySelector(
+      `#id_panel_${i}_row`
+    ) as HTMLInputElement;
     // Ensure that dropdown gets updated to match when filtering or showing
     // a pinned curve (seems to be a htmx bug)
     if (row_selector) {
@@ -27,7 +59,8 @@ function displayCurveChart(panel, force) {
   if (!curve2) {
     chart2?.destroy?.();
   }
-  let show_combined =
+
+  const show_combined =
     curve1 &&
     curve2 &&
     curve1.hazard === curve2.hazard &&
@@ -37,7 +70,7 @@ function displayCurveChart(panel, force) {
   if (!show_combined) {
     combined_chart?.destroy?.();
     document
-      .getElementById("combined-curve-chart-card")
+      .getElementById("combined-curve-chart-card")!
       .classList.add("d-none");
   }
 
@@ -51,38 +84,45 @@ function displayCurveChart(panel, force) {
   if (show_combined) {
     // Populate the combined chart
     document
-      .getElementById("combined-curve-chart-card")
+      .getElementById("combined-curve-chart-card")!
       .classList.remove("d-none");
     drawChart(2, force, curve1, curve2.key !== curve1.key ? curve2 : null);
   }
-}
+};
 
-function drawChart(panel, force, ...curves) {
+function drawChart(
+  panel: number,
+  force: boolean,
+  ...curves: Record<string, unknown>[]
+) {
   if (!curves.length) {
     return;
   }
 
   const styles = window.getComputedStyle(document.body);
   const body = styles.getPropertyValue("--bs-body-color");
-  const highlight = styles.getPropertyValue("--bs-highlight-color");
-  // const bg = styles.getPropertyValue("--bs-body-bg");
   const border = styles.getPropertyValue("--bs-border-color");
   const color1 = styles.getPropertyValue("--bs-blue");
   const color2 = styles.getPropertyValue("--bs-purple");
   const colors = [color1, color2];
 
-  let datasets = curves.filter(Boolean).map((curve, i) => {
-    const data = curve.values_xy.map(([x, y]) => ({ x, y }));
+  const datasets = curves.filter(Boolean).map((curve, i) => {
+    const data = (curve.values_xy as [number, number][]).map(([x, y]) => ({
+      x,
+      y,
+    }));
     return {
       data,
-      color: colors[i],
-      borderColor: colors[i],
-      backgroundColor: colors[i],
-      label: curve.label,
+      color: colors[i]!,
+      borderColor: colors[i]!,
+      backgroundColor: colors[i]!,
+      label: curve.label as string,
     };
   });
 
-  const canvas = document.getElementById(`vulnerability-curve-chart-${panel}`);
+  const canvas = document.getElementById(
+    `vulnerability-curve-chart-${panel}`
+  ) as HTMLCanvasElement;
   const vuln_dataset = vuln_datasets.get(panel);
   let vuln_chart = vuln_charts.get(panel);
   if (
@@ -90,8 +130,8 @@ function drawChart(panel, force, ...curves) {
     vuln_chart &&
     vuln_chart.canvas &&
     vuln_dataset &&
-    vuln_dataset.IM_units === curves[0].IM_units &&
-    vuln_dataset.Y_Description === curves[0].Y_Description
+    vuln_dataset.IM_units === curves[0]!.IM_units &&
+    vuln_dataset.Y_Description === curves[0]!.Y_Description
   ) {
     // If the chart already exists and has equivalent axes, just update it
     vuln_chart.data = {
@@ -121,7 +161,7 @@ function drawChart(panel, force, ...curves) {
           x: {
             title: {
               display: true,
-              text: `Intensity Measure (${curves[0].IM_units})`,
+              text: `Intensity Measure (${curves[0]!.IM_units})`,
             },
             grid: {
               color: border,
@@ -130,7 +170,7 @@ function drawChart(panel, force, ...curves) {
           y: {
             title: {
               display: true,
-              text: curves[0].Y_Description || "Damage Ratio",
+              text: (curves[0]!.Y_Description as string) || "Damage Ratio",
             },
             grid: {
               color: border,
@@ -147,16 +187,16 @@ function drawChart(panel, force, ...curves) {
 }
 
 // Extract the JSON of the curve from the textarea
-function getCurveObject(panel) {
+function getCurveObject(panel: number) {
   const curve_element = document.getElementById(
     `id_curve_values_json-${panel}`
-  );
+  ) as HTMLTextAreaElement;
   const curve = curve_element && JSON.parse(curve_element.value);
   return curve;
 }
 
-async function copyToClipboard(selector) {
-  const textarea = document.querySelector(selector);
+window.copyToClipboard = async function copyToClipboard(selector: string) {
+  const textarea = document.querySelector(selector) as HTMLTextAreaElement;
   const text = textarea.value;
   try {
     await navigator.clipboard.writeText(text);
@@ -166,8 +206,9 @@ async function copyToClipboard(selector) {
     console.error("Failed to copy: ", err);
     toast("Data was NOT copied to clipboard");
   }
-}
-async function downloadFile(selector) {
+};
+
+window.downloadFile = async function downloadFile(selector: string) {
   const textarea = document.querySelector(selector);
   const text = textarea.value;
   try {
@@ -188,40 +229,40 @@ async function downloadFile(selector) {
     console.error("Failed to download: ", err);
     toast("Error creating download");
   }
-}
+};
 
-function copyFilters(panel) {
+window.copyFilters = function copyFilters(panel: number) {
   const sourceForm = document.querySelector(
     `#panel-${panel} .curve-filter-form`
-  );
+  ) as HTMLFormElement;
   const targetForm = document.querySelector(
     `#panel-${1 - panel} .curve-filter-form`
-  );
+  ) as HTMLFormElement;
   for (const input of sourceForm.elements) {
     if (input.tagName === "SELECT") {
       const name = input.name;
-      targetForm[name].value = input.value;
+      (targetForm[name] as HTMLSelectElement).value = input.value;
     }
     targetForm.dispatchEvent(new Event("change"));
   }
-}
+};
 
-function setFilters(panel) {
+window.setFilters = function setFilters(panel: number) {
   const sourceTable = document.querySelector(
     `#panel-${panel} .curve-details-table`
-  );
+  ) as HTMLTableElement;
   const targetForm = document.querySelector(
     `#panel-${panel} .curve-filter-form`
-  );
+  ) as HTMLFormElement;
   for (const th of sourceTable.querySelectorAll("th")) {
     const name = th.dataset["name"];
     if (name && targetForm[name]) {
-      value = th.dataset["value"];
-      targetForm[name].value = value;
+      const value = th.dataset["value"];
+      (targetForm[name] as HTMLInputElement).value = value;
     }
   }
   targetForm.dispatchEvent(new Event("change"));
-}
+};
 
 addEventListener("DOMContentLoaded", () => {
   // When opening/closing one set of filters, do the same for the other one
@@ -229,7 +270,7 @@ addEventListener("DOMContentLoaded", () => {
   window.addEventListener(
     "toggle",
     (event) => {
-      const el = event.target;
+      const el = event.target as HTMLDetailsElement;
       pairedTogglers.forEach((klass) => {
         if (el.classList.contains(klass)) {
           for (const el2 of document.querySelectorAll(`.${klass}`)) {
@@ -244,15 +285,17 @@ addEventListener("DOMContentLoaded", () => {
   );
 
   const config = { attributes: true, childList: false, subtree: false };
-  const observer = new MutationObserver((mutationList, observer) => {
+  const observer = new MutationObserver((mutationList) => {
     for (const mutation of mutationList) {
       if (
         mutation.type === "attributes" &&
         mutation.attributeName === "data-bs-theme"
       ) {
-        console.log(`Theme changed to ${mutation.target.dataset.bsTheme}.`);
-        displayCurveChart(0, true);
-        displayCurveChart(1, true);
+        console.log(
+          `Theme changed to ${(mutation.target as HTMLSelectElement).dataset.bsTheme}.`
+        );
+        window.displayCurveChart(0, true);
+        window.displayCurveChart(1, true);
       }
     }
   });

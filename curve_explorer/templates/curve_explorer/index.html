@@ -15,7 +15,6 @@
 
 {% block afterbody %}
     {{ block.super }}
-    <script src="{% static 'chart.js/dist/chart.umd.js' %}"></script>
 {% endblock afterbody %}
 
 {% block pagetitle %}
@@ -48,6 +47,6 @@
             {% include "curve_explorer/curve_chart.html" with caption="Curve comparison" panel=2 only %}
         </div>
     </div>
-    <script src="{% static "js/curve_explorer.js" %}"></script>
+    <script type="module" src="{% static "js/curve_explorer.js" %}"></script>
     <script id="update-curve-script"></script>
 {% endblock mainbody %}
