@@ -28,7 +28,6 @@ import fiona
 
 import json
 
-from django.db import models
 from typing import Type, Dict
 
 from data.utils import clear_cache

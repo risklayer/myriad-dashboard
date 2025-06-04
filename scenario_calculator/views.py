@@ -1,6 +1,5 @@
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
-from humanize import naturaldelta
 
 from data.models import Hazard, HrscEvent, HrscHazardProbabilityRasterInstance
 from scenario_calculator.config import (

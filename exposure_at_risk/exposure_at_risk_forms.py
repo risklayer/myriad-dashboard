@@ -8,7 +8,6 @@ from django.forms import (
   ChoiceField,
   FloatField,
   Form,
-  ModelChoiceField,
   SelectMultiple,
 )
 

@@ -1,4 +1,3 @@
-from typing import List
 from django.http import HttpRequest
 from django.views.decorators.cache import cache_page
 from ninja import Query, Router

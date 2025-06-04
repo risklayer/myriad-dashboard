@@ -1,6 +1,6 @@
 from django import template
 
-from data.models import DataTableColumn, HrscEvent
+from data.models import HrscEvent
 
 register = template.Library()
 

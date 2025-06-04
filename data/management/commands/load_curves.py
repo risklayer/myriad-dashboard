@@ -51,7 +51,9 @@ class Command(BaseCommand):
       coverage = row["Coverage"]
       myriad_sectors_list = [c.strip() for c in row["MYRIAD_Sectors_Applicable"].split(";")]
       country_list = (
-        [c.strip() for c in row.get("Country", "").split(",")] if isinstance(row.get("Country", ""), str) else []
+        [c.strip() for c in row.get("Country", "").split(",")]
+        if isinstance(row.get("Country", ""), str)
+        else []
       )
       x_values = row["IM_vals"]
       y_values = row["Y_vals"]

@@ -1,6 +1,5 @@
-from django.http import HttpResponseNotFound
 from django.shortcuts import render
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET
 
 # from shared.pin import PinType, append_pinned_items, get_pinned, get_pinned_keys
 from shared.shared_forms import MapSettingsForm, RegionsForm
