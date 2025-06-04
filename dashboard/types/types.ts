@@ -19,3 +19,7 @@ declare module "*.jst" {
   ) => string;
   export default fn;
 }
+
+declare global {
+  const toast: (message: string) => void;
+}
