@@ -58,11 +58,14 @@ class ExposureAtRiskFilterForm(Form):
   )
   exposure = LabelSelectionField(
     sentence_case=True,
-    queryset=TableMetaExposure.objects.all().order_by("label"),
+    queryset=TableMetaExposure.objects.all()
+    .select_related("group")
+    .order_by("group__label", "label"),
     empty_label="",
     to_field_name="key",
     required=False,
     initial=0,
+    group_by="group.label",
   )
   # We don't use multiple but use it as a hack so it has no blank options
   column = LabelSelectionMultipleField(

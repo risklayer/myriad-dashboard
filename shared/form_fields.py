@@ -1,16 +1,44 @@
+from itertools import groupby
 from django.forms import (
   ModelChoiceField,
   ModelMultipleChoiceField,
 )
 
+from django.forms.models import (
+  ModelChoiceIterator,
+)
+
 from data.models import Hazard
+from shared.utils import rgetattr
+
+
+class GroupedModelChoiceIterator(ModelChoiceIterator):
+  def __init__(self, field, *args, group_by: str, **kwargs):
+    super(GroupedModelChoiceIterator, self).__init__(field, *args, **kwargs)
+    self.group_by = group_by
+
+  def __iter__(self):
+    if self.field.empty_label is not None:
+      yield ("", self.field.empty_label)
+    queryset = self.field.queryset
+    # Can't use iterator() when queryset uses prefetch_related()
+    if not queryset._prefetch_related_lookups:
+      queryset = queryset.iterator()
+
+    groups = groupby(queryset, key=lambda x: rgetattr(x, self.group_by, None))
+    for group, values in groups:
+      yield (group, [self.choice(value) for value in values])
 
 
 class LabelSelectionField(ModelChoiceField):
-  def __init__(self, *args, title_case=False, sentence_case=False, **kwargs):
+  def __init__(
+    self, *args, title_case=False, sentence_case=False, group_by: str | None = None, **kwargs
+  ):
     super(LabelSelectionField, self).__init__(*args, **kwargs)
     self.title_case = title_case
     self.sentence_case = sentence_case
+    if group_by:
+      self.iterator = lambda s: GroupedModelChoiceIterator(s, group_by=group_by)
 
   def label_from_instance(self, obj):
     if self.title_case:

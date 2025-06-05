@@ -1,3 +1,6 @@
+from functools import reduce
+
+
 def float_to_3_digits(value: float) -> str:
   if isinstance(value, str):
     return value
@@ -31,3 +34,10 @@ def float_to_3_digits(value: float) -> str:
 def make_choices(items: set, include_blank=True, sort=True, blank: str = "Please select"):
   choices = [(x, x if x else blank) for x in (sorted(items) if sort else items)]
   return [(None, "")] + choices if include_blank else choices
+
+
+def rgetattr(obj, attr, *args):
+  def _getattr(obj, attr):
+    return getattr(obj, attr, *args)
+
+  return reduce(_getattr, [obj] + attr.split("."))
