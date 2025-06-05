@@ -11,7 +11,7 @@ from data.api_shared import (
   CountriesEnum,
 )
 from data.models import DataTableColumn, DataTableColumnValue, Nuts3Area
-from data.schemas import AreaValuesSchema
+from data.schemas import AreaValuesWithColumnsSchema
 
 router = Router(tags=["Values"])
 
@@ -57,7 +57,14 @@ def values(
   return result
 
 
-@router.get("/area", response=AreaValuesSchema)
+@router.get(
+  "/area",
+  response=AreaValuesWithColumnsSchema,
+  exclude_unset=False,
+  exclude_none=False,
+  exclude_defaults=False,
+  by_alias=True,
+)
 def area(request: HttpRequest, nuts3_key: str, columns: List[str] = Query([])):
   """Returns nuts3 area with all or selected values"""
   area = get_object_or_404(Nuts3Area, key=nuts3_key)
@@ -73,5 +80,5 @@ def area(request: HttpRequest, nuts3_key: str, columns: List[str] = Query([])):
   return {
     "NUTS_ID": area.key,
     "country_code": area.country.country_code,
-    "columns": {v.data_table_column.key: v.value for v in values},
+    **{v.data_table_column.key: v.value for v in values},
   }

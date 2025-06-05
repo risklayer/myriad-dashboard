@@ -191,23 +191,21 @@ class Nuts3AreaSchema(ModelSchema):
     ]
 
 
-class ShapeProperties(Schema):
+class AreaPropertiesSchema(Schema):
   NUTS_ID: str
-  country_id: str
+  country_code: str
+
+
+type AreaValuesWithColumnsSchema = Dict[str, float | str] | AreaPropertiesSchema
 
 
 class ShapeFeature(Schema):
   type: Literal["Feature"]
   geometry: MultiPolygon
-  # TODO: this outputs the correct types in TS and in the results, but doesn't
-  # reflect the ShapeProperties fields in Swagger
-  properties: Union[Dict[str, str | float | List[str]], ShapeProperties]
-
-
-class AreaValuesSchema(Schema):
-  NUTS_ID: str
-  country_code: str
-  columns: Dict[str, float] = {}
+  # Note: this outputs the correct types in TS, swagger schemas and in the
+  # returned results, but doesn't reflect the AreaPropertiesSchema fields in
+  # Swagger examples
+  properties: AreaValuesWithColumnsSchema
 
 
 class FeatureCollectionSchema(Schema):
