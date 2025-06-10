@@ -287,7 +287,7 @@ function updateRegionLayer(
       layer.on({
         click: async (event) => {
           const areaSidebarTemplate = (
-            await import("./area_sidebar_template.jst")
+            await import("./area_sidebar_template.ejs")
           ).default;
           const { feature } = event.target;
           const area = areaDefinitions[feature.properties.NUTS_ID]!;
@@ -505,7 +505,7 @@ function displayDataTable(
     // _col: number
   ) =>
     cell.addEventListener("click", async () => {
-      const areaSidebarTemplate = (await import("./area_sidebar_template.jst"))
+      const areaSidebarTemplate = (await import("./area_sidebar_template.ejs"))
         .default;
       const area = rowData.region!;
       const country = area.country;

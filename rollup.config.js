@@ -24,9 +24,9 @@ export default {
   },
   plugins: [
     {
-      name: "jst",
+      name: "ejs",
       async transform(src, id) {
-        if (id.endsWith(".jst")) {
+        if (id.endsWith(".ejs")) {
           const code = _.template(src, {
             variable: "data",
             sourceURL: id,
@@ -47,7 +47,7 @@ export default {
     }),
     isProduction && (await import("@rollup/plugin-terser")).default(),
     createRollupLicensePlugin({
-      exclude: "*.jst",
+      exclude: "*.ejs",
       additionalFiles: {
         "oss-licenses.html": async (items) => {
           const pythonLicensesFile = fs.readFileSync(
@@ -57,12 +57,12 @@ export default {
             _.mapKeys(item, (value, key) => _.camelCase(key))
           );
           const licensesTemplate = _.template(
-            fs.readFileSync("./licensesTemplate.jst", "utf-8"),
+            fs.readFileSync("./licensesTemplate.ejs", "utf-8"),
             {
               variable: "data",
               client: false,
               strict: true,
-              sourceURL: "licensesTemplate.jst",
+              sourceURL: "licensesTemplate.ejs",
             }
           );
           return licensesTemplate({

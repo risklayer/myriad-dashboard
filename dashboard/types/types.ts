@@ -1,6 +1,6 @@
 import { Data, EscapeCallback, IncludeCallback, RethrowCallback } from "ejs";
 
-declare module "*.jst" {
+declare module "*.ejs" {
   /**
    * Generates HTML markup from an EJS template.
    *

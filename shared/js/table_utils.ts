@@ -33,7 +33,7 @@ export function createDataTableReferencesButtonArray(references?: string[]) {
         "data-bs-toggle": "popover",
       },
       action: async (event: MouseEvent) => {
-        const referencesTemplate = (await import("./reference_list.jst"))
+        const referencesTemplate = (await import("./reference_list.ejs"))
           .default;
         const button = event.currentTarget as HTMLButtonElement;
         const contentString = referencesTemplate({
