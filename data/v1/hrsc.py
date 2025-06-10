@@ -33,7 +33,7 @@ from django.contrib.gis.db.models.functions import Distance as DBDistance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import Distance as MDistance
 from django.db.models import Q
-from django.http import HttpRequest
+from django.http import HttpRequest, QueryDict
 from django.views.decorators.cache import cache_page
 from ninja import Query, Router
 from ninja.decorators import decorate_view
@@ -56,7 +56,7 @@ def error_handler(code, message) -> NoReturn:
 @router.get("/scenarios", tags=["HRSC"], response=List[HrscScenarioSchema])
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def scenarios(request: HttpRequest):
-  """Returns a list of available Scenarios"""
+  """Returns a list of all available Scenarios"""
   return [scenario.to_dict() for scenario in HrscScenario.objects.all()]
 
 
@@ -65,12 +65,24 @@ def scenarios(request: HttpRequest):
 def calculate_impact(
   request: HttpRequest,
   exposure_key: str,
-  event_ids: List[int] = Query([]),
-  countries: List[CountriesEnum] = Query([]),
-  bbox: str | None = None,
-  include_geometry: bool = True,
+  event_ids: Query[List[int]],
+  bbox: str,
+  countries: Query[List[CountriesEnum]] = [],
+  include_geometry: bool = False,
 ):
-  """calculate the risk footprint for a given scenario and exposure, returns a geojson"""
+  """
+  Calculates the risk footprint for a given scenario and exposure, returns a geojson.
+
+  Args:
+    * exposure_key: the key of the exposure type to use to assess the impact
+    * event_ids: IDs of events to combine. It is recommended to use two events.
+    * bbox: a bounding box string (degrees) in the format "<min_x>,<min_y>,<max_x>,<max_y>".
+      The bbox is used primarily to limit the scope of winterstorm calculations,
+      but may be expanded when calculating results to ensure full coverage of
+      any provided countries.
+    * countries: optional list of countries for which to calculate impact.
+    * include_geometry: return geojson polygons for each region with the results.
+  """
   exposure = HrscExposure.objects.get(key=exposure_key)
 
   exposure_raster_dbobj = HrscExposureRaster.objects.get(exposure=exposure)
@@ -94,6 +106,9 @@ def calculate_impact(
   use_event_bbox = True
   found_event_bbox = False
 
+  # Loop through each of the events to find the minimum resolution and the bounding
+  # box that encompassess all events. Does not apply to lazy_py_coord_vals events
+  # such as winter storms.
   for this_event_id in event_ids:
     event = HrscEvent.objects.get(id=this_event_id)
 
@@ -143,6 +158,7 @@ def calculate_impact(
         f"Event footprint needed in order to calculate risk. The selected event {event.label} has a footprint type that is not recognised.",
       )
 
+  # If only using tiff events we use the event bounds as the bounding box instead
   if use_event_bbox and found_event_bbox:
     bbox_min_x = event_bbox_min_x
     bbox_max_x = event_bbox_max_x
@@ -154,6 +170,7 @@ def calculate_impact(
   if len(countries) > 0 and "ALL" not in countries:
     nuts3area_filter = nuts3area_filter.filter(country__country_code__in=countries)
 
+  # Find all areas with a bbox that at least partially overlaps the event bbox
   nuts3area_filter_bboxed = nuts3area_filter.filter(
     bbox_min_x__lt=bbox_max_x,
     bbox_min_y__lt=bbox_max_y,
@@ -167,6 +184,7 @@ def calculate_impact(
   area_bbox_max_y = None
 
   # Find the bounding box of all selected areas
+  # TODO: can do this in SQL
   areas_found = False
   for area in nuts3area_filter_bboxed:
     areas_found = True
@@ -201,6 +219,7 @@ def calculate_impact(
 
   bbox_to_use = bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y
 
+  # Create the grid for the final bbox and resolution
   result_transform = from_origin(bbox_min_x, bbox_max_y, grid_resolution_x, grid_resolution_y)
 
   steps_y = math.ceil((bbox_max_y - bbox_min_y) / grid_resolution_y)
@@ -209,16 +228,20 @@ def calculate_impact(
   impact_data_min = np.zeros((steps_y, steps_x))
   impact_data_max = np.zeros((steps_y, steps_x))
 
+  # Take the relevant section of the exposure raster and transform to match the grid
+  # This can be the most expensive part of the process.
   exposure_raster, _ = exposure_raster_dbobj.get_window(
     bbox_to_use,
     transform_target=result_transform,
     resolution=(steps_y, steps_x),
   )
 
+  # Grid for pixels where the combined max damage exceeds the exposure
   exceeded_max_grid = np.zeros((steps_y, steps_x), dtype=bool)
 
   all_vulnerability_curves = list()
 
+  # Loop through the events and calculate the damage for each grid pixel
   for event in all_events:
     impact_value_grid = np.zeros((steps_y, steps_x), dtype=np.float32)
 
@@ -243,6 +266,8 @@ def calculate_impact(
         raster = memfile_image.read(1)
 
         memfile_band = np.empty((steps_y, steps_x), dtype=raster.dtype)
+
+        # Reproject event raster to match output grid
         reproject(
           raster,
           destination=memfile_band,
@@ -276,7 +301,9 @@ def calculate_impact(
     elif event.footprint_type == "lazy_py_coord_vals":
       footprint_location_dict = dict()
       for location_x, location_y, value in event.get_footprint(bbox_to_use):
-        exposure_row, exposure_col = rasterio.transform.rowcol(result_transform, location_x, location_y)
+        exposure_row, exposure_col = rasterio.transform.rowcol(
+          result_transform, location_x, location_y
+        )
 
         if (exposure_row, exposure_col) not in footprint_location_dict:
           footprint_location_dict[(exposure_row, exposure_col)] = []
@@ -313,15 +340,13 @@ def calculate_impact(
         impact_data_min[pos_y][pos_x] = max(impact_data_min[pos_y][pos_x], impact_value)
         impact_data_max[pos_y][pos_x] += impact_value
 
-  # lets limit exposure to maximum
+  # Limit exposure to maximum possible for each pixel
   for pos_y in range(steps_y):
     for pos_x in range(steps_x):
       exposure_value = exposure_raster[pos_y][pos_x]
       if np.isnan(exposure_value):
         exposure_value = 0
-      impact_data_max[pos_y][pos_x] = min(
-        exposure_value, impact_data_max[pos_y][pos_x]
-      )  # limit to max exposure
+      impact_data_max[pos_y][pos_x] = min(exposure_value, impact_data_max[pos_y][pos_x])
 
   areas_dict = {
     area.key: {
@@ -362,6 +387,8 @@ def calculate_impact(
             areas_dict[area.key]["exposure_total"] += float(exposure_raster[pos_y][pos_x])
 
   if settings.DEBUG:
+    # Check which ratio of pixels matched a NUTS3 area.
+    # Ratio may vary depending on selected countries, coastlines etc
     matched = 0
     for pos_y in range(steps_y):
       for pos_x in range(steps_x):
@@ -375,6 +402,7 @@ def calculate_impact(
       set(
         [
           *(exposure.references or list()),
+          # TODO: References not currently provided for events and curves
           # *[reference for curve in all_vulnerability_curves for reference in curve.references],
           # *[reference for event in all_events for reference in (event.references or list())],
         ]
@@ -415,21 +443,29 @@ def calculate_impact(
 @router.get("/exposures", tags=["HRSC"], response=List[HrscExposureSchema])
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def exposures(request: HttpRequest):
-  """Returns a list of available Exposures"""
+  """Returns a list of available exposure types"""
   return [exposure.to_dict() for exposure in HrscExposure.objects.all()]
 
 
 @router.get("/collections", tags=["HRSC"], response=List[HrscEventCollectionSchema])
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def collections(request: HttpRequest):
-  """Returns a list of available Collections"""
+  """Returns a list of available hazard collections"""
   return [collection.to_dict() for collection in HrscEventCollection.objects.all()]
 
 
 @router.get("/event/{str:id}/detail", tags=["HRSC"], response=HrscEventSchema)
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
-def event_by_id(request: HttpRequest, id: int, bbox: str | None = None):
-  """Returns the event details including footprint"""
+def event_by_id(request: HttpRequest, id: int, bbox: str = None):  # type: ignore
+  """
+  Returns the event details, optionally including footprint for supported types
+
+  Args:
+    * include_footprint_blob: include tiff or polygon coordinates for the footprint in result
+    * footprint_bbox: a bounding box string (degrees) in the format "<min_x>,<min_y>,<max_x>,<max_y>"
+      by which to slice the footprint
+    * include_metadata: include additional event metadata in the result
+  """
   return get_object_or_404(HrscEvent, id=id).to_dict(
     include_footprint_blob=True,
     footprint_bbox=bbox.split(",") if bbox and len(bbox) else None,
@@ -449,11 +485,11 @@ def event_by_id(request: HttpRequest, id: int, bbox: str | None = None):
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def events_by_collection_filter_ws(
   request: HttpRequest,
-  longitude: float = None,
-  latitude: float = None,
+  longitude: float,
+  latitude: float,
   radius: float = 1000,
-  value__min: float = None,
-  value__max: float = None,
+  value__min: float = None,  # type: ignore
+  value__max: float = None,  # type: ignore
   limit: int = 100,
 ):
   """
@@ -479,8 +515,8 @@ def events_by_collection_filter_ws(
 def events_by_collection_filter(
   request: HttpRequest,
   collection_key: str,
-  longitude: float = None,
-  latitude: float = None,
+  longitude: float,
+  latitude: float,
   radius: float = 1000,
   limit: int = 100,
 ):
@@ -493,7 +529,7 @@ def events_by_collection_filter(
   * "metadata_&lt;key&gt;__max" or "__min": upper or lower boundary
     (note: 2 underscores)
   """
-  filters: dict = request.GET
+  filters: QueryDict = request.GET
 
   events = get_events_by_collection_filter(
     collection_key, longitude, latitude, radius, limit, filters
@@ -504,11 +540,11 @@ def events_by_collection_filter(
 
 def get_events_by_collection_filter(
   collection_key: str,
-  longitude: float = None,
-  latitude: float = None,
+  longitude: float,
+  latitude: float,
   radius: float = 1000,
   limit: int = 100,
-  filters: dict = dict(),
+  filters: dict | QueryDict = dict(),
 ):
   collection = HrscEventCollection.objects.filter(key=collection_key).first()
   if not collection:
@@ -519,8 +555,6 @@ def get_events_by_collection_filter(
     longitude=longitude,
     latitude=latitude,
     radius=radius,
-    # limit=limit,
-    # event_filter=collection.hrscevent_set,
     event_filter=HrscEvent.objects.filter(collection__key=collection_key),
   )
 
@@ -609,8 +643,8 @@ def get_events_by_collection_filter_ws(
   longitude: float,
   latitude: float,
   radius: float = 1000,
-  value__min: float | None = None,
-  value__max: float | None = None,
+  value__min: float = None,  # type: ignore
+  value__max: float = None,  # type: ignore
   limit: int = 100,
 ):
   """

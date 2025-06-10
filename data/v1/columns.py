@@ -40,11 +40,11 @@ router = Router(tags=["Columns"])
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def columns(
   request: HttpRequest,
-  hazard: HazardOptionsEnum = None,
-  exposure: ExposureOptionsEnum = None,
-  threshold: ThresholdOptionsEnum = None,
-  return_period: ReturnPeriodOptionsEnum = None,
-  columns: List[str] = Query([]),
+  hazard: HazardOptionsEnum = None,  # type: ignore
+  exposure: ExposureOptionsEnum = None,  # type: ignore
+  threshold: ThresholdOptionsEnum = None,  # type: ignore
+  return_period: ReturnPeriodOptionsEnum = None,  # type: ignore
+  columns: Query[List[str]] = [],
 ):
   """Returns a list of all data columns with their metadata"""
   columns_objs, filter_options = filter_columns(
@@ -61,37 +61,37 @@ def columns(
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def columns_map(
   request: HttpRequest,
-  hazard: HazardOptionsEnum = None,
-  exposure: ExposureOptionsEnum = None,
-  threshold: ThresholdOptionsEnum = None,
-  return_period: ReturnPeriodOptionsEnum = None,
-  columns: List[str] = Query([]),
+  columns: Query[List[str]] = [],
+  hazard: HazardOptionsEnum = None,  # type: ignore
+  exposure: ExposureOptionsEnum = None,  # type: ignore
+  threshold: ThresholdOptionsEnum = None,  # type: ignore
+  return_period: ReturnPeriodOptionsEnum = None,  # type: ignore
 ):
   """Returns a list of all data columns with their metadata"""
-  columns, _ = filter_columns(
+  filtered_columns, _ = filter_columns(
     hazard, exposure, threshold, return_period, columns, get_kwargs=request.GET
   )
 
-  return {c.key: c for c in columns}
+  return {c.key: c for c in filtered_columns}
 
 
 @router.get("/summaries", response=DataTableColumnSummaryWithFilterOptionsSchema)
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def column_summaries(
   request: HttpRequest,
-  hazard: HazardOptionsEnum = None,
-  exposure: ExposureOptionsEnum = None,
-  threshold: ThresholdOptionsEnum = None,
-  return_period: ReturnPeriodOptionsEnum = None,
-  columns: List[str] = Query([]),
+  columns: Query[List[str]] = [],
+  hazard: HazardOptionsEnum = None,  # type: ignore
+  exposure: ExposureOptionsEnum = None,  # type: ignore
+  threshold: ThresholdOptionsEnum = None,  # type: ignore
+  return_period: ReturnPeriodOptionsEnum = None,  # type: ignore
 ):
   """Returns a list of all data columns keys, labels and descriptions"""
-  columns, filter_options = filter_columns(
+  filtered_columns, filter_options = filter_columns(
     hazard, exposure, threshold, return_period, columns, get_kwargs=request.GET
   )
 
   return {
-    "columns": columns,
+    "columns": filtered_columns,
     "filter_options": filter_options,
   }
 
@@ -125,10 +125,10 @@ def return_periods(request: HttpRequest):
 
 
 def filter_columns(
-  hazard: str,
-  exposure: str,
-  threshold: str,
-  return_period: str,
+  hazard: str | None,
+  exposure: str | None,
+  threshold: str | None,
+  return_period: str | None,
   column_keys: List[str],
   get_kwargs,
 ):

@@ -224,7 +224,6 @@ class HrscScenarioSchema(ModelSchema):
 
 
 class HrscEventSchema(ModelSchema):
-  id: int
   collection_id: int
   location: Optional[Dict[str, float]] = None
   footprint_type: str
@@ -242,7 +241,6 @@ class HrscEventSchema(ModelSchema):
 
 
 class HrscEventCollectionSchema(ModelSchema):
-  id: int
   key: str
   label: str
   hazard: HazardSchema
@@ -253,7 +251,6 @@ class HrscEventCollectionSchema(ModelSchema):
 
 
 class TourismIndicatorSchema(ModelSchema):
-  id: int
   key: str
   label: str
 
@@ -263,7 +260,6 @@ class TourismIndicatorSchema(ModelSchema):
 
 
 class HrscHazardProbabilityRasterSchema(ModelSchema):
-  id: int
   severity_unit: str
   hazard: HazardSchema
   severities: List[float]
@@ -281,7 +277,6 @@ class HrscExposureRasterSchema(ModelSchema):
 
 
 class HrscExposureSchema(ModelSchema):
-  id: int
   key: str
   label: str
   raster: HrscExposureRasterSchema

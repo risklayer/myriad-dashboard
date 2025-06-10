@@ -28,7 +28,7 @@ router = Router(tags=["Areas"])
 
 @router.get("", response=List[Nuts3AreaSchema])
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
-def areas(request: HttpRequest, bbox: str = "", countries: List[CountriesEnum] = Query([])):
+def areas(request: HttpRequest, countries: Query[List[CountriesEnum]] = [], bbox: str = ""):
   """Returns an array of selected NUTS3 areas"""
   nuts3areas = filter_nuts3_areas(bbox, countries)
   return nuts3areas
@@ -38,8 +38,8 @@ def areas(request: HttpRequest, bbox: str = "", countries: List[CountriesEnum] =
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def map(
   request: HttpRequest,
+  countries: Query[List[CountriesEnum]] = [],
   bbox: str = "",
-  countries: List[CountriesEnum] = Query([]),
 ):
   """Returns a map of selected NUTS3 areas"""
   nuts3areas = filter_nuts3_areas(bbox, countries)
@@ -52,10 +52,10 @@ def map(
 def shapes(
   request: HttpRequest,
   bbox: str = "",
-  countries: List[CountriesEnum] = Query([]),
-  columns: List[str] = Query([]),
-  nuts3areas: List[str] = Query([]),
-  tourismIndicators: List[str] = Query([]),
+  countries: Query[List[CountriesEnum]] = [],
+  columns: Query[List[str]] = [],
+  nuts3areas: Query[List[str]] = [],
+  tourismIndicators: Query[List[str]] = [],
 ):
   """Returns a list of all NUTS3 shapes in a GeoJSON FeatureCollection, including column values if specified.
   If using bbox, countries and nuts3areas will be ignored. If not using bbox, all nuts3areas are returned filtered by
@@ -109,7 +109,7 @@ def shapes(
           "NUTS_ID": area.key,
           "country_id": area.country.country_code,
         }
-        | value_dict.get(area.id, dict()),
+        | value_dict.get(area.pk, dict()),
         "geometry": area.geom_json,
       }
       for area in nuts3area_filter
@@ -127,7 +127,7 @@ def countries(request: HttpRequest):
 def filter_nuts3_areas(bbox: str, countries: List[CountriesEnum]):
   nuts3areas = Nuts3Area.objects.all()
   if bbox:
-    bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = bbox
+    bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y = bbox.split(",")
     nuts3areas = nuts3areas.filter(
       bbox_min_x__lt=bbox_max_x,
       bbox_min_y__lt=bbox_max_y,

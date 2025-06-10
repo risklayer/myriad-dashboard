@@ -4,6 +4,7 @@ from data.models import (
   DataTableColumn,
   DataTableColumnValue,
   DataTableMetadata,
+  KeyLabelSelection,
   Nuts3Area,
   Hazard,
   TableMetaExposure,
@@ -52,7 +53,7 @@ class Command(BaseCommand):
     table_metadata = json.load(open(table_metadata))
 
     def ensureTableMetaParameterCreation(
-      cls: Type[models.Model], data: dict, cls_dict=Dict[str, models.Model]
+      cls: Type[KeyLabelSelection], data: dict, cls_dict=Dict[str, KeyLabelSelection]
     ):
       for key, data in data["values"].items():
         if isinstance(data, dict):

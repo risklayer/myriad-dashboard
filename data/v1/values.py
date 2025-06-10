@@ -20,9 +20,9 @@ router = Router(tags=["Values"])
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def values(
   request: HttpRequest,
-  countries: List[CountriesEnum] = Query([]),
-  columns: List[str] = Query([]),
-  bbox: str = None,
+  columns: Query[List[str]],
+  countries: Query[List[CountriesEnum]] = [],
+  bbox: str = None,  # type: ignore
 ):
   """Returns a tree of filtered values, grouped by column key and area key"""
   result = dict()
@@ -65,8 +65,8 @@ def values(
   exclude_defaults=False,
   by_alias=True,
 )
-def area(request: HttpRequest, nuts3_key: str, columns: List[str] = Query([])):
-  """Returns nuts3 area with all or selected values"""
+def area(request: HttpRequest, nuts3_key: str, columns: Query[List[str]] = []):
+  """Returns a single nuts3 area with the specified column values"""
   area = get_object_or_404(Nuts3Area, key=nuts3_key)
 
   column_filter = (

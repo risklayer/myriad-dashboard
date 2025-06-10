@@ -893,7 +893,9 @@ class HrscEvent(models.Model):
     return instance, metadata_list
 
   @classmethod
-  def getByLocation(cls, point=None, longitude=None, latitude=None, radius=1000, event_filter=None):
+  def getByLocation(
+    cls, point=None, longitude=None, latitude=None, radius: float = 1000, event_filter=None
+  ):
     if longitude is not None and latitude is not None:
       point = Point(longitude, latitude, srid=settings.DEFAULT_SRID)
 
