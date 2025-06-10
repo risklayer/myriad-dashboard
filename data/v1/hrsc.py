@@ -118,47 +118,46 @@ def calculate_impact(
         f"Event footprint needed in order to calculate risk. The selected event {event.label} does not include a footprint.",
       )
 
-    if event.footprint_type == "lazy_py_geojson":
-      error_handler(
-        404,
-        f"Event footprint needed in order to calculate risk. The selected event {event.label} has a footprint type that is not currently implemented.",
-      )
-
     all_events.append(event)
 
-    if event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
-      with MemoryFile(event.get_footprint()) as memfile:
-        with memfile.open() as src:
-          grid_resolution_x = min(grid_resolution_x, src.transform.a)
-          grid_resolution_y = min(grid_resolution_y, -src.transform.e)
-
-          event_bbox_min_x = (
-            src.bounds.left if event_bbox_min_x is None else min(event_bbox_min_x, src.bounds.left)
-          )
-          event_bbox_min_y = (
-            src.bounds.bottom
-            if event_bbox_min_y is None
-            else min(event_bbox_min_y, src.bounds.bottom)
-          )
-          event_bbox_max_x = (
-            src.bounds.right
-            if event_bbox_max_x is None
-            else max(event_bbox_max_x, src.bounds.right)
-          )
-          event_bbox_max_y = (
-            src.bounds.top if event_bbox_max_y is None else max(event_bbox_max_y, src.bounds.top)
-          )
-          found_event_bbox = True
-    elif event.footprint_type == "lazy_py_coord_vals":
-      use_event_bbox = False
-      pass  # skip this, will not adjust bbox
-    else:
-      error_handler(
-        404,
-        f"Event footprint needed in order to calculate risk. The selected event {event.label} has a footprint type that is not recognised.",
+    this_event_bbox = event.get_bounds()
+    if this_event_bbox:
+      found_event_bbox = True
+      this_event_bbox_min_x, this_event_bbox_min_y, this_event_bbox_max_x, this_event_bbox_max_y = (
+        this_event_bbox
       )
 
-  # If only using tiff events we use the event bounds as the bounding box instead
+      event_bbox_min_x = (
+        this_event_bbox_min_x
+        if event_bbox_min_x is None
+        else min(event_bbox_min_x, this_event_bbox_min_x)
+      )
+      event_bbox_min_y = (
+        this_event_bbox_min_y
+        if event_bbox_min_y is None
+        else min(event_bbox_min_y, this_event_bbox_min_y)
+      )
+      event_bbox_max_x = (
+        this_event_bbox_max_x
+        if event_bbox_max_x is None
+        else max(event_bbox_max_x, this_event_bbox_max_x)
+      )
+      event_bbox_max_y = (
+        this_event_bbox_max_y
+        if event_bbox_max_y is None
+        else max(event_bbox_max_y, this_event_bbox_max_y)
+      )
+
+    this_event_resolution = event.get_resolution()
+    if this_event_resolution:
+      this_event_resolution_x, this_event_resolution_y = this_event_resolution
+      grid_resolution_x = min(grid_resolution_x, this_event_resolution_x)
+      grid_resolution_y = min(grid_resolution_y, this_event_resolution_y)
+
+    if event.footprint_type == "lazy_py_coord_vals":
+      use_event_bbox = False
+      pass  # skip this, will not adjust bbox
+
   if use_event_bbox and found_event_bbox:
     bbox_min_x = event_bbox_min_x
     bbox_max_x = event_bbox_max_x
@@ -261,6 +260,18 @@ def calculate_impact(
 
     all_vulnerability_curves.append(vulnerability_curve)
 
+    event_bounds = event.get_bounds()
+    this_event_bbox_min_x, this_event_bbox_min_y, this_event_bbox_max_x, this_event_bbox_max_y = (
+      event_bounds
+    )
+
+    start_y, start_x = rasterio.transform.rowcol(
+      result_transform, this_event_bbox_min_x, this_event_bbox_max_y, op=math.floor
+    )
+    stop_y, stop_x = rasterio.transform.rowcol(
+      result_transform, this_event_bbox_max_x, this_event_bbox_min_y, op=math.ceil
+    )
+
     if event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
       with MemoryFile(event.get_footprint(bbox_to_use)) as memfile, memfile.open() as memfile_image:
         raster = memfile_image.read(1)
@@ -278,8 +289,8 @@ def calculate_impact(
           resampling=Resampling.average,
         )
 
-        for pos_y in range(steps_y):
-          for pos_x in range(steps_x):
+        for pos_y in range(start_y, stop_y + 1):  # +1 in order to include stop_y itself
+          for pos_x in range(start_x, stop_x + 1):
             memfile_value = memfile_band[pos_y][pos_x]
 
             impact_value, exceeded_max = vulnerability_curve.apply_curve(memfile_value)
@@ -294,10 +305,35 @@ def calculate_impact(
             impact_value_grid[pos_y][pos_x] += val * impact_value
 
     elif event.footprint_type == "lazy_py_geojson":
-      error_handler(
-        404,
-        f"The selected event ({event.label}) has a footprint type that is not currently implemented.",
+      footprint_json = event.get_footprint(bbox_to_use)
+
+      area_geojson_obj = from_geojson(dumps(footprint_json))
+
+      impact_value, exceeded_max = vulnerability_curve.apply_curve(
+        footprint_json["properties"]["event_intensity"]
       )
+
+      for pos_y in range(start_y, stop_y + 1):  # +1 in order to include stop_y itself
+        for pos_x in range(start_x, stop_x + 1):
+          point_x, point_y = rasterio.transform.xy(result_transform, pos_y, pos_x, offset="center")
+          point_box = geometry.box(
+            point_x - 0.5 * grid_resolution_x,
+            point_y - 0.5 * grid_resolution_y,
+            point_x + 0.5 * grid_resolution_x,
+            point_y + 0.5 * grid_resolution_y,
+          )
+          overlap = area_geojson_obj.intersection(point_box)
+          overlap_relative = overlap.area / area_geojson_obj.area
+
+          if exceeded_max:
+            exceeded_max_grid[pos_y][pos_x] = True
+
+          val = exposure_raster[pos_y][pos_x]
+          if np.isnan(val):
+            val = 0
+
+          impact_value_grid[pos_y][pos_x] += val * impact_value * overlap_relative
+
     elif event.footprint_type == "lazy_py_coord_vals":
       footprint_location_dict = dict()
       for location_x, location_y, value in event.get_footprint(bbox_to_use):

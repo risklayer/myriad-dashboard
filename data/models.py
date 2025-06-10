@@ -4,6 +4,8 @@ import numbers
 import os.path
 import re
 from base64 import b64encode
+from json import dumps
+from math import isnan
 from typing import Dict, Optional, Tuple, Union
 
 import geopy.distance
@@ -17,10 +19,11 @@ from django.contrib.gis.measure import Distance as MDistance
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.safestring import mark_safe
-from math import isnan
 from rasterio.crs import CRS
+from rasterio.io import MemoryFile
 from rasterio.transform import TransformerBase
 from rasterio.warp import Resampling, reproject
+from shapely import from_geojson
 from shapely.geometry import Polygon, mapping
 
 from .utils import calculate_azimuth
@@ -738,6 +741,10 @@ class HrscEvent(models.Model):
   def key(self):
     return str(self.id)
 
+  def __init__(self, *args, **kwargs):
+    super(HrscEvent, self).__init__(*args, **kwargs)
+    self.footprint_cache = None
+
   def get_metadata_attribute(self, key: str) -> Union[float, int, str]:
     metadata = HrscEventMetadata.objects.filter(
       key=key,
@@ -767,7 +774,37 @@ class HrscEvent(models.Model):
 
     return data
 
+  def get_resolution(self) -> Optional[Tuple[float, float]]:
+    if self.footprint_type == "tiff_embed" or self.footprint_type == "tiff_ext":
+      with MemoryFile(self.get_footprint()) as memfile:
+        with memfile.open() as src:
+          return (src.transform.a, -src.transform.e)
+
+    # fallback: use bounds
+    bounds = self.get_bounds()
+    if bounds:
+      resolution_x = (bounds[2] - bounds[0]) / 3  # right - left
+      resolution_y = (bounds[3] - bounds[1]) / 3  # top - bottom
+      resolution = math.sqrt(0.5 * (resolution_x * resolution_x + resolution_y * resolution_y))
+      return resolution, resolution
+
+    return None
+
+  def get_bounds(self) -> Optional[Tuple[float, float, float, float]]:
+    if self.footprint_type == "tiff_embed" or self.footprint_type == "tiff_ext":
+      with MemoryFile(self.get_footprint()) as memfile:
+        with memfile.open() as src:
+          return (src.bounds.left, src.bounds.bottom, src.bounds.right, src.bounds.top)
+
+    elif self.footprint_type == "lazy_py_geojson":
+      return from_geojson(dumps(self.get_footprint())).bounds
+
+    return None
+
   def get_footprint(self, bbox: Tuple[float] | None = None) -> bytes:
+    if self.footprint_cache:
+      return self.footprint_cache
+
     if bbox is not None and (len(bbox) == 0 or bbox[0] == ""):
       raise Exception("Invalid bbox provided")
     if self.footprint_type == "lazy_py_geojson":
@@ -778,6 +815,8 @@ class HrscEvent(models.Model):
         end_lon = float(all_metadata["end_longitude"])
         end_lat = float(all_metadata["end_latitude"])
         path_width = float(all_metadata["path_width"])
+
+        all_metadata["event_intensity"] = all_metadata["wind_speed"]
 
         azimuth = calculate_azimuth((start_lat, start_lon), (end_lat, end_lon))
         angle1 = (azimuth + 90) % 360
@@ -804,14 +843,19 @@ class HrscEvent(models.Model):
 
         # Polygon expects x, y points (i.e. long/lat), but mapping outputs as lat/long
         polygon = Polygon([point1_xy, point2_xy, point3_xy, point4_xy, point1_xy])
-        return {"type": "Feature", "properties": all_metadata, "geometry": mapping(polygon)}
+        self.footprint_cache = {
+          "type": "Feature",
+          "properties": all_metadata,
+          "geometry": mapping(polygon),
+        }
+        return self.footprint_cache
       else:
         raise Exception("Cannot generate footprint for " + self.collection.key)
 
     elif self.footprint_type == "lazy_py_coord_vals":
       if self.collection.key == "winterstorm":
         if bbox:
-          return [
+          self.footprint_cache = [
             [value.location.location.x, value.location.location.y, value.value]
             for value in HrscValueCoordinateWinterstorm.objects.filter(event=self)
             if value.location.location.x > float(bbox[0])  # bbox_min_x
@@ -819,11 +863,13 @@ class HrscEvent(models.Model):
             and value.location.location.x < float(bbox[2])  # bbox_max_x
             and value.location.location.y < float(bbox[3])  # bbox_max_y
           ]
+          return self.footprint_cache
         else:
-          return [
+          self.footprint_cache = [
             [value.location.location.x, value.location.location.y, value.value]
             for value in HrscValueCoordinateWinterstorm.objects.filter(event=self)
           ]
+          return self.footprint_cache
       else:
         raise Exception("Cannot generate footprint for " + self.collection.key)
 
@@ -835,13 +881,15 @@ class HrscEvent(models.Model):
         os.path.join(settings.RASTER_DATA_ROOT, footprint.decode("utf-8")),
         "rb",
       ) as footprint_file:
-        return footprint_file.read()
+        self.footprint_cache = footprint_file.read()
+        return self.footprint_cache
 
     else:
       footprint = self.footprint
       if isinstance(footprint, memoryview):
         footprint = footprint.tobytes()
-      return footprint
+      self.footprint_cache = footprint
+      return self.footprint_cache
 
   @classmethod
   def create_with_attributes(
