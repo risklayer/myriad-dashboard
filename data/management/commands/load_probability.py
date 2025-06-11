@@ -62,7 +62,7 @@ class Command(BaseCommand):
       },
     )
 
-    if not created and len(reference) and reference != raster.references:
+    if not created and reference and len(reference) and reference != raster.references:
       raster.references = reference
       raster.save()
 

@@ -47,7 +47,7 @@ class Command(BaseCommand):
       label="Tornados", slug_key="tornado", created_info=True
     )
 
-    if not created and len(reference) and reference != hazard.references:
+    if not created and reference and len(reference) and reference != hazard.references:
       hazard.references = reference
       hazard.save()
 

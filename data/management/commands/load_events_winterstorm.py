@@ -63,7 +63,7 @@ class Command(BaseCommand):
       label="Winter storm", slug_key="winterstorm", created_info=True
     )
 
-    if not created and len(reference) and reference != hazard.references:
+    if not created and reference and len(reference) and reference != hazard.references:
       hazard.references = reference
       hazard.save()
 

@@ -61,7 +61,7 @@ class Command(BaseCommand):
       label=label, slug_key=key, references=reference, created_info=True
     )
 
-    if not created and len(reference) and reference != exposure.references:
+    if not created and reference and len(reference) and reference != exposure.references:
       exposure.references = reference
       exposure.save()
 
