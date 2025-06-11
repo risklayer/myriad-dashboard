@@ -799,6 +799,8 @@ class HrscEvent(models.Model):
     elif self.footprint_type == "lazy_py_geojson":
       return from_geojson(dumps(self.get_footprint())).bounds
 
+    # footprint_type of "lazy_py_coord_vals" as well as "none" do not have bounds and will return None
+
     return None
 
   def get_footprint(self, bbox: Tuple[float] | None = None) -> bytes:

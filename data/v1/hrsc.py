@@ -272,6 +272,11 @@ def calculate_impact(
       result_transform, this_event_bbox_max_x, this_event_bbox_min_y, op=math.ceil
     )
 
+    start_y = max(start_y, 0)
+    start_x = max(start_x, 0)
+    stop_y = min(stop_y, steps_y - 1)
+    stop_x = min(stop_x, steps_x - 1)
+
     if event.footprint_type == "tiff_embed" or event.footprint_type == "tiff_ext":
       with MemoryFile(event.get_footprint(bbox_to_use)) as memfile, memfile.open() as memfile_image:
         raster = memfile_image.read(1)
@@ -395,43 +400,60 @@ def calculate_impact(
     for area in nuts3area_filter
   }
 
-  num_areas_found = np.zeros((steps_y, steps_x), dtype="int")
   memfile_xy_raster = [
-    [rasterio.transform.xy(result_transform, pos_y, pos_x) for pos_x in range(steps_x)]
+    [
+      rasterio.transform.xy(result_transform, pos_y, pos_x, offset="center")
+      for pos_x in range(steps_x)
+    ]
     for pos_y in range(steps_y)
   ]
 
   for area in nuts3area_filter:
     area_geojson_obj = from_geojson(dumps(area.geom_json))
-    for pos_y in range(steps_y):
-      for pos_x in range(steps_x):
+
+    area_bbox_min_x, area_bbox_min_y, area_bbox_max_x, area_bbox_max_y = area_geojson_obj.bounds
+
+    start_y, start_x = rasterio.transform.rowcol(
+      result_transform, area_bbox_min_x, area_bbox_max_y, op=math.floor
+    )
+    stop_y, stop_x = rasterio.transform.rowcol(
+      result_transform, area_bbox_max_x, area_bbox_min_y, op=math.ceil
+    )
+
+    start_y = max(start_y, 0)
+    start_x = max(start_x, 0)
+    stop_y = min(stop_y, steps_y - 1)
+    stop_x = min(stop_x, steps_x - 1)
+
+    if settings.DEBUG:
+      aggregated_area = 0
+
+    for pos_y in range(start_y, stop_y + 1):  # +1 in order to include stop_y itself
+      for pos_x in range(start_x, stop_x + 1):
         memfile_x, memfile_y = memfile_xy_raster[pos_y][pos_x]
-        if (
-          area.bbox_min_x < memfile_x
-          and area.bbox_min_y < memfile_y
-          and area.bbox_max_x > memfile_x
-          and area.bbox_max_y > memfile_y
-        ):
-          point = geometry.Point(memfile_x, memfile_y)
-          if area_geojson_obj.contains(point):
-            num_areas_found[pos_y][pos_x] += 1
-            areas_dict[area.key]["impact_data_min"] += impact_data_min[pos_y][pos_x]
-            areas_dict[area.key]["impact_data_max"] += impact_data_max[pos_y][pos_x]
-            areas_dict[area.key]["exceeded_curve_max"] = (
-              True if exceeded_max_grid[pos_y][pos_x] else False
-            )
-            areas_dict[area.key]["exposure_total"] += float(exposure_raster[pos_y][pos_x])
 
-  if settings.DEBUG:
-    # Check which ratio of pixels matched a NUTS3 area.
-    # Ratio may vary depending on selected countries, coastlines etc
-    matched = 0
-    for pos_y in range(steps_y):
-      for pos_x in range(steps_x):
-        if num_areas_found[pos_y][pos_x] == 1:
-          matched += 1
+        point_box = geometry.box(
+          memfile_x - 0.5 * grid_resolution_x,
+          memfile_y - 0.5 * grid_resolution_y,
+          memfile_x + 0.5 * grid_resolution_x,
+          memfile_y + 0.5 * grid_resolution_y,
+        )
+        overlap_area = area_geojson_obj.intersection(point_box).area
+        overlap_relative = overlap_area / (grid_resolution_x * grid_resolution_y)
 
-    print("match ratio: " + str(matched / (steps_y * steps_x)))
+        if settings.DEBUG:
+          aggregated_area += overlap_area
+
+        areas_dict[area.key]["impact_data_min"] += impact_data_min[pos_y][pos_x] * overlap_relative
+        areas_dict[area.key]["impact_data_max"] += impact_data_max[pos_y][pos_x] * overlap_relative
+        if exceeded_max_grid[pos_y][pos_x]:
+          areas_dict[area.key]["exceeded_curve_max"] = True
+        areas_dict[area.key]["exposure_total"] += (
+          float(exposure_raster[pos_y][pos_x]) * overlap_relative
+        )
+
+    if settings.DEBUG:
+      print(area.key + " covering ratio: " + str(aggregated_area / area_geojson_obj.area))
 
   references = sorted(
     list(
