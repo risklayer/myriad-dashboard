@@ -56,7 +56,7 @@ MIDDLEWARE = [
   "django.middleware.clickjacking.XFrameOptionsMiddleware",
   "django_htmx.middleware.HtmxMiddleware",
   "django.middleware.gzip.GZipMiddleware",
-  # "django_browser_reload.middleware.BrowserReloadMiddleware",
+  "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
 
 ROOT_URLCONF = "dashboard.urls"
@@ -117,7 +117,7 @@ LANGUAGE_CODE = "en-us"
 
 TIME_ZONE = "UTC"
 
-USE_I18N = True
+USE_I18N = False
 
 USE_TZ = True
 
@@ -184,5 +184,4 @@ DEFAULT_SRID = 4326
 
 RASTER_DATA_ROOT = os.path.join(BASE_DIR, "data_raster")
 
-# TODO choose logical duration
 API_CACHE_TIMEOUT = 10000

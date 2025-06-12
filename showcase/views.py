@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-# from shared.pin import PinType, append_pinned_items, get_pinned, get_pinned_keys
 from shared.shared_forms import MapSettingsForm, RegionsForm
 from showcase.showcase_forms import ShowcaseFilterForm
 
@@ -32,10 +31,6 @@ def index(request):
   # TODO check that column is valid
   table_columns = request.GET.getlist("table_columns") or None
 
-  # # pinned = get_pinned(request, PinType.EXPOSURE)
-  # # # pinned_keys = get_pinned_keys(pinned)
-  # # # pinned = append_pinned_items(pinned, PinType.EXPOSURE)
-
   settings_form = MapSettingsForm(request.GET)
 
   if request.GET:
@@ -65,8 +60,6 @@ def index(request):
     column = "fp"
 
   countries_root = regions_form.create_countries_hierarchy(displayed_countries)
-  # if not column:
-  #   column = "fp"
 
   return render(
     request,
@@ -78,8 +71,6 @@ def index(request):
       "hazard": hazard_key,
       "column": column,
       "table_columns": table_columns,
-      # # "pinned": pinned,
-      # # "pinned_keys": pinned_keys,
       "settings_form": settings_form,
       "displayed_countries": displayed_countries,
       "filter_form": filter_form,
@@ -94,42 +85,11 @@ def showcase_details(request):
   hazard = request.GET.get("hazard")
   exposure = request.GET.get("column")
 
-  # if not hazard or not exposure:
-  #   return HttpResponseNotFound("Sorry I can't find the data you're looking for")
-  # # pinned = get_pinned(request, PinType.EXPOSURE)
-  # # # pinned_keys = get_pinned_keys(pinned)
-  # # # pinned = append_pinned_items(pinned, PinType.EXPOSURE)
-
   return render(
     request,
     template,
     {
       "hazard": hazard,
       "exposure": exposure,
-      # "key": key,
-      # # "pinned": pinned,
-      # # "pinned_keys": pinned_keys,
     },
   )
-
-
-# @require_POST
-# def refine_form(request):
-#   template = "showcase/refine_form.html"
-
-#   # # pinned = get_pinned(request, PinType.EXPOSURE)
-#   # # # pinned_keys = get_pinned_keys(pinned)
-#   # # # pinned = append_pinned_items(pinned, PinType.EXPOSURE)
-
-#   # TODO verify column is valid
-#   column = request.POST.get("column", None)
-
-#   return render(
-#     request,
-#     template,
-#     {
-#       "column": column,
-#       # # "pinned": pinned,
-#       # # "pinned_keys": pinned_keys,
-#     },
-#   )

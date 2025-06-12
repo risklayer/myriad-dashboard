@@ -4,15 +4,12 @@ import {
   ApiPaths,
   DataTableColumnSchema,
   FeatureCollectionSchema,
-  FeatureCollectionShapeFeature,
-  FeatureCollectionUnionShapeFeatureShapeFeatureArbitraryProperties,
   ShapeFeature,
   type CountriesEnum,
   type Nuts3AreaSchema,
-  type paths,
+  type paths
 } from "../../data/types/api";
 
-// import "../../dashboard/js/scripts.d";
 
 export const client = createClient<paths>();
 
@@ -45,6 +42,7 @@ export const getShapesList = memoize(
   },
   (countries: string | string[]) => sortBy([countries].flat(), identity).join()
 );
+
 export const getAreasMap = memoize(
   async function getAreasMap(
     countries: CountriesEnum | CountriesEnum[],
@@ -73,6 +71,7 @@ export const getAreasMap = memoize(
   (countries: string | string[], bbox?: string) =>
     [sortBy([countries].flat(), identity), bbox].flat().join()
 );
+
 export const getValuesMap = memoize(
   async function getValuesMap(
     countries: CountriesEnum[],
@@ -98,6 +97,7 @@ export const getValuesMap = memoize(
       .flat()
       .join()
 );
+
 export const getColumnsMap = memoize(
   async function getColumnsMap(
     columns: string[] | string

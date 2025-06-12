@@ -217,7 +217,6 @@ def filter_columns(
 
       filtered_columns = filtered_columns.filter(meta_or)
 
-  # TODO: if empty, return None, empty list or remove from object?
   filter_options = {
     "hazard_options": hazard_filter,
     "exposure_options": exposure_filter,

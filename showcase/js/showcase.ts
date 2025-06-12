@@ -106,7 +106,6 @@ window.formUpdate = function formUpdate(
     clickedElement,
     options,
     "filters-form",
-    "column",
     "column"
   );
   updateParams(clickedElement);

@@ -90,9 +90,6 @@ class Command(BaseCommand):
             for row in res_columns.fetchall():
               data_value = row[nuts3_gpkg_identifier]
 
-              # if data_value is None:
-              #  continue
-
               all_values.append(
                 HrscExposureColumnValue(
                   exposure=exposure,

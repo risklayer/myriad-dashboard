@@ -49,13 +49,10 @@ class LabelSelectionField(ModelChoiceField):
 
 
 class LabelSelectionFieldWithHazardUnits(LabelSelectionField):
-  hazard: Hazard = None
+  hazard: Hazard | None = None
 
   def label_from_instance(self, obj):
-    # TODO allow access without to_dict?
-    hazard_dict = self.hazard.to_dict() if self.hazard else dict()
-    unit = hazard_dict.get("unit")
-
+    unit = self.hazard.unit if self.hazard else None
     label = super().label_from_instance(obj)
 
     return f"{label} {unit}" if unit else label

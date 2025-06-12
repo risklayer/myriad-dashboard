@@ -273,7 +273,6 @@ window.formUpdate = function formUpdate(
     clickedElement,
     options,
     "filters-form",
-    "event",
     "event"
   );
   updateParams(clickedElement);

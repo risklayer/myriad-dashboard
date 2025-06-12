@@ -50,8 +50,6 @@ To use Spatialite for your DB:
 brew install libspatialite
 ```
 
-TODO: check PostGIS installation
-
 #### [.vscode/launch.json](.vscode/launch.json)
 
 ```json
@@ -61,9 +59,7 @@ TODO: check PostGIS installation
       "name": "Debug Django (all)",
       "type": "debugpy",
       "request": "launch",
-      "args": [
-        "runserver"
-      ],
+      "args": ["runserver"],
       "django": true,
       "autoStartBrowser": false,
       "program": "${workspaceFolder}/manage.py",
@@ -73,9 +69,7 @@ TODO: check PostGIS installation
       "name": "Debug Django (mine)",
       "type": "debugpy",
       "request": "launch",
-      "args": [
-        "runserver"
-      ],
+      "args": ["runserver"],
       "django": true,
       "autoStartBrowser": false,
       "program": "${workspaceFolder}/manage.py",

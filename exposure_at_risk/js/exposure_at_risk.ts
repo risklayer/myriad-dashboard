@@ -19,7 +19,6 @@ import "@gnatih/leaflet.legend";
 import { LayersControlEvent } from "leaflet";
 import { uniq, without } from "lodash";
 import {
-  components,
   DataTableColumnSchema,
   Nuts3AreaSchema,
   ShapeFeature,
@@ -42,6 +41,7 @@ import {
   LayerNames,
   QuantisationType,
 } from "../../shared/js/map_tools";
+import { createDataTableReferencesButtonArray } from "../../shared/js/table_utils";
 import { createGeoJSONDownload, slugify } from "../../shared/js/utils";
 import {
   downloadGeoJSON,
@@ -51,13 +51,14 @@ import {
   getValuesMap,
 } from "./exposure_at_risk_api";
 import { TableDatum } from "./types";
-import { createDataTableReferencesButtonArray } from "../../shared/js/table_utils";
 
 declare global {
   interface Window {
     formUpdate: () => void;
     closeAreaPanel: () => void;
-    updateParams: () => void;
+    updateParams: (
+      clickedElement?: HTMLSelectElement | HTMLInputElement | undefined
+    ) => void;
     setFilters: () => Promise<void>;
     toggleTable: (key: string) => void;
     sortColumn: (key: string, direction: "up" | "down") => void;
@@ -83,7 +84,6 @@ const {
   cleanupLayer,
   updateBaseLayer,
   returnHome,
-  zoomTo,
   updateMapButtonStates,
   updateTableButtonStates,
 } = createMap({
@@ -102,16 +102,10 @@ window.formUpdate = function formUpdate(
   clickedElement?: HTMLSelectElement | HTMLInputElement,
   options?: FormUpdateOptions
 ) {
-  options = handleMapButtonClick(
-    clickedElement,
-    options,
-    "filters-form",
-    "column",
-    "column"
-  );
+  handleMapButtonClick(clickedElement, options, "filters-form", "column");
   updateParams(clickedElement);
   updateMapButtonStates();
-  updateMapAndTable(options);
+  updateMapAndTable();
 };
 
 // Flag to indicate that current action is from a popstate so that changes
@@ -152,9 +146,7 @@ const updateParams = (window.updateParams = function updateParams(
   );
 });
 
-async function updateMapAndTable({
-  zoomToFit = "auto",
-}: FormUpdateOptions = {}) {
+async function updateMapAndTable() {
   const paramsGrouped = getParamsGrouped();
 
   const countries = (paramsGrouped.countries as CountriesEnum[]) ?? [];
@@ -180,18 +172,18 @@ async function updateMapAndTable({
       ]) as CountriesEnum[]);
 
   if (!countries.length && !areas.length) {
-    cleanupLayer("region_layer");
+    cleanupLayer(LayerNames.Region);
     hideLegend();
     returnHome();
     return;
   }
 
-  // Download the shapes, areas, values for the selected countries, in parallel
+  // Download the shapes, areas, columns, values for the selected countries, in parallel
   const [shapes, areaDefinitions, columnsMap, values] = await fetchMapResources(
     allColumns,
     countriesIncludingAreas
   );
-  if (!columnsMap || !Object.keys(shapes).length) {
+  if (!columnsMap) {
     window.toast(`Sorry, no matching column definitions found`);
     return;
   }
@@ -210,8 +202,7 @@ async function updateMapAndTable({
     // Don't return, can still draw the map
   }
 
-  // TODO: do we want to include the current-mapped column in the table or not?
-  const { geojson, data, extraColumns, min, max } = buildMapAndTableData({
+  const { geojson, data, extraColumns } = buildMapAndTableData({
     shapes,
     areas,
     areaDefinitions,
@@ -235,7 +226,7 @@ async function updateMapAndTable({
     mapColumns = uniq([mapColumns[0], ...tableColumns, ...extraColumns]);
   }
 
-  cleanupLayer("region_layer");
+  cleanupLayer(LayerNames.Region);
 
   // Domain is reversed so higher values are red
   const paletteName = (paramsGrouped.colors?.[0] ??
@@ -268,7 +259,7 @@ async function updateMapAndTable({
     );
     setTimeout(
       () =>
-        main_map.invalidateSize().fitBounds(LAYERS.region_layer.getBounds()),
+        main_map.invalidateSize().fitBounds(LAYERS.region_layer!.getBounds()),
       50
     );
   });
@@ -281,7 +272,7 @@ function updateRegionLayer(
   columnsMap: Record<string, DataTableColumnSchema>,
   columns: string[]
 ) {
-  LAYERS.region_layer.options = {
+  LAYERS.region_layer!.options = {
     interactive: true,
     onEachFeature: (_, layer) => {
       layer.on({
@@ -324,12 +315,12 @@ function updateRegionLayer(
     },
   };
 
-  LAYERS.region_layer
-    .addData(geojson as unknown as GeoJsonObject)
-    .bindTooltip(({ feature }) => {
+  LAYERS.region_layer!.addData(geojson as unknown as GeoJsonObject).bindTooltip(
+    ({ feature }) => {
       const area = areaDefinitions[feature.properties.NUTS_ID]!;
       return `${area.label}, ${area.country.label}`;
-    });
+    }
+  );
 }
 
 const MAX_OVERLAP_KEY = "max_overlap";
@@ -358,13 +349,9 @@ function buildMapAndTableData({
   geojson: Feature[];
   data: Array<TableDatum>;
   extraColumns: string[];
-  min: number;
-  max: number;
 } {
   const geojson: Feature[] = [];
   const data: Array<TableDatum> = [];
-  let min: number = 0;
-  let max: number = 0;
   let extraColumns: string[] = [];
 
   if (tableColumns.length === 2) {
@@ -386,9 +373,6 @@ function buildMapAndTableData({
   });
 
   const isMappingSummaryColumn = SUMMARY_COLUMNS.includes(mapColumns[0]!);
-  // const allPrimaryColumns = isMappingSummaryColumn
-  //   ? tableColumns
-  //   : uniq([...mapColumns, ...tableColumns]);
   const allPrimaryColumns = uniq([...mapColumns, ...tableColumns]);
 
   for (const shape of shapes) {
@@ -443,18 +427,6 @@ function buildMapAndTableData({
           const primaryValue = isMappingSummaryColumn
             ? datum[mapColumns[0]!]!
             : value;
-          /*
-          Only calculate max/min based on the first column (which, if
-          selected, will be the map column), and add the data to the table/
-          geojson arrays once only (other columns will be added to the 
-          objects after they have been appeanded to the arrays).
-          */
-          if (primaryValue < min) {
-            min = primaryValue;
-          }
-          if (primaryValue > max) {
-            max = primaryValue;
-          }
           data.push(datum);
           geo = {
             ...shape,
@@ -471,7 +443,7 @@ function buildMapAndTableData({
       geojson.push(shape);
     }
   }
-  return { geojson, data, extraColumns, max, min };
+  return { geojson, data, extraColumns };
 }
 
 function fetchMapResources(

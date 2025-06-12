@@ -9,9 +9,7 @@ from data.models import (
 )
 
 # Dynamic "Enum" types for the purpose of displaying options in swagger
-# Need to determine if this will create issues after importing data,
-# e.g. might require a server restart before using API.
-# They are specified as StrEnum so they don't need to be coercer to strings for
+# They are specified as StrEnum so they don't need to be coerced to strings for
 # use in queries (since the models don't use enums)
 countries = dict()
 hazards = dict()

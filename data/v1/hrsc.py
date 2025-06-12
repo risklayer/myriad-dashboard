@@ -531,14 +531,6 @@ def event_by_id(request: HttpRequest, id: int, bbox: str = None):  # type: ignor
   )
 
 
-# removed this endpoint, not efficient enough
-# @router.get("/events/{str:collection_key}", tags=["HRSC"], response=List[HrscEventSchema])
-# @decorate_view(cache_page(API_CACHE_TIMEOUT))
-# def events_by_collection(request: HttpRequest, collection_key: str):
-#  """Returns a list of events inside this collection"""
-#  return [event.to_dict() for event in HrscEventCollection.objects.get(key=collection_key).hrscevent_set.all()]
-
-
 @router.get("/events/winterstorm/filter", tags=["HRSC"], response=List[HrscEventSchema])
 @decorate_view(cache_page(API_CACHE_TIMEOUT))
 def events_by_collection_filter_ws(

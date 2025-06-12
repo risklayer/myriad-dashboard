@@ -33,8 +33,7 @@ export function handleMapButtonClick(
   clickedElement: HTMLInputElement | HTMLSelectElement | undefined,
   options: FormUpdateOptions | undefined,
   formId: string = "filters-form",
-  fieldName: string = "column",
-  mapButtonZoomType: ZoomToFitOption
+  fieldName: string = "column"
 ) {
   const filtersForm = document.getElementById(formId) as HTMLFormElement;
   const hiddenSelectionField = filtersForm[fieldName] as HTMLInputElement;
@@ -201,7 +200,7 @@ export enum LayerNames {
   GeoRaster = "geo_raster",
 }
 
-export function createMap({
+export function createMap<TLayers extends LayerNames[]>({
   initialBaselayer,
   latitude,
   longitude,
@@ -216,7 +215,7 @@ export function createMap({
   itemFieldName: "event" | "column";
   tableSelectElementId: string;
   tableSelectButtonClass: string;
-  layers: Partial<Record<LayerNames, string>>;
+  layers: Record<TLayers[0], string>;
 }) {
   const main_map: L.Map = L.map("map", {
     center: [latitude, longitude],
@@ -240,47 +239,29 @@ export function createMap({
     })
     .addTo(main_map);
 
-  const LAYERS: Partial<Record<LayerNames, L.Layer>> =
-    // {
-    //   region_layer: LeafletGeoJSON;
-    //   heat_layer: LeafletLayer;
-    //   filtered_items_layer: L.FeatureGroup<FilteredEventData>;
-    //   event_footprint_layer: LeafletGeoJSON;
-    //   search_location_layer: L.FeatureGroup;
-    //   geo_raster: L.GridLayer | null;
-    // }
-    pick(
-      {
-        region_layer: createRegionLayer().addTo(main_map),
-        heat_layer: createHeatLayer(main_map).addTo(main_map),
-        filtered_items_layer: createFilteredEventsLayer().addTo(main_map),
-        event_footprint_layer: createEventFootprintLayer().addTo(main_map),
-        search_location_layer: createSearchLocationLayer().addTo(main_map),
-        geo_raster: null as unknown as L.GridLayer,
-      },
-      Object.keys(layers)
-    );
+  const LAYERS: Record<TLayers[0], L.Layer> = pick(
+    {
+      region_layer: createRegionLayer().addTo(main_map) as L.GeoJSON,
+      heat_layer: createHeatLayer(main_map).addTo(main_map),
+      filtered_items_layer: createFilteredEventsLayer().addTo(main_map),
+      event_footprint_layer: createEventFootprintLayer().addTo(main_map),
+      search_location_layer: createSearchLocationLayer().addTo(main_map),
+      geo_raster: null as unknown as L.GridLayer,
+    },
+    Object.keys(layers)
+  );
 
-  const LEGENDS: Partial<Record<LayerNames, any>> =
-    // {
-    //   region_layer: LeafletGeoJSON;
-    //   heat_layer: LeafletLayer;
-    //   filtered_items_layer: L.FeatureGroup<FilteredEventData>;
-    //   event_footprint_layer: LeafletGeoJSON;
-    //   search_location_layer: L.FeatureGroup;
-    //   geo_raster: L.GridLayer | null;
-    // }
-    pick(
-      {
-        region_layer: null,
-        heat_layer: null,
-        filtered_items_layer: null,
-        event_footprint_layer: null,
-        search_location_layer: null,
-        geo_raster: null,
-      },
-      Object.keys(layers)
-    );
+  const LEGENDS: Partial<Record<LayerNames, any>> = pick(
+    {
+      region_layer: null,
+      heat_layer: null,
+      filtered_items_layer: null,
+      event_footprint_layer: null,
+      search_location_layer: null,
+      geo_raster: null,
+    },
+    Object.keys(layers)
+  );
 
   const baseLayerControl = L.control
     .layers(
