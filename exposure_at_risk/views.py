@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_POST
 
+from data.models import DataTableColumn
 from scenario_calculator.config import DEFAULT_LATITUDE
 from shared.pin import PinType, append_pinned_items, get_pinned, get_pinned_keys
 from scenario_calculator.config import DEFAULT_LONGITUDE
@@ -11,8 +12,13 @@ from shared.shared_forms import MapSettingsForm, RegionsForm
 def index(request):
   template = "exposure_at_risk/index.html"
 
-  column = request.GET.get("column") or None
-  # TODO check that column is valid
+  column = request.GET.get("column", None)
+
+  if column:
+    column_obj = DataTableColumn.objects.filter(key=column).first()
+    if not column_obj:
+      column = None
+
   table_columns = request.GET.getlist("table_columns") or None
 
   pinned = get_pinned(request, PinType.EXPOSURE)
@@ -47,6 +53,9 @@ def column_details(request, key: str):
   pinned_keys = get_pinned_keys(pinned)
   pinned = append_pinned_items(pinned, PinType.EXPOSURE)
 
+  if key:
+    get_object_or_404(DataTableColumn, key=key)
+
   return render(
     request,
     template,
@@ -66,8 +75,10 @@ def refine_form(request):
   pinned_keys = get_pinned_keys(pinned)
   pinned = append_pinned_items(pinned, PinType.EXPOSURE)
 
-  # TODO verify column is valid
   column = request.POST.get("column", None)
+
+  if column:
+    get_object_or_404(DataTableColumn, key=column)
 
   return render(
     request,

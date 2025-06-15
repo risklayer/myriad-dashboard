@@ -39,14 +39,12 @@ class ExposureAtRiskFilterForm(Form):
     to_field_name="key",
     required=False,
     blank=False,
-    # initial=0,
   )
   return_period = LabelSelectionField(
     queryset=TableMetaReturnPeriod.objects.all().order_by("key"),
     empty_label="",
     to_field_name="key",
     required=False,
-    # initial=0,
   )
   threshold = LabelSelectionFieldWithHazardUnits(
     queryset=TableMetaThreshold.objects.all().order_by("key"),
@@ -67,6 +65,7 @@ class ExposureAtRiskFilterForm(Form):
     initial=0,
     group_by="group.label",
   )
+
   # We don't use multiple but use it as a hack so it has no blank options
   column = LabelSelectionMultipleField(
     sentence_case=True,
@@ -111,7 +110,6 @@ class ExposureAtRiskFilterForm(Form):
       self.fields["column"].queryset = DataTableColumn.objects.none()
       return list()
 
-    # if not has_data
     hazard = self.cleaned_data.get("hazard")
 
     # Allow threshold field to use units from selected hazard
@@ -125,9 +123,7 @@ class ExposureAtRiskFilterForm(Form):
 
     if hazard:
       filter_meta_fields = (
-        DataTableColumnMetadata.objects
-        # .exclude(key__in=non_filter_keys)
-        .filter(
+        DataTableColumnMetadata.objects.filter(
           Q(datatablecolumnmetadatavaluefloat__column__hazard=hazard)
           | Q(datatablecolumnmetadatavaluestring__column__hazard=hazard)
         )
@@ -144,7 +140,6 @@ class ExposureAtRiskFilterForm(Form):
     meta_field_names = list()
     meta_field_names_with_meta = list()
     for meta in filter_meta_fields:
-      # TODO string fields
       label = getattr(meta, "label").replace("_", " ")
       key = getattr(meta, "key")
 
@@ -164,7 +159,6 @@ class ExposureAtRiskFilterForm(Form):
         meta_field_names_with_meta.append((field_name, key, meta))
         meta_field_names.append(field_name)
       else:
-        # float
         label = getattr(meta, "label").replace("_", " ")
         key = getattr(meta, "key")
         meta_min_val = getattr(meta, "min", None)
@@ -174,13 +168,6 @@ class ExposureAtRiskFilterForm(Form):
         field_name = "metadata_f_%s__min" % (key)
         [min_required, max_required] = getattr(meta, "required", (False, False))
         [min_initial, max_initial] = getattr(meta, "initial", (None, None))
-
-        # if (
-        #   min_required
-        #   and min_initial is not None
-        #   and (self.data.get(field_name) is None or self.data.get(field_name) == "")
-        # ):
-        #   overrides[field_name] = min_initial
 
         range = f"({min_value}–{max_value})"
         self.fields[field_name] = FloatField(

@@ -1171,13 +1171,6 @@ class HrscHazardProbabilityRasterInstance(models.Model, RasterInstance):
     return str(self.severity_value)
 
 
-# class HrscHazardProbabilityRasterValue(models.Model):
-#  probability_instance = models.ForeignKey(HrscHazardProbabilityRasterInstance, on_delete=models.CASCADE)
-#  location = models.ForeignKey(GridLocation, on_delete=models.CASCADE)
-#
-#  value = models.FloatField()
-
-
 class HrscScenario(models.Model, KeyLabelSelection):
   key = models.TextField(unique=True)
   label = models.TextField()

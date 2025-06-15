@@ -1,4 +1,5 @@
 from django import template
+from django.shortcuts import get_object_or_404
 
 from data.models import DataTableColumn
 
@@ -36,7 +37,7 @@ def show_column_details(
       column = SummaryColumnContent[key]
       summary_column = True
     else:
-      column = DataTableColumn.objects.filter(key=key).first() if (key and key != "") else None
+      column = get_object_or_404(DataTableColumn, key=key) if (key and key != "") else None
 
   if not column:
     return None

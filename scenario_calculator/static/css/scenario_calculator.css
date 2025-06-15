@@ -88,22 +88,3 @@
 .table-wrapper {
   grid-area: table-wrapper;
 }
-
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: var(--bs-body-bg);
-  color: var(--bs-body-color);
-  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
-}
-
-.leaflet-legend {
-  background-color: var(--bs-body-bg) !important;
-}
-
-.leaflet-legend-item i {
-  margin-right: 1em;
-}
-
-.pointer {
-  cursor: pointer;
-}
