@@ -48,6 +48,19 @@ export default {
     isProduction && (await import("@rollup/plugin-terser")).default(),
     createRollupLicensePlugin({
       exclude: "*.ejs",
+      includePackages() {
+        // These packages are included as script tags so need manual inclusion
+        return [
+          "node_modules/@popperjs/core",
+          "node_modules/bootstrap",
+          "node_modules/georaster",
+          "node_modules/htmx.org",
+          "node_modules/jszip",
+          // "node_modules/htmx-ext-class-tools", // No license listed
+        ];
+      },
+      // licenseOverrides: {
+      // },
       additionalFiles: {
         "oss-licenses.html": async (items) => {
           const pythonLicensesFile = fs.readFileSync(
