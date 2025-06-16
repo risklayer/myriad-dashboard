@@ -1,5 +1,5 @@
 import chroma from "chroma-js";
-import L, { Layer } from "leaflet";
+import L from "leaflet";
 import "leaflet-defaulticon-compatibility";
 
 import "leaflet-contour";
@@ -20,6 +20,8 @@ import { floatTo3Digits } from "./utils";
 
 // Using regular import fails to import proj4 properly.
 import "../../node_modules/georaster-layer-for-leaflet/dist/v3/webpack/bundle/georaster-layer-for-leaflet.min.js";
+import { Feature, GeoJsonProperties, GeometryObject } from "geojson";
+import { MultiPolygon, ShapeFeature } from "../../data/types/api";
 
 export type ZoomToFitOption = "event" | "column" | "regions" | "auto" | false;
 export type FormUpdateOptions = { zoomToFit?: ZoomToFitOption };
@@ -49,18 +51,11 @@ export function handleMapButtonClick(
     } else {
       hiddenSelectionField.value = value;
       activateButton(clickedElement);
-      // options = { ...options, zoomToFit: mapButtonZoomType };
     }
   }
   return options;
 }
-// class SVGIcon extends L.Icon {
-//   createIcon(oldIcon?: HTMLElement) {
-//     const icon = super.createIcon(oldIcon);
-//     console.log(oldIcon, icon);
-//     return oldIcon!;
-//   }
-// }
+
 export function createIconSvg(
   type: string,
   size: number = 12,
@@ -74,7 +69,7 @@ export function createIconSvg(
 }
 
 export function getHazardMarker(
-  hazardEvent: FilteredEventData & Record<string, number>,
+  hazardEvent: FilteredEventData & Record<string, string | number>,
   colors: chroma.Scale<chroma.Color>,
   colorBy: string
 ) {
@@ -138,7 +133,6 @@ export const hazardIconSettings: Record<
   heat_wave: {
     icon: "thermometer-sun",
   },
-  // tropical-storm, cloud-lightning-rain, cloud-lightning-rain-fill,
 };
 const contrastingColor = memoize((color) => {
   const w = chroma.contrast("#ffffff", color);
@@ -154,7 +148,7 @@ export function getIcon(
 ): L.Icon<L.IconOptions> | L.DivIcon | undefined {
   const { icon, ...settings } = hazardIconSettings[event.hazard]!;
   const color = colors(event[colorBy ?? 0]).toString();
-  // hazardIconSettings[sample(Object.keys(hazardIconSettings))];
+
   return L.divIcon({
     html: `<div class="rounded-5 p-1 py-0 w-100 h-100" style="background:${color}">${createIconSvg(
       icon,
@@ -239,9 +233,9 @@ export function createMap<TLayers extends LayerNames[]>({
     })
     .addTo(main_map);
 
-  const LAYERS: Record<TLayers[0], L.Layer> = pick(
+  const LAYERS = pick(
     {
-      region_layer: createRegionLayer().addTo(main_map) as L.GeoJSON,
+      region_layer: createRegionLayer().addTo(main_map),
       heat_layer: createHeatLayer(main_map).addTo(main_map),
       filtered_items_layer: createFilteredEventsLayer().addTo(main_map),
       event_footprint_layer: createEventFootprintLayer().addTo(main_map),
@@ -283,28 +277,6 @@ export function createMap<TLayers extends LayerNames[]>({
     )
     .addTo(main_map);
 
-  // if (LayerNames.Heat in layers) {
-  // const opacityControl = L.control
-  //   .opacity(
-  //     Object.entries(layers).reduce(
-  //       (acc, [name, title]) =>
-  //         LAYERS[name as LayerNames]
-  //           ? {
-  //               ...acc,
-  //               [title]: LAYERS[name as LayerNames],
-  //             }
-  //           : acc,
-  //       {}
-  //     ),
-  //     {
-  //       position: "topleft",
-  //       label: "Opacity",
-  //       // collapsed: true,
-  //     }
-  //   )
-  //   .addTo(main_map);
-  // }
-
   // See https://github.com/ptma/Leaflet.Legend
   // No types available
   // @ts-ignore
@@ -313,19 +285,6 @@ export function createMap<TLayers extends LayerNames[]>({
     inactive: true,
     legends: [],
   });
-
-  // @ts-ignore
-  // const rightLegend = new L.Control.Legend({
-  //   position: "bottomright",
-  //   inactive: true,
-  //   legends: [],
-  // });
-
-  // const topLegend = new L.Control.Legend({
-  //   position: "topright",
-  //   inactive: true,
-  //   legends: [],
-  // });
 
   /**
    * Background option is stored in URL state.
@@ -388,7 +347,7 @@ export function createMap<TLayers extends LayerNames[]>({
     values: number[];
     limits: number[];
     max: number;
-    colors: chroma.Scale<chroma.Color>;
+    colors: chroma.Scale;
   } {
     const legend = layer
       ? (LEGENDS[layer] ??
@@ -495,8 +454,6 @@ export function createMap<TLayers extends LayerNames[]>({
       { projection: 4326 },
       true
     );
-
-    // console.log("georaster:", georaster);
 
     const values = georaster.values
       .flat()
@@ -682,7 +639,7 @@ function createRegionLayer() {
   return L.geoJSON([], {
     interactive: false,
     style: { weight: 1 },
-  });
+  }) as L.GeoJSON<GeoJsonProperties, GeometryObject>;
 }
 
 function createEventFootprintLayer() {
@@ -707,19 +664,51 @@ function createFilteredEventsLayer(): L.FeatureGroup<FilteredEventData> {
   return L.featureGroup();
 }
 
-function createHeatLayer(map: L.Map): L.Layer {
+export type LeafletContourFeature = ShapeFeature & {
+  geometry: MultiPolygon & { value: number };
+};
+
+export type LeafletContourOptions = L.LayerOptions & {
+  thresholds?: number;
+  color?: number;
+  style?: (feature: Feature) => {
+    color?: string;
+    opacity?: number;
+    fillOpacity?: number;
+  };
+};
+
+type LeafletContour = L.LayerGroup &
+  L.Class & {
+    new (
+      data: { x: number[][]; y: number[][]; z: number[][] } | null,
+      options: LeafletContourOptions
+    ): LeafletContour;
+  };
+
+declare module "leaflet" {
+  const Contour: LeafletContour;
+  const HeatContourLayer: LeafletContour;
+}
+
+L.HeatContourLayer = L.Contour.extend({
+  options: {
+    thresholds: 50,
+    color: 1,
+    pane: "heatPane",
+  },
+});
+
+function createHeatLayer(map: L.Map): LeafletContour {
   // https://github.com/JamesRunnalls/leaflet-contour?tab=readme-ov-file#api-reference
-  // @ts-ignore
   const pane = map.createPane("heatPane");
 
   pane.style.opacity = "1";
 
-  // @ts-ignore
-  return new L.HeatLayer(null, {
-    pane: "heatPane",
+  return new L.HeatContourLayer(null, {
     thresholds: 10,
-    opacity: 0.5,
-  }) as unknown as L.Layer;
+    pane: "heatPane",
+  });
 }
 
 /**
@@ -822,13 +811,5 @@ L.Control.Opacity.include({
     holder2.appendChild(input);
     const container = obj.overlay ? this._overlaysList : this._baseLayersList;
     container.appendChild(label);
-  },
-});
-
-L.HeatLayer = L.Contour.extend({
-  options: {
-    thresholds: 50,
-    color: 1,
-    pane: "heatPane",
   },
 });

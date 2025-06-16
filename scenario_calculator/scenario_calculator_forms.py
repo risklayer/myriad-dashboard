@@ -39,9 +39,6 @@ from shared.utils import make_choices
 
 from .config import non_filter_keys
 
-# class RangeInput(NumberInput):
-#   input_type = "range"
-
 
 TIME_UNITS = ["days", "months", "years"]
 
@@ -146,7 +143,6 @@ class ScenarioCalculatorHazardFilterForm(Form):
     to_field_name="key",
     required=False,
     blank=True,
-    # initial=0,
   )
   collection = LabelSelectionField(
     queryset=HrscEventCollection.objects.all().order_by("label"),
@@ -154,7 +150,6 @@ class ScenarioCalculatorHazardFilterForm(Form):
     to_field_name="key",
     required=False,
     blank=False,
-    # initial=0,
   )
   latitude = FloatField(
     required=False,
@@ -232,33 +227,20 @@ class ScenarioCalculatorHazardFilterForm(Form):
       "latitude",
       "longitude",
       "radius",
-      # "return_period",
-      # "threshold",
-      # "exposure",
     )
 
   def configure_fields(self):
     self.full_clean()
     has_data = hasattr(self, "cleaned_data")
     if not has_data:
-      # hazard = self.fields["hazard"].queryset.first()
-      # self.initial["hazard"] = hazard.key
-      # self.fields["collection"].queryset = self.fields["collection"].queryset.filter(hazard=hazard)
       self.fields["collection"].queryset = self.fields["collection"].queryset.none()
-      # only_one_collection = self.fields["collection"].queryset.count() == 1
       only_one_collection = True
-      # collection = self.fields["collection"].queryset.first()
       collection = None
-      # self.initial["collection"] = collection.key
       longitude = DEFAULT_LONGITUDE
       latitude = DEFAULT_LATITUDE
       radius = DEFAULT_RADIUS
     else:
       hazard = self.cleaned_data.get("hazard")
-
-      # if not hazard:
-      #   hazard = self.cleaned_data["hazard"] = self.fields["hazard"].queryset.first()
-      #   self.initial["hazard"] = hazard.key
 
       self.fields["collection"].queryset = self.fields["collection"].queryset.filter(hazard=hazard)
 
@@ -316,8 +298,6 @@ class ScenarioCalculatorHazardFilterForm(Form):
           .order_by("label")
         )
 
-    # overrides = {}
-
     # Create fields for each meta float
     meta_field_names = list()
     for meta in filter_meta_fields:
@@ -331,13 +311,6 @@ class ScenarioCalculatorHazardFilterForm(Form):
       field_name = "metadata_%s__min" % (key)
       [min_required, max_required] = meta_dict.get("required", (False, False))
       [min_initial, max_initial] = meta_dict.get("initial", (None, None))
-
-      # if (
-      #   min_required
-      #   and min_initial is not None
-      #   and (self.data.get(field_name) is None or self.data.get(field_name) == "")
-      # ):
-      #   overrides[field_name] = min_initial
 
       self.fields[field_name] = FloatField(
         required=min_required,
@@ -375,17 +348,10 @@ class ScenarioCalculatorHazardFilterForm(Form):
     if has_data:
       # Populate the meta fields
       self.full_clean()
-      # for field in overrides:
-      #   self.initial[field] = self.cleaned_data[field] = overrides[field]
       for field in meta_field_names:
         value = self.cleaned_data.get(field)
         if value is not None and value != "":
           metadata_filters[field] = value
-
-    # for field in meta_field_names:
-    #   value = self.cleaned_data.get(field) if has_data else overrides.get(field, None)
-    #   if value is not None and value != "":
-    #     filters[field] = value
 
     if "color_by" in self.errors:
       del self.errors["color_by"]

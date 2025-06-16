@@ -179,8 +179,7 @@ def probability_result(request):
       time_window = time_window / 12
     elif time_window_unit == "days":
       time_window = time_window / 365.25
-    # time_window_delta = datetime.timedelta(days= time_window)
-    # (time window/return period 1) * (time window/return period 2)
+
     for form in probability_forms:
       if form.is_valid():
         hazard: Hazard = form.cleaned_data.get("hazard")
@@ -217,7 +216,7 @@ def probability_result(request):
         return_period = int(return_period)
     else:
       return_period = "-"
-    # delta = datetime.timedelta(days=total)
+
     results.append(
       ("Combined", "—", "", return_period, float_to_3_digits(return_period) + " years")
     )

@@ -10,7 +10,12 @@ import "datatables.net-buttons/js/buttons.print";
 import "datatables.net-buttons/js/dataTables.buttons";
 import jQuery from "jquery";
 
-import type { Feature } from "geojson";
+import type {
+  Feature,
+  GeoJsonObject,
+  GeoJsonProperties,
+  Geometry,
+} from "geojson";
 
 import chroma from "chroma-js";
 import L from "leaflet";
@@ -23,9 +28,9 @@ import { ceil, floor, keyBy, mapValues, pick, uniq } from "lodash";
 import { toast } from "../../dashboard/js/scripts";
 import {
   components,
-  DataTableColumnSchema,
   FeatureCollectionSchema,
   HrscEventSchema,
+  MultiPolygon,
   Nuts3AreaSchema,
   ShapeFeature,
   type CountriesEnum,
@@ -49,6 +54,7 @@ import {
   getHazardMarker,
   handleMapButtonClick,
   LayerNames,
+  LeafletContourFeature,
   QuantisationType,
 } from "../../shared/js/map_tools";
 import { createDataTableReferencesButtonArray } from "../../shared/js/table_utils";
@@ -67,8 +73,25 @@ import {
 } from "./scenario_calculator_api";
 import { TableDatum } from "./types";
 
+// window.htmx.logAll();
+
 declare global {
-  interface Window {}
+  interface Window {
+    formUpdate: (
+      clickedElement?: HTMLSelectElement | HTMLInputElement,
+      options?: FormUpdateOptions
+    ) => void;
+    choosePoint: (event: MouseEvent) => void;
+    closeAreaPanel: () => void;
+    updateParams: () => void;
+    searchHere: () => void;
+    zoomToRegions: () => void;
+    zoomToEvent: () => void;
+    zoomToAllEvents: () => void;
+    calculateImpact: () => Promise<void>;
+    toggleTable: (key: string) => void;
+    sortColumn: (key: string, direction: "up" | "down") => void;
+  }
 }
 
 const options = document.getElementById("scenario_calculator_script")!.dataset;
@@ -80,13 +103,11 @@ const INITIAL_BASELAYER =
     .value as BaseMapTypes) || "Greyscale";
 
 const INITIAL_PROBABILITY_LATITUDE = parseFloat(
-  // @ts-ignore
   ((document.getElementById("id_p-latitude") as HTMLInputElement).value ||
     options.latitude) ??
     "0"
 );
 const INITIAL_PROBABILITY_LONGITUDE = parseFloat(
-  // @ts-ignore
   ((document.getElementById("id_p-longitude") as HTMLInputElement).value ||
     options.longitude) ??
     "0"
@@ -109,12 +130,9 @@ const ALL_PAGE_FORMS = [
 const {
   main_map,
   LAYERS,
-  hideLegend,
   showLegend,
   cleanupLayer,
   updateBaseLayer,
-  returnHome,
-  zoomTo,
   updateMapButtonStates,
   updateTableButtonStates,
   setGeoRasterLayer,
@@ -135,8 +153,6 @@ const {
   },
 });
 
-// window.htmx.logAll();
-
 const filter_circle = L.circle([INITIAL_LATITUDE, INITIAL_LONGITUDE], {
   radius: INITIAL_RADIUS * 1000,
   weight: 1,
@@ -144,7 +160,7 @@ const filter_circle = L.circle([INITIAL_LATITUDE, INITIAL_LONGITUDE], {
   fillColor: "#ffffff",
   opacity: 0.8,
   fillOpacity: 0.1,
-}).addTo(LAYERS.search_location_layer);
+}).addTo(LAYERS.search_location_layer as L.LayerGroup);
 
 function createBBoxGeometry(
   latitude: number,
@@ -189,21 +205,13 @@ const calculateBbox = L.polygon(
     fillColor: "transparent",
     dashArray: [5, 5],
     opacity: 0.8,
-    // fillOpacity: 0.1,
   }
 ).addTo(main_map);
 
 const crosshair = L.marker(
   [INITIAL_PROBABILITY_LATITUDE, INITIAL_PROBABILITY_LONGITUDE],
-  {
-    // radius: INITIAL_RADIUS * 1000,
-    // weight: 1,
-    // color: "#ffffff",
-    // fillColor: "#ffffff",
-    // opacity: 0.8,
-    // fillOpacity: 0.1,
-  }
-).addTo(LAYERS.search_location_layer);
+  {}
+).addTo(LAYERS.search_location_layer as L.LayerGroup);
 
 let values_table: DataTableApi | null = null;
 
@@ -275,7 +283,7 @@ window.formUpdate = function formUpdate(
     "filters-form",
     "event"
   );
-  updateParams(clickedElement);
+  window.updateParams(clickedElement);
   updateMapButtonStates();
   if (clickedElement?.classList.contains("select-tree-input")) {
     updateCombinedImpact({ countriesOnly: true });
@@ -298,11 +306,11 @@ window.addEventListener("popstate", () => {
   usingHistory = false;
 });
 
-const updateParams = (window.updateParams = function updateParams(
+window.updateParams = function updateParams(
   clickedElement?: HTMLSelectElement | HTMLInputElement | undefined
 ) {
   applyAllFormValuesToParams(ALL_PAGE_FORMS, clickedElement);
-});
+};
 
 async function updateProbabilitiesAndStochastics({
   zoomToFit = false,
@@ -330,12 +338,11 @@ async function updateProbabilitiesAndStochastics({
     filter_circle
       .setLatLng([latitude, longitude])
       .setRadius(Math.min(radius, WINTERSTORM_MAXIMUM_RADIUS) * 1000)
-      .addTo(LAYERS.search_location_layer!);
+      .addTo(LAYERS.search_location_layer as L.LayerGroup);
   } else {
-    LAYERS.search_location_layer!.removeLayer(filter_circle);
+    (LAYERS.search_location_layer as L.LayerGroup).removeLayer(filter_circle);
   }
 
-  // const tableColumns = paramsGrouped.table_events ?? [];
   const selectedEventIds = Array.from(
     (paramsGrouped.event ?? []) as string | string[]
   )
@@ -351,11 +358,13 @@ async function updateProbabilitiesAndStochastics({
         ({ ...element.dataset }) as unknown as FilteredEventData &
           Record<string, number | string>
     )
-    .filter((event) => event.latitude && event.longitude)
-    .map((event) =>
-      mapValues(event, (val) =>
-        isNaN(val as number) ? val : parseFloat(val as string)
-      )
+    .filter((event) => event.latitude != null && event.longitude != null)
+    .map(
+      (event) =>
+        mapValues(event, (val) => {
+          const num = parseFloat(val as string);
+          return Number.isNaN(num) ? val : num;
+        }) as FilteredEventData
     );
 
   if (!filteredEvents.length) {
@@ -366,16 +375,8 @@ async function updateProbabilitiesAndStochastics({
     cleanupLayer(LayerNames.EventFootprint);
   }
 
-  // if (!filteredEvents.length && !selectedEventIds.length) {
-  //   return;
-  // }
-
   // Download the shapes, areas, values for the selected countries, in parallel
   const events = await getEventDetail(selectedEventIds);
-
-  // cleanupLayer("region_layer");
-  // cleanupLayer(LayerNames.FilteredItems);
-  // cleanupLayer(LayerNames.EventFootprint);
 
   // Domain is reversed so higher values are red
   const palette = (paramsGrouped.colors?.[0] ??
@@ -386,7 +387,6 @@ async function updateProbabilitiesAndStochastics({
   const quantisation = (paramsGrouped.quantisation?.[0] ??
     "logarithmic") as QuantisationType;
 
-  // updateRegionLayer(geojson);
   updateEventFootprintLayer(events, palette, invertColors, quantisation);
 
   updateFilteredEventsLayer(
@@ -420,7 +420,7 @@ window.calculateImpact = async function calculateImpact(event: MouseEvent) {
   const button = event.target as HTMLButtonElement;
   button.classList.add("load-request");
   button.disabled = true;
-  updateParams();
+  window.updateParams();
   try {
     await updateCombinedImpact();
   } finally {
@@ -440,12 +440,6 @@ async function updateCombinedImpact({
 }: UpdateCombinedOptions = {}) {
   const paramsGrouped = getParamsGrouped();
 
-  // const colorBy =
-  //   paramsGrouped.color_by?.join() ||
-  //   document
-  //     .querySelector("input[id^=id_metadata_]")
-  //     ?.id?.replace(/^id_metadata_(\w+)__(?:min|max)/, "$1");
-
   const countries = (paramsGrouped.countries as CountriesEnum[]) ?? [];
   const tableEvents = countriesOnly
     ? []
@@ -456,10 +450,6 @@ async function updateCombinedImpact({
     return;
   }
 
-  // const allColumns = without(
-  //   uniq([...tableColumns].flat().filter(Boolean)),
-  //   ...SUMMARY_COLUMNS
-  // );
   const areas = paramsGrouped.areas ?? [];
   const exposure = paramsGrouped.exposure ?? [];
   const [colorResultsBy] = paramsGrouped.color_results_by ?? [];
@@ -506,29 +496,14 @@ async function updateCombinedImpact({
 
   const eventsMap = keyBy(events ?? [], "id");
 
-  // TODO: do we want to include the current-mapped column in the table or not?
   const { geojson, data } = buildResultsMapAndTableData({
     shapes: shapes ?? [],
     areas,
     areaDefinitions: areaDefinitions ?? {},
     countries,
     tableColumns: RESULT_COLUMNS,
-    mapColumns: [],
-    eventsMap: eventsMap ?? {},
-    values: values ?? lastResults ?? [],
+    values: values ?? lastResults ?? null,
   });
-
-  // If the selected map column is one of the selected table columns, we'll
-  // display ALL columns if you click on a NUTS3 region, beginning with the
-  // selected one (to ensure that that one has its values displayed in the map).
-  // And if there are extra columns (min overlap, max total) we'll display them
-  // too.
-  // if (
-  //   events[0] &&
-  //   (tableColumns.includes(events[0]) || SUMMARY_COLUMNS.includes(events[0]))
-  // ) {
-  //   events = uniq([events[0], ...tableColumns, ...extraColumns]);
-  // }
 
   cleanupLayer(LayerNames.Region);
 
@@ -550,7 +525,7 @@ async function updateCombinedImpact({
     values: geojson.map(
       (feature) => feature.properties?.columns?.[colorResultsBy!] ?? null
     ),
-    title: RESULT_COLUMN_TITLES[colorResultsBy],
+    title: RESULT_COLUMN_TITLES[colorResultsBy!],
   });
 
   updateRegionLayer(
@@ -569,16 +544,7 @@ async function updateCombinedImpact({
 }
 
 function updateEventFootprintLayer(
-  events: {
-    collection_id: number;
-    footprint?: string | { [key: string]: unknown } | null;
-    footprint_type: string;
-    id: number;
-    location?: { [key: string]: number } | null;
-    hazard?: string;
-    hazardLabel?: string;
-    unit?: string;
-  }[],
+  events: HrscEventSchema[],
   paletteName: chroma.BrewerPaletteName,
   invertColors: boolean,
   quantisation: QuantisationType
@@ -607,7 +573,7 @@ function updateEventFootprintLayer(
 
       LAYERS.heat_layer!.options = {
         thresholds: colors.colors().length,
-        style: (feature) => {
+        style: (feature: LeafletContourFeature) => {
           return {
             color: colors(feature.geometry.value),
             opacity: 1,
@@ -615,14 +581,17 @@ function updateEventFootprintLayer(
             fillOpacity: 1,
           };
         },
-        onEachFeature: (feature, layer) => {
+        onEachFeature: (
+          feature: MultiPolygon & { value: number },
+          layer: L.HeatLayer
+        ) => {
           layer.bindPopup(
             `<table><tbody><tr><td>${Math.round(feature.value)}km/h</td></tr></tbody></table>`
           );
         },
-      };
+      } as L.HeatMapOptions;
       // @ts-ignore
-      LAYERS.heat_layer.initialize(
+      LAYERS.heat_layer!.initialize(
         footprintToCartesian(
           event.footprint as unknown as [number, number, number][]
         ),
@@ -671,13 +640,13 @@ const RESULT_COLUMN_TITLES: Record<(typeof RESULT_COLUMNS)[number], string> = {
 } as const;
 
 function updateRegionLayer(
-  geojson: Feature[],
+  geojson: Feature<GeometryObject, GeoJsonProperties>[],
   colors: chroma.Scale<chroma.Color>,
   areaDefinitions: Record<string, Nuts3AreaSchema>,
-  eventsMap: Record<string, DataTableColumnSchema>,
+  eventsMap: Dictionary<HrscEventSchema>,
   colorResultsBy: string
 ) {
-  LAYERS.region_layer.options = {
+  LAYERS.region_layer!.options = {
     interactive: true,
     onEachFeature: (_, layer) => {
       layer.on({
@@ -703,7 +672,7 @@ function updateRegionLayer(
         },
       });
     },
-    style: (feature) => {
+    style: (feature: Feature<GeometryObject, GeoJsonProperties>) => {
       const value = feature?.properties?.columns?.[colorResultsBy];
       if (value == null) {
         return { weight: 1 };
@@ -716,16 +685,16 @@ function updateRegionLayer(
     },
   };
 
-  LAYERS.region_layer
-    .addData(geojson as unknown as GeoJsonObject)
-    .bindTooltip(({ feature }) => {
+  LAYERS.region_layer!.addData(geojson as unknown as GeoJsonObject).bindTooltip(
+    ({ feature }) => {
       const area = areaDefinitions[feature.properties.NUTS_ID]!;
       return `${area.label}, ${area.country.label}`;
-    });
+    }
+  );
 }
 
 function updateFilteredEventsLayer(
-  events: Array<FilteredEventData & Record<string, number>>,
+  events: Array<FilteredEventData & Record<string, number | string>>,
   paletteName: chroma.BrewerPaletteName,
   invertColors: boolean,
   quantisation: QuantisationType,
@@ -735,7 +704,7 @@ function updateFilteredEventsLayer(
 
   const values = events
     .map((event) => event[colorBy] ?? 0)
-    .filter((value) => value != null);
+    .filter((value) => value != null) as number[];
 
   const title = `${events[0]?.hazardLabel} search${colorBy ? ` (${colorBy.replace(/_/g, " ")})` : ""}`;
 
@@ -761,18 +730,12 @@ function updateFilteredEventsLayer(
   markers.forEach((marker) => LAYERS.filtered_items_layer?.addLayer(marker));
 }
 
-const MAX_OVERLAP_KEY = "max_overlap";
-const MAX_COMBINED_KEY = "max_combined";
-const SUMMARY_COLUMNS = [MAX_OVERLAP_KEY, MAX_COMBINED_KEY];
-
 function buildResultsMapAndTableData({
   shapes,
   areas,
   areaDefinitions,
   countries,
   tableColumns,
-  mapColumns,
-  eventsMap,
   values,
 }: {
   shapes: ShapeFeature[];
@@ -780,55 +743,27 @@ function buildResultsMapAndTableData({
   areaDefinitions: Record<string, Nuts3AreaSchema>;
   countries: CountriesEnum[];
   tableColumns: string[];
-  mapColumns: string[];
   events: HrscEventSchema[];
-  eventsMap: Dictionary<HrscEventSchema>;
   values: FeatureCollectionSchema | null;
 }): {
-  geojson: Feature[];
+  geojson: Feature<GeometryObject, GeoJsonProperties>[];
   eventGeojson: Feature[];
   data: Array<TableDatum>;
-  extraColumns: string[];
-  min: number;
-  max: number;
 } {
   const geojson: Feature[] = [];
   const eventGeojson: Feature[] = [];
   const data: Array<TableDatum> = [];
-  const min: number = 0;
-  const max: number = 0;
-  const extraColumns: string[] = [];
 
-  const valuesByKey = keyBy(values.features, (v) => v.properties.NUTS_ID);
-
-  // if (tableColumns.length === 2) {
-  //   const [column1, column2] = tableColumns.map((key) => eventsMap[key]) as [
-  //     DataTableColumnSchema,
-  //     DataTableColumnSchema,
-  //   ];
-  //   if (column1.exposure!.key === column2.exposure!.key) {
-  //     extraColumns = SUMMARY_COLUMNS;
-  //   }
-  // }
-
-  // extraColumns.forEach((key) => {
-  //   eventsMap[key] = {
-  //     key,
-  //     label: key,
-  //     description: "",
-  //   };
-  // });
-
-  const isMappingSummaryColumn = SUMMARY_COLUMNS.includes(mapColumns[0]!);
-  // const allPrimaryColumns = isMappingSummaryColumn
-  //   ? tableColumns
-  //   : uniq([...mapColumns, ...tableColumns]);
+  const valuesByKey = keyBy(
+    values?.features ?? [],
+    (v) => v.properties.NUTS_ID
+  );
 
   for (const shape of shapes) {
     if (!shape) {
       continue;
     }
-    const code = shape.properties.NUTS_ID;
+    const code = shape.properties.NUTS_ID as string;
 
     /*
     Because we fetch shapes, areas and data for a whole country (for better
@@ -848,19 +783,13 @@ function buildResultsMapAndTableData({
       continue;
     }
 
-    // const ZeroColumnValues = values?.features?.length
-    //   ? tableColumns.reduce((acc, key) => ({ ...acc, [key]: 0 }), {})
-    //   : {};
-
     if (tableColumns.length && areaDefinitions[code]) {
       const properties = valuesByKey[code]?.properties;
       const regionValues = pick(properties, [...tableColumns]) as Record<
         string,
         number
       >;
-      // if (!Object.keys(regionValues).length) {
-      //   regionValues = ZeroColumnValues;
-      // }
+
       const datum = {
         region: areaDefinitions[code] as Nuts3AreaSchema,
         ...regionValues,
@@ -870,13 +799,12 @@ function buildResultsMapAndTableData({
         ...shape,
         properties: {
           ...shape.properties,
-          // value: primaryValue,
           columns: regionValues,
           ...(properties && "references" in properties
             ? { references: properties.references }
             : {}),
         },
-      };
+      } as Feature<Geometry, GeoJsonProperties>;
       geojson.push(geo);
     }
   }
@@ -910,7 +838,7 @@ function displayDataTable(
   columns: (keyof typeof RESULT_COLUMN_TITLES)[],
   countries: string[],
   data: TableDatum[],
-  eventsMap: Record<string, DataTableColumnSchema>,
+  eventsMap: Dictionary<HrscEventSchema>,
   geojson: Feature[]
 ) {
   const createAreaCellOnClick = (
@@ -918,7 +846,6 @@ function displayDataTable(
     _cellData: string,
     rowData: TableDatum,
     row: number
-    // _col: number
   ) =>
     cell.addEventListener("click", async () => {
       const areaSidebarTemplate = (await import("./area_sidebar_template.ejs"))
@@ -931,7 +858,7 @@ function displayDataTable(
         eventsMap,
         columnsMap: RESULT_COLUMN_TITLES,
         columns,
-        properties: geojson[row]!.properties.columns,
+        properties: geojson[row]!.properties!.columns,
         formatValue: floatTo3Digits,
       });
       const areaDetails = document.getElementById("area-details")!;
@@ -1012,7 +939,7 @@ const baseLayerInput = document.getElementById(
 main_map.addEventListener("baselayerchange", (event: LayersControlEvent) => {
   baseLayerInput.value = event.name;
   if (!usingHistory) {
-    updateParams();
+    window.updateParams();
   }
 });
 
@@ -1020,54 +947,13 @@ resetSelectTreeIndeterminate();
 updateProbabilitiesAndStochastics();
 
 window.closeAreaPanel = function closeAreaPanel() {
-  [
-    "area-details",
-    // "pin-name-title-0",
-    // "column-details-inner",
-  ].forEach((id) => {
+  ["area-details"].forEach((id) => {
     const element = document.getElementById(id);
     if (element) {
       element.innerHTML = "";
     }
   });
 };
-
-// window.setFilters = async function setFilters() {
-//   const sourceTable = document.querySelector(`#column-details-table`);
-//   let targetForm = document.querySelector(`#filters-form`) as HTMLFormElement;
-//   if (!sourceTable || !targetForm) {
-//     return;
-//   }
-//   const values: Record<string, string> = {};
-//   for (const th of sourceTable.querySelectorAll("th")) {
-//     const name = th.dataset["name"];
-//     if (name && targetForm[name]) {
-//       const value = th.dataset["value"];
-//       values[name] = value!;
-//     }
-//   }
-//   if (values.hazard !== targetForm.hazard.value) {
-//     targetForm.hazard.value = values.hazard!;
-//     targetForm.hazard.dispatchEvent(new Event("change"));
-//     await new Promise((resolve) => {
-//       // Use parent element because the form itself will be replaced
-//       targetForm.parentElement!.addEventListener(
-//         "htmx:afterSettle",
-//         (evt: CustomEvent<{ elt: HTMLElement }>) => {
-//           if (evt.detail?.elt!.id === "filters-form") {
-//             targetForm = evt.detail.elt as HTMLFormElement;
-//             return resolve(true);
-//           }
-//         },
-//         { once: true }
-//       );
-//     });
-//   }
-//   for (const key in values) {
-//     (targetForm[key] as HTMLSelectElement).value = values[key]!;
-//   }
-//   targetForm.hazard.dispatchEvent(new Event("change"));
-// };
 
 window.toggleTable = function toggleTable(key: string, label: string) {
   const tableId = "table-events";
@@ -1098,7 +984,7 @@ window.sortColumn = function sortColumn(key: string, direction: "up" | "down") {
 
 async function getGeoJSON(features: components["schemas"]["ShapeFeature"][]) {
   const data = {
-    type: "FeatureCollection",
+    type: "FeatureCollection" as const,
     features,
   };
   createGeoJSONDownload(data, "combined_scenario");
@@ -1109,6 +995,7 @@ window.searchHere = function searchHere() {
   const center: L.LatLng = main_map.getCenter();
   const width = bounds.getNorthWest().distanceTo(bounds.getNorthEast());
   const height = bounds.getNorthWest().distanceTo(bounds.getSouthWest());
+
   // Half the max of width/height, converted to kilometres
   const radius = Math.ceil(Math.max(width, height) * 0.0005);
   const filtersForm = document.getElementById(

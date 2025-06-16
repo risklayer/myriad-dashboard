@@ -20,11 +20,6 @@
         Search stochastic events
         {% include "shared/icon.html" with type="search" class="me-1" %}
       </summary>
-      {% comment %} <ul>
-        {% for key, error in filter_form.errors.items %}
-          <li>{{ key }}: {{ error }}</li>
-        {% endfor %}
-      </ul> {% endcomment %}
       {% crispy filter_form %}
     </details>
   </fieldset>

@@ -1,7 +1,7 @@
 from functools import reduce
 
 
-def float_to_3_digits(value: float) -> str:
+def float_to_3_digits(value: float | int) -> str:
   if isinstance(value, str):
     return value
   if value > 100:
@@ -31,7 +31,7 @@ def float_to_3_digits(value: float) -> str:
   return "{:e}".format(value)
 
 
-def make_choices(items: set, include_blank=True, sort=True, blank: str = "Please select"):
+def make_choices(items: list, include_blank=True, sort=True, blank: str = "Please select"):
   choices = [(x, x if x else blank) for x in (sorted(items) if sort else items)]
   return [(None, "")] + choices if include_blank else choices
 

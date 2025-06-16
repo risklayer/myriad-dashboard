@@ -1,11 +1,8 @@
-import { identity, memoize, sortBy } from "lodash";
+import { identity, sortBy } from "lodash";
 import createClient from "openapi-fetch";
 import {
   ApiPaths,
-  DataTableColumnSchema,
   FeatureCollectionSchema,
-  FeatureCollectionShapeFeature,
-  FeatureCollectionUnionShapeFeatureShapeFeatureArbitraryProperties,
   HrscEventSchema,
   ShapeFeature,
   type CountriesEnum,
@@ -13,8 +10,6 @@ import {
   type paths,
 } from "../../data/types/api";
 import { memoizeUnlessNull } from "../../shared/js/utils";
-
-// import "../../dashboard/js/scripts.d";
 
 export const client = createClient<paths>();
 
@@ -102,35 +97,6 @@ export const getAreasMap = memoizeUnlessNull(
   (countries: string | string[], bbox?: string) =>
     [sortBy([countries].flat(), identity), bbox].flat().join()
 );
-
-export async function downloadGeoJSON({
-  countries,
-  areas,
-  columns,
-}: {
-  countries?: CountriesEnum[] | CountriesEnum;
-  areas?: string[] | string;
-  columns?: string[] | string;
-}): Promise<FeatureCollectionSchema | null> {
-  const {
-    data, // only present if 2XX response
-    error, // only present if 4XX or 5XX response
-  } = await client.GET(ApiPaths.data_v1_areas_shapes, {
-    params: {
-      query: {
-        countries: [countries!].flat().filter(Boolean),
-        columns: [columns!].flat().filter(Boolean),
-        nuts3areas: [areas!].flat().filter(Boolean),
-      },
-    },
-  });
-  if (error) {
-    window.toast("Sorry, there was a problem retrieving dataset details.");
-    console.error(error);
-    return null;
-  }
-  return data;
-}
 
 export const getCombinedImpact = memoizeUnlessNull(
   async function getCombinedImpact(
