@@ -365,8 +365,7 @@ export function applyFormValuesToParams(
       ).map((input) => input.name)
     );
 
-    // .entries() is in all browsers, but not in web standards yet (?)
-    // @ts-ignore
+    // @ts-expect-error .entries() is in all browsers, but not in web standards yet (?)
     for (const [name, value] of formData.entries()) {
       if (treeInputs.has(name) || value === "" || value == null) {
         continue;

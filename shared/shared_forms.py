@@ -98,7 +98,7 @@ class RegionsForm(Form):
       selected_countries = set(self.initial.get("countries"))
       selected_areas = set(self.initial.get("areas"))
     all_selected = "ALL" in selected_countries
-    # regions = Nuts3Area.objects.all().order_by("label")
+
     countries_tree = []
     for country in countries:
       areas = country.areas.all().order_by("label")

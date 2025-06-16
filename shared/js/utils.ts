@@ -3,10 +3,6 @@ import { components } from "../../data/types/api";
 import type { Api as DataTableApi } from "datatables.net-bs5";
 
 export function floatTo3Digits(value: number): string {
-  // if (value > 1000000) {
-  //   const digits = Math.floor((String(Math.round(value)).length - 4) / 3);
-  //   return String(round(value, -digits * 3));
-  // }
   if (value > 100) {
     return String(round(value, 0));
   }
@@ -82,10 +78,14 @@ export function createGeoJSONDownload(
 export const memoizeUnlessNull = ((func, resolver) => {
   const memoized = memoize(func, resolver);
   return (...args: Parameters<typeof func>) => {
-    const result = memoized(...args);
-    if (result === null) {
-      // @ts-expect-error memoized.resolve is an undocumented method
-      memoized.cache.delete(memoized.resolve(...args));
+    let result = null;
+    try {
+      result = memoized(...args);
+    } finally {
+      if (result === null) {
+        // @ts-expect-error memoized.resolve is an undocumented method
+        memoized.cache.delete(memoized.resolve(...args));
+      }
     }
     return result;
   };

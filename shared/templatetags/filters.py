@@ -43,7 +43,7 @@ def fix_danube_columns(value):
       "\\b(flood|fl)\\b",
       "Flood",
       re.sub(
-        "\\btotal\\b", "Total", re.sub("^fp\s(.+)$", "\\1 Footprint", re.sub("_", " ", value))
+        "\\btotal\\b", "Total", re.sub("^fp\\s(.+)$", "\\1 Footprint", re.sub("_", " ", value))
       ),
     ),
   )

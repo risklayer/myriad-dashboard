@@ -1,7 +1,6 @@
 import L from "leaflet";
 import { grayscaleTileLayer } from "./leaflet_grayscale";
 
-// TODO update attribution
 export const grayscaleLayer = grayscaleTileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {

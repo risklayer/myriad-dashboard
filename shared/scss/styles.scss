@@ -40,7 +40,6 @@
   height: auto;
   overflow: visible;
   width: auto;
-  /* @apply bg-ws-blue-500 p-3 text-white; */
 }
 
 /* Main shared styles */
@@ -59,19 +58,7 @@
     var(--theme-color-2-rgb),
     var(--theme-color-3-rgb)
   );
-  /* a {
-		color: white;
-		&:not(:focus) {
-			text-decoration: none;
-		}
-	} */
 }
-
-/* h1, h2, h3, h4, h5, h6 {
-  color: #000;
-  line-height: 1.25em;
-  margin-bottom: 60px;
-} */
 
 h1,
 h2,
@@ -123,14 +110,6 @@ h6 {
   color: #374cff;
   font-size: 1.125rem;
 }
-
-/* p {
-  margin-top: 1.875rem;
-} */
-
-/* textarea, input {
-  field-sizing: content;
-} */
 
 /* Features */
 /* https://getbootstrap.com/docs/5.3/examples/features/ */
