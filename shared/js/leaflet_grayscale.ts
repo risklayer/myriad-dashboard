@@ -56,7 +56,7 @@ const GrayscaleTileLayer = L.TileLayer.extend({
           this.options.quotaDivider();
     }
     ctx.putImageData(imgd, 0, 0);
-    img.setAttribute("data-grayscaled", "");
+    img.setAttribute("data-grayscaled", "true");
     img.src = canvas.toDataURL();
   },
 }) as unknown as typeof L.TileLayer;
