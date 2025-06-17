@@ -36,7 +36,7 @@
           <p>Combined impacts for a flood and earthquake in the Danube region</p>
           {% include "shared/settings_form.html" with form=settings_form only %}
           {% include "shared/regions_form.html" with countries=countries open=False only %}
-          {% show_showcase_form request=request filter_form=filter_form pinned=pinned pinned_keys=pinned_keys column=column %}
+          {% show_showcase_form request=request filter_form=filter_form column=column %}
           <input type="hidden"
                  id="column-select-hidden"
                  name="column"
@@ -89,7 +89,7 @@
                 </select>
                 <ul class="list-group mb-2">
                   {% for column_key in table_columns %}
-                    {% include "showcase/table_datasets_list_item.html" with key=column_key pin_label=pinned|pin_label:column_key only %}
+                    {% include "showcase/table_datasets_list_item.html" with key=column_key only %}
                   {% endfor %}
                   {% include "showcase/table_datasets_list_total_item.html" with key="max_overlap" pin_label="Maximum overlapping exposure (2 hazards)" class="summary-column" only %}
                   {% include "showcase/table_datasets_list_total_item.html" with key="max_combined" pin_label="Maximum combined exposure (2 hazards)" class="summary-column" only %}

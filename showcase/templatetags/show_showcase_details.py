@@ -9,8 +9,6 @@ register = template.Library()
 def show_showcase_details(
   hazard: str | None,
   exposure: str | None,
-  # pinned=None,
-  # pinned_keys=None,
 ):
   if not hazard or not exposure:
     return None
@@ -30,7 +28,6 @@ def show_showcase_details(
 
   return {
     "column": column,
-    # # "pinned": pinned,
-    # # "pinned_keys": pinned_keys,
-    # "summary_column": summary_column,
+    "hazard": hazard,
+    "exposure": exposure,
   }

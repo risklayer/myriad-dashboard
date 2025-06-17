@@ -1,13 +1,10 @@
 {% load filters %}
 
-{% comment %} <h2 id="pin-name-title-0" class="h5 p-0 mb-2 text-center rounded-5 exposure-title pin-label pin-label-{{ pin_key|slugify }}">
-  {% if column %}{{ pinned|pin_label:column.key }}{% endif %}
-</h2> {% endcomment %}
 <input type="hidden" name="item_selected_0" value="{{ column.key }}" />
 {% if column %}
   <div id="column-details-inner">
     {% if not summary_column %}
-      {% include "shared/action_buttons.html" with pinned=pinned key=column.key pinned_keys=pinned_keys panel="0" pin_type="exposure" add_to_table=True set_filters=False show_pin=False only %}
+      {% include "shared/action_buttons.html" with pinned=pinned key=exposure pinned_keys=pinned_keys panel="0" pin_type="exposure" add_to_table=True set_filters=False show_pin=False only %}
     {% endif %}
     <table id="column-details-table" class="table table-stacked-headless">
       <tbody>

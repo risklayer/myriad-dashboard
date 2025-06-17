@@ -10,14 +10,19 @@ import "datatables.net-buttons/js/buttons.print";
 import "datatables.net-buttons/js/dataTables.buttons";
 import jQuery from "jquery";
 
-import type { Feature, GeoJsonObject } from "geojson";
+import type {
+  Feature,
+  GeoJsonObject,
+  GeoJsonProperties,
+  Geometry,
+} from "geojson";
 
 import chroma from "chroma-js";
 import "../../shared/js/leaflet_grayscale";
 
 import "@gnatih/leaflet.legend";
 import { LayersControlEvent } from "leaflet";
-import { sortBy, uniq, without } from "lodash";
+import { sortBy, uniq } from "lodash";
 import {
   DataTableColumnSchema,
   Nuts3AreaSchema,
@@ -40,6 +45,7 @@ import {
   LayerNames,
   QuantisationType,
 } from "../../shared/js/map_tools";
+import { TableDatum } from "../../shared/js/types";
 import { createGeoJSONDownload } from "../../shared/js/utils";
 import {
   downloadGeoJSON,
@@ -48,7 +54,6 @@ import {
   getShapesList,
   getValuesMap,
 } from "./showcase_api";
-import { TableDatum } from "./types";
 
 declare global {
   interface Window {
@@ -83,7 +88,6 @@ const {
   cleanupLayer,
   updateBaseLayer,
   returnHome,
-  zoomTo,
   updateMapButtonStates,
   updateTableButtonStates,
 } = createMap({
@@ -102,15 +106,10 @@ window.formUpdate = function formUpdate(
   clickedElement?: HTMLSelectElement | HTMLInputElement,
   options?: FormUpdateOptions
 ) {
-  options = handleMapButtonClick(
-    clickedElement,
-    options,
-    "filters-form",
-    "column"
-  );
+  handleMapButtonClick(clickedElement, options, "filters-form", "column");
   updateParams(clickedElement);
   updateMapButtonStates();
-  updateMapAndTable(options);
+  updateMapAndTable();
 };
 
 // Flag to indicate that current action is from a popstate so that changes
@@ -191,9 +190,7 @@ function getColumnName(hazard: HazardTypes, code: string): string | null {
   return key; // `Danube_multi_hazard_scenario_A21_${key}`;
 }
 
-async function updateMapAndTable({
-  zoomToFit = "auto",
-}: FormUpdateOptions = {}) {
+async function updateMapAndTable() {
   const paramsGrouped = getParamsGrouped();
 
   const countries = (paramsGrouped.countries as CountriesEnum[]) ?? ["ALL"];
@@ -208,7 +205,7 @@ async function updateMapAndTable({
   // Always show footprints first, then other valuesin alphabetical order
   const tableColumnCodes = sortBy(paramsGrouped.table_columns ?? [], (col) =>
     col === "fp" ? "" : col
-  );
+  ).filter((col) => /^(fp|[A-S])$/.test(col));
 
   const columns = Array.from(
     (paramsGrouped.column ?? ["fp"]) as string | string[]
@@ -217,16 +214,15 @@ async function updateMapAndTable({
   const tableColumns = uniq(tableColumnCodes)
     .map((code) => hazards.map((h) => getColumnName(h, code)))
     .flat()
-    .filter(Boolean);
+    .filter(Boolean) as string[];
 
   const mapColumns: string[] = columns
     .map((column) => getColumnName(hazard, column)!)
     .filter(Boolean);
 
-  const allColumns = without(
-    uniq([mapColumns, tableColumns].flat().filter(Boolean)) as string[]
-    // ...SUMMARY_COLUMNS
-  );
+  const allColumns = uniq(
+    [mapColumns, tableColumns].flat().filter(Boolean)
+  ) as string[];
   const areas = paramsGrouped.areas ?? [];
 
   const showAllCountries = countries?.includes("ALL");
@@ -241,7 +237,7 @@ async function updateMapAndTable({
       ]) as CountriesEnum[]);
 
   if (!countries.length && !areas.length) {
-    cleanupLayer("region_layer");
+    cleanupLayer(LayerNames.Region);
     hideLegend();
     returnHome();
     return;
@@ -252,10 +248,6 @@ async function updateMapAndTable({
     allColumns,
     countriesIncludingAreas
   );
-  if (!columnsMap || !Object.keys(shapes).length) {
-    window.toast(`Sorry, no matching column definitions found`);
-    return;
-  }
   if (!shapes || !Object.keys(shapes).length) {
     window.toast(`Sorry, no outlines found for ${countries.join(", ")}`);
     return;
@@ -264,6 +256,10 @@ async function updateMapAndTable({
     window.toast(`Sorry, no areas found for ${countries.join(", ")}`);
     return;
   }
+  if (!columnsMap || !Object.keys(shapes).length) {
+    window.toast(`Sorry, no matching column definitions found`);
+    // Don't return, can still draw the map
+  }
   if (tableColumns.length && (!values?.length || !Object.keys(values).length)) {
     window.toast(
       `Sorry, no values found for ${countries.join(", ")} and ${tableColumns}`
@@ -271,32 +267,17 @@ async function updateMapAndTable({
     // Don't return, can still draw the map
   }
 
-  // TODO: do we want to include the current-mapped column in the table or not?
-  const { geojson, data, extraColumns, min, max } = buildMapAndTableData({
+  const { geojson, data, extraColumns } = buildMapAndTableData({
     shapes,
     areas,
     areaDefinitions,
     countries,
     tableColumns,
     mapColumns,
-    columnsMap,
     values,
   });
 
-  // If the selected map column is one of the selected table columns, we'll
-  // display ALL columns if you click on a NUTS3 region, beginning with the
-  // selected one (to ensure that that one has its values displayed in the map).
-  // And if there are extra columns (min overlap, max total) we'll display them
-  // too.
-  // if (
-  //   mapColumn[0] &&
-  //   (tableColumns.includes(mapColumn[0]) ||
-  //     SUMMARY_COLUMNS.includes(mapColumn[0]))
-  // ) {
-  //   mapColumn = uniq([mapColumn[0], ...tableColumns, ...extraColumns]);
-  // }
-
-  cleanupLayer("region_layer");
+  cleanupLayer(LayerNames.Region);
 
   // Domain is reversed so higher values are red
   const paletteName = (paramsGrouped.colors?.[0] ??
@@ -315,8 +296,14 @@ async function updateMapAndTable({
       values: geojson.map((feature) => feature.properties?.value),
       title: getLegendTitle(mapColumns[0]!),
     });
-    // allColumns has mapColumn first
-    updateRegionLayer(geojson, colors, areaDefinitions, columnsMap, allColumns);
+
+    updateRegionLayer(
+      geojson,
+      colors,
+      areaDefinitions,
+      columnsMap ?? {},
+      allColumns
+    );
   }
 
   setTimeout(() => {
@@ -324,12 +311,12 @@ async function updateMapAndTable({
       [...tableColumns, ...extraColumns],
       countries,
       data,
-      columnsMap,
+      columnsMap ?? {},
       geojson
     );
     setTimeout(
       () =>
-        main_map.invalidateSize().fitBounds(LAYERS.region_layer.getBounds()),
+        main_map.invalidateSize().fitBounds(LAYERS.region_layer!.getBounds()),
       50
     );
   });
@@ -337,12 +324,12 @@ async function updateMapAndTable({
 
 function updateRegionLayer(
   geojson: Feature[],
-  colors?: chroma.Scale<chroma.Color> | null,
+  colors: chroma.Scale<chroma.Color> | null,
   areaDefinitions: Record<string, Nuts3AreaSchema>,
   columnsMap: Record<string, DataTableColumnSchema>,
   columns: string[]
 ) {
-  LAYERS.region_layer.options = {
+  LAYERS.region_layer!.options = {
     interactive: true,
     onEachFeature: (_, layer) => {
       layer.on({
@@ -378,24 +365,20 @@ function updateRegionLayer(
       }
       const { value } = feature.properties;
       if (colors && value != undefined) {
-        const color = colors(feature.properties.value);
+        const color = colors(feature.properties.value).toString();
         return { color, weight: 1, fillOpacity: 0.7 };
       }
       return {};
     },
   };
 
-  LAYERS.region_layer
-    .addData(geojson as unknown as GeoJsonObject)
-    .bindTooltip(({ feature }) => {
+  LAYERS.region_layer!.addData(geojson as unknown as GeoJsonObject).bindTooltip(
+    ({ feature }) => {
       const area = areaDefinitions[feature.properties.NUTS_ID]!;
       return `${area.label}, ${area.country.label}`;
-    });
+    }
+  );
 }
-
-const MAX_OVERLAP_KEY = "max_overlap";
-const MAX_COMBINED_KEY = "max_combined";
-const SUMMARY_COLUMNS = [MAX_OVERLAP_KEY, MAX_COMBINED_KEY];
 
 function buildMapAndTableData({
   shapes,
@@ -404,7 +387,6 @@ function buildMapAndTableData({
   countries,
   tableColumns,
   mapColumns,
-  columnsMap,
   values,
 }: {
   shapes: ShapeFeature[];
@@ -413,51 +395,23 @@ function buildMapAndTableData({
   countries: CountriesEnum[];
   tableColumns: string[];
   mapColumns: string[];
-  columnsMap: Record<string, DataTableColumnSchema>;
   values: Array<Record<string, Record<string, number>> | null> | null;
 }): {
   geojson: Feature[];
   data: Array<TableDatum>;
   extraColumns: string[];
-  min: number;
-  max: number;
 } {
   const geojson: Feature[] = [];
   const data: Array<TableDatum> = [];
-  let min: number = 0;
-  let max: number = 0;
   const extraColumns: string[] = [];
 
-  // if (tableColumns.length === 2) {
-  //   const [column1, column2] = tableColumns.map((key) => columnsMap[key]) as [
-  //     DataTableColumnSchema,
-  //     DataTableColumnSchema,
-  //   ];
-  //   if (column1.exposure!.key === column2.exposure!.key) {
-  //     extraColumns = SUMMARY_COLUMNS;
-  //   }
-  // }
-
-  // extraColumns.forEach((key) => {
-  //   columnsMap[key] = {
-  //     key,
-  //     label: key,
-  //     description: "",
-  //   };
-  // });
-
-  // const isMappingSummaryColumn = SUMMARY_COLUMNS.includes(mapColumns[0]!);
-  const isMappingSummaryColumn = false;
-  // const allPrimaryColumns = isMappingSummaryColumn
-  //   ? tableColumns
-  //   : uniq([...mapColumns, ...tableColumns]);
   const allPrimaryColumns = uniq([...mapColumns, ...tableColumns]);
 
   for (const shape of shapes) {
     if (!shape) {
       continue;
     }
-    const code = shape.properties.NUTS_ID;
+    const code = shape.properties.NUTS_ID as string;
 
     /*
     Because we fetch shapes, areas and data for a whole country (for better
@@ -481,43 +435,19 @@ function buildMapAndTableData({
       const datum = {
         region: areaDefinitions[code] as Nuts3AreaSchema,
       } as TableDatum;
+      data.push(datum);
+
       const region_values: Record<string, number> = {};
       let geo: Feature;
-
-      // extraColumns will only exist if there are exactly two data columns
-      // with matching exposure types
-      extraColumns.forEach((column: string) => {
-        const val0 = values?.[0]?.[tableColumns[0]!]?.[code] ?? 0;
-        const val1 = values?.[1]?.[tableColumns[1]!]?.[code] ?? 0;
-        const value =
-          column === MAX_OVERLAP_KEY
-            ? Math.min(val0, val1)
-            : // TODO Math.min with area total exposure once available
-              val0 + val1;
-        datum[column] = region_values[column] = value;
-      });
 
       allPrimaryColumns.forEach((column: string, i: number) => {
         const value = values?.[i]?.[column]?.[code] ?? 0;
 
         datum[column] = region_values[column] = value;
+
         if (i === 0) {
-          const primaryValue = isMappingSummaryColumn
-            ? datum[mapColumns[0]!]!
-            : value;
-          /*
-          Only calculate max/min based on the first column (which, if
-          selected, will be the map column), and add the data to the table/
-          geojson arrays once only (other columns will be added to the 
-          objects after they have been appeanded to the arrays).
-          */
-          if (primaryValue < min) {
-            min = primaryValue;
-          }
-          if (primaryValue > max) {
-            max = primaryValue;
-          }
-          data.push(datum);
+          const primaryValue = value;
+
           geo = {
             ...shape,
             properties: {
@@ -525,15 +455,16 @@ function buildMapAndTableData({
               value: primaryValue,
               columns: region_values,
             },
-          };
+          } as Feature<Geometry, GeoJsonProperties>;
+
           geojson.push(geo);
         }
       });
     } else {
-      geojson.push(shape);
+      geojson.push(shape as Feature);
     }
   }
-  return { geojson, data, extraColumns, max, min };
+  return { geojson, data, extraColumns };
 }
 
 function fetchMapResources(
@@ -586,6 +517,7 @@ function displayDataTable(
       areaDetails.innerHTML = contents;
       areaDetails.scrollIntoView({ behavior: "smooth" });
     });
+
   const column_spec: ConfigColumns[] = [
     {
       data: "region.key",
@@ -612,10 +544,12 @@ function displayDataTable(
       searchable: false,
     })),
   ];
+
   if (values_table) {
     values_table.destroy();
     jQuery("#values-table").empty();
   }
+
   const title = `Scenario showcase for ${countries.join(", ")} (${columns})`;
 
   values_table = new DataTable("#values-table", {
@@ -652,6 +586,7 @@ function displayDataTable(
 const baseLayerInput = document.getElementById(
   "id_base_layer"
 ) as HTMLInputElement;
+
 main_map.addEventListener("baselayerchange", (event: LayersControlEvent) => {
   baseLayerInput.value = event.name;
   if (!usingHistory) {
@@ -663,11 +598,7 @@ resetSelectTreeIndeterminate();
 updateMapAndTable();
 
 window.closeAreaPanel = function closeAreaPanel() {
-  [
-    "area-details",
-    // "pin-name-title-0",
-    // "column-details-inner",
-  ].forEach((id) => {
+  ["area-details"].forEach((id) => {
     const element = document.getElementById(id);
     if (element) {
       element.innerHTML = "";
@@ -689,6 +620,7 @@ window.setFilters = async function setFilters() {
       values[name] = value!;
     }
   }
+
   if (values.hazard !== targetForm.hazard.value) {
     targetForm.hazard.value = values.hazard!;
     targetForm.hazard.dispatchEvent(new Event("change"));
@@ -706,9 +638,11 @@ window.setFilters = async function setFilters() {
       );
     });
   }
+
   for (const key in values) {
     (targetForm[key] as HTMLSelectElement).value = values[key]!;
   }
+
   targetForm.hazard.dispatchEvent(new Event("change"));
 };
 

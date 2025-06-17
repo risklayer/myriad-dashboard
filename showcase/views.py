@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
+from data.models import DataTableColumn, DataTableColumnMetadataValueString
 from shared.shared_forms import MapSettingsForm, RegionsForm
 from showcase.showcase_forms import ShowcaseFilterForm
 
@@ -28,8 +29,11 @@ def index(request):
   template = "showcase/index.html"
 
   column = request.GET.get("column") or None
-  # TODO check that column is valid
   table_columns = request.GET.getlist("table_columns") or None
+
+  if table_columns and len(table_columns):
+    a_to_s = [chr(c) for c in range(65, 84)]
+    table_columns = [col for col in table_columns if col in a_to_s or col == "fp"]
 
   settings_form = MapSettingsForm(request.GET)
 
@@ -40,7 +44,7 @@ def index(request):
       request.GET,
       initial={
         "hazard": "EQ",
-        "columnn": ["fp"],
+        "column": ["fp"],
       },
     )
     filter_form.full_clean()
@@ -53,7 +57,7 @@ def index(request):
     filter_form = ShowcaseFilterForm(
       initial={
         "hazard": "EQ",
-        "columnn": ["fp"],
+        "column": ["fp"],
       },
     )
     hazard_key = "EQ"

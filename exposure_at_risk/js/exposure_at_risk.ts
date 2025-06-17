@@ -50,7 +50,7 @@ import {
   getShapesList,
   getValuesMap,
 } from "./exposure_at_risk_api";
-import { TableDatum } from "./types";
+import { TableDatum } from "../../shared/js/types";
 
 declare global {
   interface Window {
@@ -307,7 +307,7 @@ function updateRegionLayer(
         return { weight: 1 };
       }
       const { value } = feature.properties;
-      const color = colors(feature.properties.value);
+      const color = colors(feature.properties.value).toString();
       if (value != undefined) {
         return { color, weight: 1, fillOpacity: 0.7 };
       }

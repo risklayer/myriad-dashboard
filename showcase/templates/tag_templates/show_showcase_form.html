@@ -29,9 +29,6 @@
           <li class="list-group-item d-flex gap-1 align-items-start p-0">
             <div class="col-9 px-2 py-1">NACE Rev 2.1 code {{ code }}</div>
             <div class="btn-group col-3">
-              {% comment %} {% include "shared/pin_button.html" with pinned=pinned key=column_instance.key pinned_keys=pinned_keys
-                    index="list" panel="list-"|add:column_instance.key|slugify pin_type="exposure" compact=True confirm=True
-              only %} {% endcomment %}
               {% include "showcase/show_on_map_button.html" with key=code compact=True
               active=column|equals:code only %}
               {% include "shared/add_to_table_button.html" with key=code compact=True only %}

@@ -71,7 +71,7 @@ import {
   getEventDetail,
   getShapesList,
 } from "./scenario_calculator_api";
-import { TableDatum } from "./types";
+import { TableDatum } from "../../shared/js/types";
 
 // window.htmx.logAll();
 
@@ -795,6 +795,7 @@ function buildResultsMapAndTableData({
         ...regionValues,
       } as TableDatum;
       data.push(datum);
+
       const geo = {
         ...shape,
         properties: {
@@ -805,6 +806,7 @@ function buildResultsMapAndTableData({
             : {}),
         },
       } as Feature<Geometry, GeoJsonProperties>;
+
       geojson.push(geo);
     }
   }

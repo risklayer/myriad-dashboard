@@ -37,11 +37,8 @@ class ShowcaseFilterForm(Form):
   column = ChoiceField(
     label="NACE Rev 2.1 code",
     choices=list(),
-    # empty_label="",
-    # to_field_name="key",
     required=False,
     initial=("A21_A", "A21_A"),
-    # initial=0,
   )
 
   def __init__(self, *args, **kwargs):
@@ -55,8 +52,6 @@ class ShowcaseFilterForm(Form):
       include_blank=False,
     )
 
-    # meta_field_names = self.configure_fields()
-
     self.helper = FormHelper()
     self.helper.form_tag = False
     self.helper.disable_csrf = True
@@ -64,6 +59,4 @@ class ShowcaseFilterForm(Form):
     self.helper.field_class = "col-12 pb-0"
     self.helper.layout = Layout(
       "hazard",
-      # "column",
-      #   *meta_field_names,
     )

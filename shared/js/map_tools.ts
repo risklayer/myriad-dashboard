@@ -209,7 +209,7 @@ export function createMap<TLayers extends LayerNames[]>({
   itemFieldName: "event" | "column";
   tableSelectElementId: string;
   tableSelectButtonClass: string;
-  layers: Record<TLayers[0], string>;
+  layers: Partial<Record<TLayers[0], string>>;
 }) {
   const main_map: L.Map = L.map("map", {
     center: [latitude, longitude],

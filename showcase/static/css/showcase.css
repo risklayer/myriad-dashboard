@@ -13,12 +13,9 @@
 
 /* Grid layout */
 .layout-grid {
-  /* max-height: calc(100vh - var(--navbar-height));
-  height: calc(100vh - var(--navbar-height)); */
   display: grid;
   grid-template-columns: minmax(300px, 20vw) 1fr minmax(300px, 20vw);
   grid-template-rows: 1fr min-content;
-  /* grid-auto-rows: 1fr; */
   gap: 0px 0px;
   grid-auto-flow: row;
   justify-content: stretch;
@@ -45,17 +42,12 @@
   grid-area: right-toolbar-wrapper;
   height: 0;
   min-height: 100%;
-  /* overflow-y: hidden; */
 }
 
 .right-toolbar-contents {
   overflow-x: hidden;
   overflow-y: auto;
 }
-
-/* .area-details,
-.column-details {
-} */
 
 .left-side-bars {
   display: grid;
@@ -72,10 +64,6 @@
 .left-side-bars-header {
   grid-area: left-side-bars-header;
 }
-
-/* .regions-form-wrapper {
-  grid-area: regions-form-wrapper;
-} */
 
 .filters-form-wrapper {
   grid-area: filters-form;
