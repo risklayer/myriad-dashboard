@@ -36,7 +36,6 @@ INSTALLED_APPS = [
   # local
   "shared",
   "dashboard",
-  "ui",
   "curve_explorer",
   "exposure_at_risk",
   "vulnerability_index_editor",
