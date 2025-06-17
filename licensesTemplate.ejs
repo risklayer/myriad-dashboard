@@ -2,7 +2,42 @@
   Open Source Software Licenses
 </h2>
 <div class="p-4">
-  <p>This software includes a variety of open source software packages, which are listed below:</p>
+  <p>
+    <a href="https://www.myriad-multirisk.eu">MYRIAD-EU Multi-Risk Toolkit</a> copyright <%- (new Date().getFullYear())
+      %> <a href="https://www.risklayer.com">Risklayer GmbH</a>.
+  </p>
+
+  <p>
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+    documentation files (the “Software”), to deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to the following conditions:
+  </p>
+
+  <p>
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+    Software.
+  </p>
+
+  <p>
+    THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+    THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+  </p>
+  <hr>
+  <p>
+    <a href="https://www.myriad-multirisk.eu">MYRIAD-EU Multi-Risk Toolkit Datasets</a> © <%- (new Date().getFullYear())
+      %> by <a href="https://www.risklayer.com">Risklayer GmbH</a> are licensed under <a
+        href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International</a><img
+        src="https://mirrors.creativecommons.org/presskit/icons/cc.svg"
+        style="max-width: 1em;max-height:1em;margin-left: .2em;"><img
+        src="https://mirrors.creativecommons.org/presskit/icons/by.svg"
+        style="max-width: 1em;max-height:1em;margin-left: .2em;">
+  </p>
+  <hr>
+  <p>This software was built using a variety of open source software packages, which are listed below.</p>
   <% data.items.map(item=> { %>
     <h3><%- item.name %></h3>
     <table class="table w-100">
@@ -47,7 +82,7 @@
     <% if (item.licenseText) { %>
       <details class="mt-2">
         <summary>License details</summary>
-        <%= item.licenseText.replace(/(\\r?\\n)/g, "<br>" ) %>
+        <pre class="mt-3"><%- item.licenseText.replace(/(\\r?\\n)/g, "\\n" ) %></pre>
       </details>
       <% } %>
         <hr>

@@ -1,8 +1,7 @@
 {% load dashboard %}
 {% load static %}
 
-<a xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}#main"
-   class="skip-link">Skip to main content</a>
+<a href="#main" class="skip-link">Skip to main content</a>
 <nav class="navbar navbar-expand-xl" data-bs-theme="dark">
   <div class="container-fluid">
     <button class="navbar-toggler"
@@ -16,7 +15,7 @@
     </button>
     {% url "home" as home_url %}
     <span class="navbar-brand p-0">
-      <a xlink:href="{% static "bootstrap-icons/bootstrap-icons.svg" %}{{ home_url }}">
+      <a href="{{ home_url }}">
         <img src="{% static 'img/myriad-logo-white.svg' %}"
              alt="MYRIAD-EU: Reducing risks together"
              height="40"
