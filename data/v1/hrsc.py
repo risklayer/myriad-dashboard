@@ -260,17 +260,25 @@ def calculate_impact(
 
     all_vulnerability_curves.append(vulnerability_curve)
 
-    event_bounds = event.get_bounds()
-    this_event_bbox_min_x, this_event_bbox_min_y, this_event_bbox_max_x, this_event_bbox_max_y = (
-      event_bounds
-    )
+    start_x = 0
+    stop_x = steps_x
+    start_y = 0
+    stop_y = steps_y
 
-    start_y, start_x = rasterio.transform.rowcol(
-      result_transform, this_event_bbox_min_x, this_event_bbox_max_y, op=math.floor
-    )
-    stop_y, stop_x = rasterio.transform.rowcol(
-      result_transform, this_event_bbox_max_x, this_event_bbox_min_y, op=math.ceil
-    )
+    event_bounds = event.get_bounds()
+
+    # Not all event types have set bounds
+    if event_bounds:
+      this_event_bbox_min_x, this_event_bbox_min_y, this_event_bbox_max_x, this_event_bbox_max_y = (
+        event_bounds
+      )
+
+      start_y, start_x = rasterio.transform.rowcol(
+        result_transform, this_event_bbox_min_x, this_event_bbox_max_y, op=math.floor
+      )
+      stop_y, stop_x = rasterio.transform.rowcol(
+        result_transform, this_event_bbox_max_x, this_event_bbox_min_y, op=math.ceil
+      )
 
     start_y = max(start_y, 0)
     start_x = max(start_x, 0)
