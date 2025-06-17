@@ -1,4 +1,5 @@
 from itertools import groupby
+from types import FunctionType
 from django.forms import (
   ModelChoiceField,
   ModelMultipleChoiceField,
@@ -30,15 +31,41 @@ class GroupedModelChoiceIterator(ModelChoiceIterator):
       yield (group, [self.choice(value) for value in values])
 
 
+class PostSortedModelChoiceIterator(ModelChoiceIterator):
+  def __init__(self, field, *args, sort_by: FunctionType, **kwargs):
+    super(PostSortedModelChoiceIterator, self).__init__(field, *args, **kwargs)
+    self.sort_by = sort_by
+
+  def __iter__(self):
+    if self.field.empty_label is not None:
+      yield ("", self.field.empty_label)
+    queryset = self.field.queryset
+    # Can't use iterator() when queryset uses prefetch_related()
+    if not queryset._prefetch_related_lookups:
+      queryset = queryset.iterator()
+    for obj in sorted(queryset, key=self.sort_by):
+      yield self.choice(obj)
+
+
 class LabelSelectionField(ModelChoiceField):
   def __init__(
-    self, *args, title_case=False, sentence_case=False, group_by: str | None = None, **kwargs
+    self,
+    *args,
+    title_case=False,
+    sentence_case=False,
+    group_by: str | None = None,
+    sort_by: FunctionType | None = None,
+    **kwargs,
   ):
     super(LabelSelectionField, self).__init__(*args, **kwargs)
     self.title_case = title_case
     self.sentence_case = sentence_case
     if group_by:
+      if sort_by:
+        raise Exception("Cannot use both group_by and sort_by on LabelSelectionField")
       self.iterator = lambda s: GroupedModelChoiceIterator(s, group_by=group_by)
+    elif sort_by:
+      self.iterator = lambda s: PostSortedModelChoiceIterator(s, sort_by=sort_by)
 
   def label_from_instance(self, obj):
     if self.title_case:

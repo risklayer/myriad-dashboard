@@ -41,3 +41,12 @@ def rgetattr(obj, attr, *args):
     return getattr(obj, attr, *args)
 
   return reduce(_getattr, [obj] + attr.split("."))
+
+
+def get_number_from_string(text, fallback: float | None = None):
+  val = text.split()[0]
+  try:
+    num = float(val)
+    return num
+  except Exception:
+    return text if fallback is None else fallback

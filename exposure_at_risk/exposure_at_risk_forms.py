@@ -26,7 +26,7 @@ from shared.form_fields import (
   LabelSelectionFieldWithHazardUnits,
   LabelSelectionMultipleField,
 )
-from shared.utils import make_choices
+from shared.utils import get_number_from_string, make_choices
 
 
 class ExposureAtRiskFilterForm(Form):
@@ -45,6 +45,7 @@ class ExposureAtRiskFilterForm(Form):
     empty_label="",
     to_field_name="key",
     required=False,
+    sort_by=lambda rp: get_number_from_string(rp.label),
   )
   threshold = LabelSelectionFieldWithHazardUnits(
     queryset=TableMetaThreshold.objects.all().order_by("key"),
@@ -53,6 +54,7 @@ class ExposureAtRiskFilterForm(Form):
     required=False,
     initial=0,
     title_case=True,
+    sort_by=lambda th: get_number_from_string(th.label, 0),
   )
   exposure = LabelSelectionField(
     sentence_case=True,
