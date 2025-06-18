@@ -342,7 +342,7 @@ async function updateProbabilitiesAndStochastics({
 
   const hazard = paramsGrouped.hazard?.join() ?? null;
 
-  if (hazard === "winterstorm") {
+  if (hazard === "extratropical_cyclone") {
     filter_circle
       .setLatLng([latitude, longitude])
       .setRadius(Math.min(radius, WINTERSTORM_MAXIMUM_RADIUS) * 1000)

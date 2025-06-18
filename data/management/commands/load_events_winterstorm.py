@@ -60,7 +60,7 @@ class Command(BaseCommand):
     **options,
   ):
     hazard, created = Hazard.get_or_create_by_label(
-      label="Winter storm", slug_key="winterstorm", created_info=True
+      label="Winter storm", slug_key="extratropical_cyclone", created_info=True
     )
 
     if not created and reference and len(reference) and reference != hazard.references:
