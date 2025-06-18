@@ -1,9 +1,0 @@
-services:
-  myriad-dashboard-uwsgi:
-    build: .
-    volumes:
-      - ./docker-volumes/db:/myriad-dashboard/db
-      - ./docker-volumes/run:/myriad-dashboard/run
-      - ./docker-volumes/www_static_data:/myriad-dashboard/www_static_data
-      - ./docker-volumes/media:/myriad-dashboard/media
-      - ./docker-volumes/settings:/myriad-dashboard/settings
