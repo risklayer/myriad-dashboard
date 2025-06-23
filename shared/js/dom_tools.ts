@@ -280,18 +280,18 @@ export function toggleSelectArray(
   selectArrayElementId: string,
   key: string,
   listNode?: Node
-) {
+): string[] {
   const selectArrayElement = document.getElementById(
     selectArrayElementId
   ) as HTMLSelectElement;
   const selectArrayListElement =
-    selectArrayElement.nextElementSibling! as HTMLUListElement;
+    selectArrayElement.nextElementSibling as HTMLUListElement;
   const existingIndex = Array.from(selectArrayElement.options).findIndex(
     (option) => option.value === key
   );
   if (existingIndex > -1) {
     selectArrayElement.remove(existingIndex);
-    selectArrayListElement.removeChild(
+    selectArrayListElement?.removeChild(
       selectArrayListElement.children[existingIndex]!
     );
   } else {
@@ -301,9 +301,13 @@ export function toggleSelectArray(
     option.innerText = key;
     selectArrayElement.options.add(option, selectArrayElement.options[0]);
     if (listNode) {
-      selectArrayListElement.prepend(listNode);
+      selectArrayListElement?.prepend(listNode);
     }
   }
+  const selectedKeys = Array.from(selectArrayElement.options).map(
+    (opt) => opt.value
+  );
+  return selectedKeys;
 }
 
 /**

@@ -288,7 +288,9 @@ async function updateMapAndTable() {
   const quantisation = (paramsGrouped.quantisation?.[0] ??
     "logarithmic") as QuantisationType;
 
-  if (mapColumns[0]) {
+  const shouldUpdateMap = mapColumns[0];
+
+  if (shouldUpdateMap) {
     const { colors } = showLegend({
       paletteName,
       quantisation,
@@ -314,11 +316,13 @@ async function updateMapAndTable() {
       columnsMap ?? {},
       geojson
     );
-    setTimeout(
-      () =>
-        main_map.invalidateSize().fitBounds(LAYERS.region_layer!.getBounds()),
-      50
-    );
+    if (shouldUpdateMap) {
+      setTimeout(
+        () =>
+          main_map.invalidateSize().fitBounds(LAYERS.region_layer!.getBounds()),
+        50
+      );
+    }
   });
 }
 
@@ -346,12 +350,6 @@ function updateRegionLayer(
             columnsMap,
             columns,
             properties: feature.properties,
-            showThreshold: columns.some(
-              (column) => columnsMap[column]?.threshold
-            ),
-            showReturnPeriod: columns.some(
-              (column) => columnsMap[column]?.return_period
-            ),
           });
           const areaDetails = document.getElementById("area-details")!;
           areaDetails.innerHTML = contents;
@@ -365,7 +363,7 @@ function updateRegionLayer(
       }
       const { value } = feature.properties;
       if (colors && value != undefined) {
-        const color = colors(feature.properties.value).toString();
+        const color = colors(value ?? 0).toString();
         return { color, weight: 1, fillOpacity: 0.7 };
       }
       return {};
@@ -508,10 +506,6 @@ function displayDataTable(
         columnsMap,
         columns,
         properties: geojson[row]!.properties,
-        showThreshold: columns.some((column) => columnsMap[column]?.threshold),
-        showReturnPeriod: columns.some(
-          (column) => columnsMap[column]?.return_period
-        ),
       });
       const areaDetails = document.getElementById("area-details")!;
       areaDetails.innerHTML = contents;
@@ -648,9 +642,26 @@ window.setFilters = async function setFilters() {
 
 window.toggleTable = function toggleTable(key: string) {
   const id = "table-columns";
-  toggleSelectArray(id, key);
+  const selectedKeys: string[] = toggleSelectArray(id, key);
   updateTableButtonStates();
-  window.formUpdate();
+  const params = getParamsGrouped();
+  const [mapColumn] = params.column ?? [];
+  // Make sure that the map displays a column that's selected to display in table
+  if (
+    selectedKeys.includes(key) &&
+    (!mapColumn || (mapColumn !== "fp" && !selectedKeys.includes(mapColumn)))
+  ) {
+    // This will trigger displaying the map and also trigger formUpdate()
+    // so no need to do it below
+    (
+      document.querySelector(
+        `button.show-on-map-button[value=${key}]`
+      ) as HTMLButtonElement
+    ).click();
+    return;
+  } else {
+    window.formUpdate();
+  }
 };
 
 function prettyColumnTitle(column: string): string {
