@@ -3,8 +3,10 @@ from crispy_forms.layout import (
   Layout,
 )
 from django.forms import (
+  CharField,
   ChoiceField,
   Form,
+  HiddenInput,
   Select,
 )
 
@@ -40,6 +42,7 @@ class ShowcaseFilterForm(Form):
     required=False,
     initial=("A21_A", "A21_A"),
   )
+  detail_area = CharField(widget=HiddenInput)
 
   def __init__(self, *args, **kwargs):
     super(ShowcaseFilterForm, self).__init__(*args, **kwargs)
@@ -59,4 +62,5 @@ class ShowcaseFilterForm(Form):
     self.helper.field_class = "col-12 pb-0"
     self.helper.layout = Layout(
       "hazard",
+      "detail_area",
     )

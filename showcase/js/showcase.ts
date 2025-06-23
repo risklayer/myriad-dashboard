@@ -57,7 +57,10 @@ import {
 
 declare global {
   interface Window {
-    formUpdate: () => void;
+    formUpdate: (
+      clickedElement?: HTMLSelectElement | HTMLInputElement,
+      options?: FormUpdateOptions
+    ) => void;
     closeAreaPanel: () => void;
     updateParams: () => void;
     setFilters: () => Promise<void>;
@@ -109,7 +112,7 @@ window.formUpdate = function formUpdate(
   handleMapButtonClick(clickedElement, options, "filters-form", "column");
   updateParams(clickedElement);
   updateMapButtonStates();
-  updateMapAndTable();
+  updateMapAndTable(options);
 };
 
 // Flag to indicate that current action is from a popstate so that changes
@@ -190,7 +193,7 @@ function getColumnName(hazard: HazardTypes, code: string): string | null {
   return key; // `Danube_multi_hazard_scenario_A21_${key}`;
 }
 
-async function updateMapAndTable() {
+async function updateMapAndTable(options: FormUpdateOptions = {}) {
   const paramsGrouped = getParamsGrouped();
 
   const countries = (paramsGrouped.countries as CountriesEnum[]) ?? ["ALL"];
@@ -223,6 +226,9 @@ async function updateMapAndTable() {
   const allColumns = uniq(
     [mapColumns, tableColumns].flat().filter(Boolean)
   ) as string[];
+
+  const detailArea = (paramsGrouped.detail_area ?? [])[0] ?? null;
+
   const areas = paramsGrouped.areas ?? [];
 
   const showAllCountries = countries?.includes("ALL");
@@ -277,8 +283,6 @@ async function updateMapAndTable() {
     values,
   });
 
-  cleanupLayer(LayerNames.Region);
-
   // Domain is reversed so higher values are red
   const paletteName = (paramsGrouped.colors?.[0] ??
     "RdYlGn") as chroma.BrewerPaletteName;
@@ -288,7 +292,40 @@ async function updateMapAndTable() {
   const quantisation = (paramsGrouped.quantisation?.[0] ??
     "logarithmic") as QuantisationType;
 
-  const shouldUpdateMap = mapColumns[0];
+  const areaDetails = document.getElementById(
+    "area-details"
+  ) as HTMLInputElement;
+  if (detailArea) {
+    const feature = geojson.find(
+      (geo) => geo?.properties?.NUTS_ID === detailArea
+    );
+    if (feature) {
+      const areaSidebarTemplate = (await import("./area_sidebar_template.ejs"))
+        .default;
+      const area = areaDefinitions[feature.properties!.NUTS_ID]!;
+      const country = area.country;
+      const contents = areaSidebarTemplate({
+        area,
+        country,
+        columnsMap,
+        columns: tableColumns,
+        properties: feature!.properties,
+        prettyColumnTitle,
+      });
+
+      areaDetails.innerHTML = contents;
+    } else {
+      areaDetails.innerHTML = "";
+    }
+  } else {
+    areaDetails.innerHTML = "";
+  }
+
+  if (options.areaDetailOnly) {
+    return;
+  }
+
+  const shouldUpdateMap = !options.areaDetailOnly && mapColumns[0];
 
   if (shouldUpdateMap) {
     const { colors } = showLegend({
@@ -299,13 +336,7 @@ async function updateMapAndTable() {
       title: getLegendTitle(mapColumns[0]!),
     });
 
-    updateRegionLayer(
-      geojson,
-      colors,
-      areaDefinitions,
-      columnsMap ?? {},
-      allColumns
-    );
+    updateRegionLayer(geojson, colors, areaDefinitions);
   }
 
   setTimeout(() => {
@@ -329,31 +360,19 @@ async function updateMapAndTable() {
 function updateRegionLayer(
   geojson: Feature[],
   colors: chroma.Scale<chroma.Color> | null,
-  areaDefinitions: Record<string, Nuts3AreaSchema>,
-  columnsMap: Record<string, DataTableColumnSchema>,
-  columns: string[]
+  areaDefinitions: Record<string, Nuts3AreaSchema>
 ) {
+  cleanupLayer(LayerNames.Region);
   LAYERS.region_layer!.options = {
     interactive: true,
     onEachFeature: (_, layer) => {
       layer.on({
         click: async (event) => {
-          const areaSidebarTemplate = (
-            await import("./area_sidebar_template.ejs")
-          ).default;
-          const { feature } = event.target;
-          const area = areaDefinitions[feature.properties.NUTS_ID]!;
-          const country = area.country;
-          const contents = areaSidebarTemplate({
-            area,
-            country,
-            columnsMap,
-            columns,
-            properties: feature.properties,
-          });
-          const areaDetails = document.getElementById("area-details")!;
-          areaDetails.innerHTML = contents;
-          areaDetails.scrollIntoView({ behavior: "smooth" });
+          const detailAreaField = document.getElementById(
+            "id_detail_area"
+          ) as HTMLInputElement;
+          detailAreaField.value = event.target.feature.properties.NUTS_ID;
+          window.formUpdate(null, { areaDetailOnly: true });
         },
       });
     },
@@ -496,20 +515,11 @@ function displayDataTable(
     // _col: number
   ) =>
     cell.addEventListener("click", async () => {
-      const areaSidebarTemplate = (await import("./area_sidebar_template.ejs"))
-        .default;
-      const area = rowData.region!;
-      const country = area.country;
-      const contents = areaSidebarTemplate({
-        area,
-        country,
-        columnsMap,
-        columns,
-        properties: geojson[row]!.properties,
-      });
-      const areaDetails = document.getElementById("area-details")!;
-      areaDetails.innerHTML = contents;
-      areaDetails.scrollIntoView({ behavior: "smooth" });
+      const detailAreaField = document.getElementById(
+        "id_detail_area"
+      ) as HTMLInputElement;
+      detailAreaField.value = geojson[row]!.properties!.NUTS_ID;
+      window.formUpdate(null, { areaDetailOnly: true });
     });
 
   const column_spec: ConfigColumns[] = [

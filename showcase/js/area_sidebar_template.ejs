@@ -22,14 +22,8 @@
   <tbody>
     <% data.columns.filter(col=> col in data.columnsMap).map(col => { %>
       <tr>
-        <th><%- data.columnsMap[col].label.replace(/_/g, " " ) ?? "—" %></th>
-        <% if (data.showThreshold) { %>
-          <th><%- data.columnsMap[col].threshold?.label ?? "—" %></th>
-          <% } %>
-            <% if (data.showReturnPeriod) { %>
-              <th><%- data.columnsMap[col].return_period?.label ?? "—" %></th>
-              <% } %>
-                <td><%- data.properties.columns[col] %></td>
+        <th><%- data.prettyColumnTitle(data.columnsMap[col].key) ?? "—" %></th>
+        <td><%- data.properties.columns[col] %></td>
       </tr>
       <% }) %>
   </tbody>

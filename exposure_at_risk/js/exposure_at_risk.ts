@@ -54,7 +54,10 @@ import { TableDatum } from "../../shared/js/types";
 
 declare global {
   interface Window {
-    formUpdate: () => void;
+    formUpdate: (
+      clickedElement?: HTMLSelectElement | HTMLInputElement,
+      options?: FormUpdateOptions
+    ) => void;
     closeAreaPanel: () => void;
     updateParams: (
       clickedElement?: HTMLSelectElement | HTMLInputElement | undefined

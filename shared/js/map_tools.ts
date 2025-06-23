@@ -24,7 +24,10 @@ import { Feature, GeoJsonProperties, GeometryObject } from "geojson";
 import { MultiPolygon, ShapeFeature } from "../../data/types/api";
 
 export type ZoomToFitOption = "event" | "column" | "regions" | "auto" | false;
-export type FormUpdateOptions = { zoomToFit?: ZoomToFitOption };
+export type FormUpdateOptions = {
+  zoomToFit?: ZoomToFitOption;
+  areaDetailOnly?: boolean;
+};
 export type QuantisationType =
   | "logarithmic"
   | "equidistant"
