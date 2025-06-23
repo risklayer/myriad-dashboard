@@ -88,7 +88,7 @@ def shapes(
     ).select_related("nuts_area")
 
     for value in all_values:
-      value_dict[value.nuts_area_id][value.data_table_column.key] = value.value
+      value_dict[value.nuts_area.key][value.data_table_column.key] = value.value
 
   for indicator in TourismIndicator.objects.filter(key__in=tourismIndicators):
     all_values = TourismIndicatorValue.objects.filter(
@@ -96,7 +96,7 @@ def shapes(
     ).select_related("nuts_area")
 
     for value in all_values:
-      value_dict[value.nuts_area_id][value.data_table_column.key] = value.value
+      value_dict[value.nuts_area.key][value.indicator.key] = value.value
 
   return {
     "type": "FeatureCollection",
@@ -105,11 +105,13 @@ def shapes(
     "features": [
       {
         "type": "Feature",
-        "properties": {
-          "NUTS_ID": area.key,
-          "country_id": area.country.country_code,
-        }
-        | value_dict.get(area.pk, dict()),
+        "properties": (
+          {
+            "NUTS_ID": area.key,
+            "country_id": area.country.country_code,
+          }
+          | value_dict.get(area.key, dict())
+        ),
         "geometry": area.geom_json,
       }
       for area in nuts3area_filter
