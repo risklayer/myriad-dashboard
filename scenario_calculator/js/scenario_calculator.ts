@@ -94,27 +94,29 @@ declare global {
   }
 }
 
-const options = document.getElementById("scenario_calculator_script")!.dataset;
-const INITIAL_LATITUDE = parseFloat(options.latitude ?? "0");
-const INITIAL_LONGITUDE = parseFloat(options.longitude ?? "0");
-const INITIAL_RADIUS = parseFloat(options.radius ?? "0");
+const pageOptions = document.getElementById(
+  "scenario_calculator_script"
+)!.dataset;
+const INITIAL_LATITUDE = parseFloat(pageOptions.latitude ?? "0");
+const INITIAL_LONGITUDE = parseFloat(pageOptions.longitude ?? "0");
+const INITIAL_RADIUS = parseFloat(pageOptions.radius ?? "0");
 const INITIAL_BASELAYER =
   ((document.getElementById("id_base_layer") as HTMLInputElement)
     .value as BaseMapTypes) || "Greyscale";
 
 const INITIAL_PROBABILITY_LATITUDE = parseFloat(
   ((document.getElementById("id_p-latitude") as HTMLInputElement).value ||
-    options.latitude) ??
+    pageOptions.latitude) ??
     "0"
 );
 const INITIAL_PROBABILITY_LONGITUDE = parseFloat(
   ((document.getElementById("id_p-longitude") as HTMLInputElement).value ||
-    options.longitude) ??
+    pageOptions.longitude) ??
     "0"
 );
 
 const WINTERSTORM_MAXIMUM_RADIUS = parseFloat(
-  options.winterstormRadius ?? "100"
+  pageOptions.winterstormRadius ?? "100"
 );
 
 const ALL_PAGE_FORMS = [
@@ -275,9 +277,9 @@ window.addEventListener("keydown", (evt) => {
 
 window.formUpdate = function formUpdate(
   clickedElement?: HTMLSelectElement | HTMLInputElement,
-  options?: FormUpdateOptions
+  options: FormUpdateOptions = {}
 ) {
-  options = handleMapButtonClick(
+  const extendedOptions = handleMapButtonClick(
     clickedElement,
     options,
     "filters-form",
@@ -285,10 +287,16 @@ window.formUpdate = function formUpdate(
   );
   window.updateParams(clickedElement);
   updateMapButtonStates();
-  if (clickedElement?.classList.contains("select-tree-input")) {
-    updateCombinedImpact({ countriesOnly: true });
+  if (
+    clickedElement?.classList.contains("select-tree-input") ||
+    extendedOptions.areaDetailOnly
+  ) {
+    updateCombinedImpact({
+      countriesOnly: clickedElement?.classList.contains("select-tree-input"),
+      areaDetailOnly: extendedOptions.areaDetailOnly,
+    });
   } else {
-    updateProbabilitiesAndStochastics(options);
+    updateProbabilitiesAndStochastics(extendedOptions);
   }
 };
 
@@ -430,13 +438,16 @@ window.calculateImpact = async function calculateImpact(event: MouseEvent) {
 };
 
 let lastResults: FeatureCollectionSchema | null = null;
+let lastBBox: string | null = null;
 
 export type UpdateCombinedOptions = {
   countriesOnly?: boolean;
+  areaDetailOnly?: boolean;
 };
 
 async function updateCombinedImpact({
   countriesOnly = false,
+  areaDetailOnly = false,
 }: UpdateCombinedOptions = {}) {
   const paramsGrouped = getParamsGrouped();
 
@@ -450,6 +461,7 @@ async function updateCombinedImpact({
     return;
   }
 
+  const detailArea = (paramsGrouped.detail_area ?? [])[0] ?? null;
   const areas = paramsGrouped.areas ?? [];
   const exposure = paramsGrouped.exposure ?? [];
   const [colorResultsBy] = paramsGrouped.color_results_by ?? [];
@@ -477,10 +489,13 @@ async function updateCombinedImpact({
     return;
   }
 
-  const bbox = getCalculationBBoxString();
+  const bbox =
+    areaDetailOnly && lastBBox ? lastBBox : getCalculationBBoxString();
+  lastBBox = bbox;
 
   // Download the shapes, areas, values for the selected countries, in parallel
-  const [shapes, areaDefinitions, values, events] =
+  // eslint-disable-next-line prefer-const
+  let [shapes, areaDefinitions, values, events] =
     await fetchCountriesAndCombinedImpacts(
       countriesIncludingAreas as CountriesEnum[],
       tableEvents!,
@@ -491,7 +506,10 @@ async function updateCombinedImpact({
   if (values) {
     lastResults = values;
   } else if (lastResults) {
-    toast("Run calculate again to update results.");
+    values = lastResults;
+    if (!areaDetailOnly) {
+      toast("Run calculate again to update results.");
+    }
   }
 
   const eventsMap = keyBy(events ?? [], "id");
@@ -505,7 +523,42 @@ async function updateCombinedImpact({
     values: values ?? lastResults ?? null,
   });
 
-  cleanupLayer(LayerNames.Region);
+  const areaDetails = document.getElementById(
+    "area-details"
+  ) as HTMLInputElement;
+
+  if (detailArea) {
+    const feature = geojson.find(
+      (geo) => geo?.properties?.NUTS_ID === detailArea
+    );
+    if (feature) {
+      const areaSidebarTemplate = (await import("./area_sidebar_template.ejs"))
+        .default;
+      const area = areaDefinitions![feature.properties!.NUTS_ID]!;
+      const country = area.country;
+      const contents = areaSidebarTemplate({
+        area,
+        country,
+        columnsMap: RESULT_COLUMN_TITLES,
+        columns: RESULT_COLUMNS,
+        properties: feature!.properties!,
+        formatValue: floatTo3Digits,
+      });
+
+      areaDetails.innerHTML = contents;
+      if (areaDetailOnly) {
+        areaDetails.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      areaDetails.innerHTML = "";
+    }
+  } else {
+    areaDetails.innerHTML = "";
+  }
+
+  if (areaDetailOnly) {
+    return;
+  }
 
   // Domain is reversed so higher values are red
   const paletteName = (paramsGrouped.colors?.[0] ??
@@ -523,7 +576,7 @@ async function updateCombinedImpact({
     quantisation,
     invertColors,
     values: geojson.map(
-      (feature) => feature.properties?.columns?.[colorResultsBy!] ?? null
+      (feature) => feature.properties?.[colorResultsBy!] ?? null
     ),
     title: RESULT_COLUMN_TITLES[colorResultsBy!],
   });
@@ -646,34 +699,23 @@ function updateRegionLayer(
   eventsMap: Dictionary<HrscEventSchema>,
   colorResultsBy: string
 ) {
+  cleanupLayer(LayerNames.Region);
   LAYERS.region_layer!.options = {
     interactive: true,
     onEachFeature: (_, layer) => {
       layer.on({
         click: async (event) => {
-          const areaSidebarTemplate = (
-            await import("./area_sidebar_template.ejs")
-          ).default;
           const { feature } = event.target;
-          const area = areaDefinitions[feature.properties.NUTS_ID]!;
-          const country = area.country;
-          const contents = areaSidebarTemplate({
-            area,
-            country,
-            eventsMap,
-            columns: RESULT_COLUMNS,
-            columnsMap: RESULT_COLUMN_TITLES,
-            properties: feature.properties.columns,
-            formatValue: floatTo3Digits,
-          });
-          const areaDetails = document.getElementById("area-details")!;
-          areaDetails.innerHTML = contents;
-          areaDetails.scrollIntoView({ behavior: "smooth" });
+          const detailAreaField = document.getElementById(
+            "id_detail_area"
+          ) as HTMLInputElement;
+          detailAreaField.value = feature.properties.NUTS_ID;
+          window.formUpdate(null, { areaDetailOnly: true });
         },
       });
     },
     style: (feature: Feature<GeometryObject, GeoJsonProperties>) => {
-      const value = feature?.properties?.columns?.[colorResultsBy];
+      const value = feature?.properties?.[colorResultsBy];
       if (value == null) {
         return { weight: 1 };
       }
@@ -800,7 +842,7 @@ function buildResultsMapAndTableData({
         ...shape,
         properties: {
           ...shape.properties,
-          columns: regionValues,
+          ...regionValues,
           ...(properties && "references" in properties
             ? { references: properties.references }
             : {}),
@@ -850,22 +892,11 @@ function displayDataTable(
     row: number
   ) =>
     cell.addEventListener("click", async () => {
-      const areaSidebarTemplate = (await import("./area_sidebar_template.ejs"))
-        .default;
-      const area = rowData.region!;
-      const country = area.country;
-      const contents = areaSidebarTemplate({
-        area,
-        country,
-        eventsMap,
-        columnsMap: RESULT_COLUMN_TITLES,
-        columns,
-        properties: geojson[row]!.properties!.columns,
-        formatValue: floatTo3Digits,
-      });
-      const areaDetails = document.getElementById("area-details")!;
-      areaDetails.innerHTML = contents;
-      areaDetails.scrollIntoView({ behavior: "smooth" });
+      const detailAreaField = document.getElementById(
+        "id_detail_area"
+      ) as HTMLInputElement;
+      detailAreaField.value = rowData.region.key;
+      window.formUpdate(null, { areaDetailOnly: true });
     });
   const column_spec: ConfigColumns[] = [
     {
@@ -949,12 +980,11 @@ resetSelectTreeIndeterminate();
 updateProbabilitiesAndStochastics();
 
 window.closeAreaPanel = function closeAreaPanel() {
-  ["area-details"].forEach((id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.innerHTML = "";
-    }
-  });
+  const areaDetails = document.getElementById(
+    "id_detail_area"
+  ) as HTMLInputElement;
+  areaDetails.value = "";
+  window.formUpdate(null, { areaDetailOnly: true });
 };
 
 window.toggleTable = function toggleTable(key: string, label: string) {

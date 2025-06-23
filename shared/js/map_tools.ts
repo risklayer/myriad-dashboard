@@ -39,7 +39,7 @@ export function handleMapButtonClick(
   options: FormUpdateOptions | undefined,
   formId: string = "filters-form",
   fieldName: string = "column"
-) {
+): FormUpdateOptions {
   const filtersForm = document.getElementById(formId) as HTMLFormElement;
   const hiddenSelectionField = filtersForm[fieldName] as HTMLInputElement;
   if (
@@ -56,7 +56,7 @@ export function handleMapButtonClick(
       activateButton(clickedElement);
     }
   }
-  return options;
+  return options ?? {};
 }
 
 export function createIconSvg(

@@ -295,6 +295,7 @@ async function updateMapAndTable(options: FormUpdateOptions = {}) {
   const areaDetails = document.getElementById(
     "area-details"
   ) as HTMLInputElement;
+
   if (detailArea) {
     const feature = geojson.find(
       (geo) => geo?.properties?.NUTS_ID === detailArea
@@ -314,6 +315,9 @@ async function updateMapAndTable(options: FormUpdateOptions = {}) {
       });
 
       areaDetails.innerHTML = contents;
+      if (options.areaDetailOnly) {
+        areaDetails.scrollIntoView({ behavior: "smooth" });
+      }
     } else {
       areaDetails.innerHTML = "";
     }
@@ -602,12 +606,11 @@ resetSelectTreeIndeterminate();
 updateMapAndTable();
 
 window.closeAreaPanel = function closeAreaPanel() {
-  ["area-details"].forEach((id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.innerHTML = "";
-    }
-  });
+  const areaDetails = document.getElementById(
+    "id_detail_area"
+  ) as HTMLInputElement;
+  areaDetails.value = "";
+  window.formUpdate(null, { areaDetailOnly: true });
 };
 
 window.setFilters = async function setFilters() {

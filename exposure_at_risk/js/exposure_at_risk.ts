@@ -55,7 +55,7 @@ import { TableDatum } from "../../shared/js/types";
 declare global {
   interface Window {
     formUpdate: (
-      clickedElement?: HTMLSelectElement | HTMLInputElement,
+      clickedElement?: HTMLSelectElement | HTMLInputElement | null,
       options?: FormUpdateOptions
     ) => void;
     closeAreaPanel: () => void;
@@ -72,9 +72,9 @@ declare global {
 
 let values_table: DataTableApi | null = null;
 
-const options = document.getElementById("exposure_at_risk_script")!.dataset;
-const INITIAL_LATITUDE = parseFloat(options.latitude ?? "0");
-const INITIAL_LONGITUDE = parseFloat(options.longitude ?? "0");
+const pageOptions = document.getElementById("exposure_at_risk_script")!.dataset;
+const INITIAL_LATITUDE = parseFloat(pageOptions.latitude ?? "0");
+const INITIAL_LONGITUDE = parseFloat(pageOptions.longitude ?? "0");
 export const INITIAL_BASELAYER =
   ((document.getElementById("id_base_layer") as HTMLInputElement)
     .value as keyof typeof BaseMaps) || "Greyscale";
@@ -105,10 +105,15 @@ window.formUpdate = function formUpdate(
   clickedElement?: HTMLSelectElement | HTMLInputElement,
   options?: FormUpdateOptions
 ) {
-  handleMapButtonClick(clickedElement, options, "filters-form", "column");
+  options = handleMapButtonClick(
+    clickedElement,
+    options,
+    "filters-form",
+    "column"
+  );
   updateParams(clickedElement);
   updateMapButtonStates();
-  updateMapAndTable();
+  updateMapAndTable(options);
 };
 
 // Flag to indicate that current action is from a popstate so that changes
@@ -149,7 +154,11 @@ const updateParams = (window.updateParams = function updateParams(
   );
 });
 
-async function updateMapAndTable() {
+async function updateMapAndTable(
+  options: {
+    areaDetailOnly?: boolean;
+  } = {}
+) {
   const paramsGrouped = getParamsGrouped();
 
   const countries = (paramsGrouped.countries as CountriesEnum[]) ?? [];
@@ -161,6 +170,9 @@ async function updateMapAndTable() {
     uniq([mapColumns, ...tableColumns].flat().filter(Boolean)),
     ...SUMMARY_COLUMNS
   );
+
+  const detailArea = (paramsGrouped.detail_area ?? [])[0] ?? null;
+
   const areas = paramsGrouped.areas ?? [];
 
   const showAllCountries = countries?.includes("ALL");
@@ -229,7 +241,46 @@ async function updateMapAndTable() {
     mapColumns = uniq([mapColumns[0], ...tableColumns, ...extraColumns]);
   }
 
-  cleanupLayer(LayerNames.Region);
+  const areaDetails = document.getElementById(
+    "area-details"
+  ) as HTMLInputElement;
+  if (detailArea) {
+    const feature = geojson.find(
+      (geo) => geo?.properties?.NUTS_ID === detailArea
+    );
+    if (feature) {
+      const areaSidebarTemplate = (await import("./area_sidebar_template.ejs"))
+        .default;
+      const area = areaDefinitions[feature.properties!.NUTS_ID]!;
+      const country = area.country;
+      const contents = areaSidebarTemplate({
+        area,
+        country,
+        columnsMap,
+        columns: tableColumns,
+        properties: feature!.properties,
+        showThreshold: tableColumns.some(
+          (column) => columnsMap[column]?.threshold
+        ),
+        showReturnPeriod: tableColumns.some(
+          (column) => columnsMap[column]?.return_period
+        ),
+      });
+
+      areaDetails.innerHTML = contents;
+      if (options.areaDetailOnly) {
+        areaDetails.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      areaDetails.innerHTML = "";
+    }
+  } else {
+    areaDetails.innerHTML = "";
+  }
+
+  if (options.areaDetailOnly) {
+    return;
+  }
 
   // Domain is reversed so higher values are red
   const paletteName = (paramsGrouped.colors?.[0] ??
@@ -275,33 +326,17 @@ function updateRegionLayer(
   columnsMap: Record<string, DataTableColumnSchema>,
   columns: string[]
 ) {
+  cleanupLayer(LayerNames.Region);
   LAYERS.region_layer!.options = {
     interactive: true,
     onEachFeature: (_, layer) => {
       layer.on({
         click: async (event) => {
-          const areaSidebarTemplate = (
-            await import("./area_sidebar_template.ejs")
-          ).default;
-          const { feature } = event.target;
-          const area = areaDefinitions[feature.properties.NUTS_ID]!;
-          const country = area.country;
-          const contents = areaSidebarTemplate({
-            area,
-            country,
-            columnsMap,
-            columns,
-            properties: feature.properties,
-            showThreshold: columns.some(
-              (column) => columnsMap[column]?.threshold
-            ),
-            showReturnPeriod: columns.some(
-              (column) => columnsMap[column]?.return_period
-            ),
-          });
-          const areaDetails = document.getElementById("area-details")!;
-          areaDetails.innerHTML = contents;
-          areaDetails.scrollIntoView({ behavior: "smooth" });
+          const detailAreaField = document.getElementById(
+            "id_detail_area"
+          ) as HTMLInputElement;
+          detailAreaField.value = event.target.feature.properties.NUTS_ID;
+          window.formUpdate(null, { areaDetailOnly: true });
         },
       });
     },
@@ -480,24 +515,11 @@ function displayDataTable(
     // _col: number
   ) =>
     cell.addEventListener("click", async () => {
-      const areaSidebarTemplate = (await import("./area_sidebar_template.ejs"))
-        .default;
-      const area = rowData.region!;
-      const country = area.country;
-      const contents = areaSidebarTemplate({
-        area,
-        country,
-        columnsMap,
-        columns,
-        properties: geojson[row]!.properties,
-        showThreshold: columns.some((column) => columnsMap[column]?.threshold),
-        showReturnPeriod: columns.some(
-          (column) => columnsMap[column]?.return_period
-        ),
-      });
-      const areaDetails = document.getElementById("area-details")!;
-      areaDetails.innerHTML = contents;
-      areaDetails.scrollIntoView({ behavior: "smooth" });
+      const detailAreaField = document.getElementById(
+        "id_detail_area"
+      ) as HTMLInputElement;
+      detailAreaField.value = geojson[row]!.properties!.NUTS_ID;
+      window.formUpdate(null, { areaDetailOnly: true });
     });
   const column_spec: ConfigColumns[] = [
     {
@@ -579,16 +601,11 @@ resetSelectTreeIndeterminate();
 updateMapAndTable();
 
 window.closeAreaPanel = function closeAreaPanel() {
-  [
-    "area-details",
-    // "pin-name-title-0",
-    // "column-details-inner",
-  ].forEach((id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.innerHTML = "";
-    }
-  });
+  const areaDetails = document.getElementById(
+    "id_detail_area"
+  ) as HTMLInputElement;
+  areaDetails.value = "";
+  window.formUpdate(null, { areaDetailOnly: true });
 };
 
 window.setFilters = async function setFilters() {

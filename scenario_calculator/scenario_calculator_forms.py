@@ -5,6 +5,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout
 from django.db.models import Max, Min
 from django.forms import (
+  CharField,
   FloatField,
   Form,
   HiddenInput,
@@ -397,6 +398,7 @@ class ScenarioCalculatorCombineEventsForm(Form):
     to_field_name="key",
     required=True,
   )
+  detail_area = CharField(widget=HiddenInput)
 
   color_results_by = ChoiceField(choices=color_choices, required=False, initial=color_choices[0])
 
@@ -413,4 +415,5 @@ class ScenarioCalculatorCombineEventsForm(Form):
     self.helper.layout = Layout(
       "exposure",
       "color_results_by",
+      "detail_area",
     )

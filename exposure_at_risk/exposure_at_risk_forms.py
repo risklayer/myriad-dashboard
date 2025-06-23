@@ -6,9 +6,11 @@ from crispy_forms.layout import (
 )
 from django.db.models import Max, Min, Q
 from django.forms import (
+  CharField,
   ChoiceField,
   FloatField,
   Form,
+  HiddenInput,
   SelectMultiple,
 )
 
@@ -82,6 +84,7 @@ class ExposureAtRiskFilterForm(Form):
       }
     ),
   )
+  detail_area = CharField(widget=HiddenInput)
 
   def update_choices(self, possible_values: dict):
     for key, values in possible_values.items():
@@ -100,6 +103,7 @@ class ExposureAtRiskFilterForm(Form):
     self.helper.field_class = "col-12 pb-0"
     self.helper.layout = Layout(
       "hazard",
+      "detail_area",
       *meta_field_names,
     )
 
