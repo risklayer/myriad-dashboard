@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union, TypeAlias
 
 from geojson_pydantic import MultiPolygon
 from ninja import ModelSchema, Schema
@@ -124,7 +124,7 @@ class AreaPropertiesSchema(Schema):
   country_code: str
 
 
-type AreaValuesWithColumnsSchema = Dict[str, float | str] | AreaPropertiesSchema
+AreaValuesWithColumnsSchema : TypeAlias = Dict[str, float | str] | AreaPropertiesSchema
 
 
 class ShapeFeature(Schema):
