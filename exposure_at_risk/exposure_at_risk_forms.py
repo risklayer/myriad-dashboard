@@ -33,7 +33,7 @@ from shared.utils import get_number_from_string, make_choices
 
 class ExposureAtRiskFilterForm(Form):
   hazard = LabelSelectionField(
-    queryset=Hazard.objects.exclude(key="EQ_flood")
+    queryset=Hazard.objects.exclude(key="earthquake_flood")
     .filter(datatablecolumn__in=DataTableColumn.objects.all())
     .distinct()
     .order_by("label"),

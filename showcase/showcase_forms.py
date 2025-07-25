@@ -22,14 +22,14 @@ from shared.utils import make_choices
 
 class ShowcaseFilterForm(Form):
   hazard = LabelSelectionField(
-    queryset=Hazard.objects.filter(key__in=list(["EQ", "flood", "EQ_flood"]))
+    queryset=Hazard.objects.filter(key__in=list(["earthquake", "flood", "earthquake_flood"]))
     .distinct()
     .order_by("id"),
     empty_label=None,
     to_field_name="key",
     required=False,
     blank=False,
-    initial="EQ_flood",
+    initial="earthquake_flood",
     widget=Select(
       {
         "onchange": "formUpdate()",

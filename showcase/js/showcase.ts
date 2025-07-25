@@ -155,8 +155,8 @@ const updateParams = (window.updateParams = function updateParams(
 
 const FootprintColumns: Record<HazardTypes, string | null> = {
   flood: "fp_fl",
-  EQ: "fp_eq",
-  EQ_flood: null,
+  earthquake: "fp_eq",
+  earthquake_flood: null,
 };
 
 function getLegendTitle(column: string) {
@@ -170,11 +170,11 @@ function getLegendTitle(column: string) {
   }
 }
 
-type HazardTypes = "flood" | "EQ" | "EQ_flood";
+type HazardTypes = "flood" | "earthquake" | "earthquake_flood";
 
 function getColumnName(hazard: HazardTypes, code: string): string | null {
   let prefix: string = hazard?.toLocaleLowerCase();
-  if (hazard === "EQ_flood") {
+  if (hazard === "earthquake_flood") {
     prefix = "total";
     if (code === "fp") {
       return null;
@@ -199,11 +199,13 @@ async function updateMapAndTable(options: FormUpdateOptions = {}) {
   const countries = (paramsGrouped.countries as CountriesEnum[]) ?? ["ALL"];
 
   const hazard = Array.from(
-    (paramsGrouped.hazard as HazardTypes | HazardTypes[]) ?? ["EQ"]
+    (paramsGrouped.hazard as HazardTypes | HazardTypes[]) ?? ["earthquake"]
   ).filter(Boolean)[0] as HazardTypes;
 
   const hazards: HazardTypes[] =
-    hazard === "EQ_flood" ? ["EQ", "flood", "EQ_flood"] : [hazard];
+    hazard === "earthquake_flood"
+      ? ["earthquake", "flood", "earthquake_flood"]
+      : [hazard];
 
   // Always show footprints first, then other valuesin alphabetical order
   const tableColumnCodes = sortBy(paramsGrouped.table_columns ?? [], (col) =>

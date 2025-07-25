@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-from data.models import DataTableColumn, DataTableColumnMetadataValueString
 from shared.shared_forms import MapSettingsForm, RegionsForm
 from showcase.showcase_forms import ShowcaseFilterForm
 
@@ -43,24 +42,24 @@ def index(request):
     filter_form = ShowcaseFilterForm(
       request.GET,
       initial={
-        "hazard": "EQ",
+        "hazard": "earthquake",
         "column": ["fp"],
       },
     )
     filter_form.full_clean()
 
     hazard = filter_form.cleaned_data.get("hazard", None)
-    hazard_key = hazard.key if hazard else "EQ_flood"
+    hazard_key = hazard.key if hazard else "earthquake_flood"
     column = filter_form.cleaned_data.get("column", "A")
   else:
     regions_form = RegionsForm(initial={"countries": ["ALL"], "areas": list()})
     filter_form = ShowcaseFilterForm(
       initial={
-        "hazard": "EQ",
+        "hazard": "earthquake",
         "column": ["fp"],
       },
     )
-    hazard_key = "EQ"
+    hazard_key = "earthquake"
     column = "fp"
 
   countries_root = regions_form.create_countries_hierarchy(displayed_countries)
